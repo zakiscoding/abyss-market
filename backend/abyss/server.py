@@ -9,8 +9,10 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 
 from . import config
 from .events import EventStream
+from .incident import PaymentsSimulator
 from .llm import LLM
 from .market import run_job
+from .mayday import IncidentControl, healthy_status, run_incident
 from .reputation import ReputationStore
 
 
@@ -30,6 +32,8 @@ async def websocket_endpoint(ws: WebSocket) -> None:
     await ws.accept()
     stream = EventStream(ws.send_json)
     running: asyncio.Task | None = None
+    sim = PaymentsSimulator()
+    control = IncidentControl()
     await stream.hello(reputation)
 
     try:
@@ -66,6 +70,34 @@ async def websocket_endpoint(ws: WebSocket) -> None:
                     continue
                 reputation.reset()
                 await stream.hello(reputation)
+            elif message_type == "start_incident":
+                if running is not None and not running.done():
+                    await _connection_error(stream, "a job or incident is already running")
+                    continue
+                error = _validate_price_weight(message)
+                if error is not None:
+                    await _connection_error(stream, error)
+                    continue
+                sim.reset()
+                control = IncidentControl()
+                running = asyncio.create_task(
+                    _run_incident_safely(
+                        stream, sim, control, message.get("price_weight", config.PRICE_WEIGHT)
+                    )
+                )
+            elif message_type == "approve_repair":
+                if running is None or running.done() or not control.awaiting_approval:
+                    await _connection_error(stream, "no repair is awaiting approval")
+                    continue
+                control.approval.set()
+            elif message_type == "reset_incident":
+                if running is not None and not running.done():
+                    running.cancel()
+                    with contextlib.suppress(asyncio.CancelledError):
+                        await running
+                running = None
+                sim.reset()
+                await stream.emit("incident_status", healthy_status(sim), job_id=None)
             else:
                 await _connection_error(stream, "unknown message type")
     except WebSocketDisconnect:
@@ -89,10 +121,29 @@ async def _run_job_safely(stream: EventStream, job: str, price_weight: float) ->
             )
 
 
+async def _run_incident_safely(
+    stream: EventStream, sim: PaymentsSimulator, control: IncidentControl, price_weight: float
+) -> None:
+    try:
+        await run_incident(
+            stream=stream, llm=llm, rep=reputation, sim=sim, control=control, price_weight=price_weight
+        )
+    except Exception as exc:
+        logger.exception("incident crashed")
+        with contextlib.suppress(Exception):
+            await stream.emit(
+                "error", {"message": f"internal error: {exc}", "task_id": None, "fatal": True}, job_id=None
+            )
+
+
 def _validate_start(message: dict) -> str | None:
     job = message.get("job")
     if not isinstance(job, str) or not job.strip() or len(job) > 2000:
         return "job must be a string between 1 and 2000 characters"
+    return _validate_price_weight(message)
+
+
+def _validate_price_weight(message: dict) -> str | None:
     price_weight = message.get("price_weight", config.PRICE_WEIGHT)
     if (
         isinstance(price_weight, bool)

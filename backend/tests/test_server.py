@@ -86,6 +86,60 @@ def test_reset_sends_fresh_hello(monkeypatch, tmp_path) -> None:
     )
 
 
+def _receive_until(websocket, kind: str, events: list[dict]) -> list[dict]:
+    while not events or events[-1]["type"] != kind:
+        events.append(websocket.receive_json())
+    return events
+
+
+def test_incident_over_websocket_waits_for_approval(monkeypatch, tmp_path) -> None:
+    server = _server(monkeypatch, tmp_path)
+    with TestClient(server.app) as client:
+        with client.websocket_connect("/ws") as websocket:
+            events = [websocket.receive_json()]
+            websocket.send_json({"type": "reset_incident"})
+            _receive_until(websocket, "incident_status", events)
+            assert events[-1]["data"]["status"] == "healthy"
+            assert events[-1]["job_id"] is None
+
+            websocket.send_json({"type": "start_incident"})
+            _receive_until(websocket, "approval_required", events)
+            assert not any(e["type"] == "service_restored" for e in events)
+            websocket.send_json({"type": "approve_repair"})
+            _receive_until(websocket, "final", events)
+
+    validate_stream(events)
+    sandbox = [e["data"]["passed"] for e in events if e["type"] == "sandbox_result"]
+    assert sandbox == [False, True]
+    assert events[-2]["type"] == "service_restored"
+
+
+def test_approve_without_pending_repair_is_rejected(monkeypatch, tmp_path) -> None:
+    server = _server(monkeypatch, tmp_path)
+    with TestClient(server.app) as client:
+        with client.websocket_connect("/ws") as websocket:
+            websocket.receive_json()
+            websocket.send_json({"type": "approve_repair"})
+            error = websocket.receive_json()
+    assert error["type"] == "error"
+    assert "awaiting approval" in error["data"]["message"]
+
+
+def test_reset_incident_cancels_and_can_repeat(monkeypatch, tmp_path) -> None:
+    server = _server(monkeypatch, tmp_path)
+    with TestClient(server.app) as client:
+        with client.websocket_connect("/ws") as websocket:
+            websocket.receive_json()
+            for _ in range(2):
+                websocket.send_json({"type": "start_incident"})
+                _receive_until(websocket, "approval_required", [])
+                websocket.send_json({"type": "reset_incident"})
+                event = websocket.receive_json()
+                while not (event["type"] == "incident_status" and event["data"]["status"] == "healthy"):
+                    event = websocket.receive_json()
+                assert event["data"]["telemetry"]["db_pool_size"] == 20
+
+
 def test_bad_json_and_unknown_type_return_errors(monkeypatch, tmp_path) -> None:
     server = _server(monkeypatch, tmp_path)
     with TestClient(server.app) as client:

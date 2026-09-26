@@ -633,7 +633,9 @@ def _validate_incident(job_id: str, events: list[dict]) -> None:
     while index < len(body):
         ev = body[index]
         kind = ev["type"]
-        if kind == "incident_status" and ev is not first:
+        if ev is first:
+            pass
+        elif kind == "incident_status":
             new_status = ev["data"]["status"]
             if new_status not in STATUS_NEXT.get(status, set()):
                 raise ValueError(f"incident status cannot go from {status} to {new_status}")

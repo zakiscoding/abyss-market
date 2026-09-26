@@ -125,7 +125,7 @@ async def run_job(
                 task_failed = True
                 final_tasks.append(_final_task(task, None, None, None, ledger))
                 continue
-            winner, promised_quality, predicted_tokens, predicted_price = auction
+            winner, promised_quality, predicted_tokens, predicted_price, _ = auction
         else:
             winner = agents[fixed_agent_id]
             promised_quality = None
@@ -266,8 +266,9 @@ async def _run_auction(
     estimated_input: int,
     price_weight: float,
     tasks_won: dict[str, int],
-) -> tuple[config.AgentSpec, int, int, float] | None:
+) -> tuple[config.AgentSpec, int, int, float, float] | None:
     dep_sizes = {task_id: len(output) for task_id, output in dep_outputs.items()}
+    confidences: dict[str, float] = {}
     calls = [
         request_bid(
             llm,
@@ -312,6 +313,7 @@ async def _run_auction(
         price = predicted_cost(agent.model, estimated_input, tokens)
         reputation = rep.get(agent.agent_id, task.type)
         score = score_bid(quality, reputation, price, price_weight)
+        confidences[agent.agent_id] = clamp_confidence(raw)
         bid = ScoredBid(
             agent_id=agent.agent_id,
             promised_quality=quality,
@@ -333,7 +335,7 @@ async def _run_auction(
                 "est_input_tokens": estimated_input,
                 "predicted_cost_usd": price,
                 "promised_quality": quality,
-                "confidence": clamp_confidence(raw),
+                "confidence": confidences[agent.agent_id],
                 "eta_ms": eta_ms(agent.model, tokens),
                 "pitch": pitch,
                 "reputation": reputation,
@@ -369,6 +371,7 @@ async def _run_auction(
         winner_bid.promised_quality,
         winner_bid.predicted_output_tokens,
         winner_bid.predicted_cost_usd,
+        confidences[winner_bid.agent_id],
     )
 
 
