@@ -31,25 +31,61 @@
           "research": 1.0,
           "writing": 1.0,
           "checking": 1.0,
-          "diagnose": 1.0,
-          "remediate": 1.0,
-          "verify": 1.0
+          "database.diagnose": 1.0,
+          "database.remediate": 1.0,
+          "database.verify": 1.0,
+          "networking.diagnose": 1.0,
+          "networking.remediate": 1.0,
+          "networking.verify": 1.0,
+          "security.diagnose": 1.0,
+          "security.remediate": 1.0,
+          "security.verify": 1.0,
+          "payments.diagnose": 1.0,
+          "payments.remediate": 1.0,
+          "payments.verify": 1.0,
+          "generalist.diagnose": 1.0,
+          "generalist.remediate": 1.0,
+          "generalist.verify": 1.0
         },
         "sonnet": {
           "research": 1.0,
           "writing": 1.0,
           "checking": 1.0,
-          "diagnose": 1.0,
-          "remediate": 1.0,
-          "verify": 1.0
+          "database.diagnose": 1.0,
+          "database.remediate": 1.0,
+          "database.verify": 1.0,
+          "networking.diagnose": 1.0,
+          "networking.remediate": 1.0,
+          "networking.verify": 1.0,
+          "security.diagnose": 1.0,
+          "security.remediate": 1.0,
+          "security.verify": 1.0,
+          "payments.diagnose": 1.0,
+          "payments.remediate": 1.0,
+          "payments.verify": 1.0,
+          "generalist.diagnose": 1.0,
+          "generalist.remediate": 1.0,
+          "generalist.verify": 1.0
         },
         "opus": {
           "research": 1.0,
           "writing": 1.0,
           "checking": 1.0,
-          "diagnose": 1.0,
-          "remediate": 1.0,
-          "verify": 1.0
+          "database.diagnose": 1.0,
+          "database.remediate": 1.0,
+          "database.verify": 1.0,
+          "networking.diagnose": 1.0,
+          "networking.remediate": 1.0,
+          "networking.verify": 1.0,
+          "security.diagnose": 1.0,
+          "security.remediate": 1.0,
+          "security.verify": 1.0,
+          "payments.diagnose": 1.0,
+          "payments.remediate": 1.0,
+          "payments.verify": 1.0,
+          "generalist.diagnose": 1.0,
+          "generalist.remediate": 1.0,
+          "generalist.verify": 1.0
         }
       },
       "config": {
@@ -63,6 +99,159 @@
           "diagnose",
           "remediate",
           "verify"
+        ],
+        "rep_keys": [
+          "research",
+          "writing",
+          "checking",
+          "database.diagnose",
+          "database.remediate",
+          "database.verify",
+          "networking.diagnose",
+          "networking.remediate",
+          "networking.verify",
+          "security.diagnose",
+          "security.remediate",
+          "security.verify",
+          "payments.diagnose",
+          "payments.remediate",
+          "payments.verify",
+          "generalist.diagnose",
+          "generalist.remediate",
+          "generalist.verify"
+        ],
+        "domains": [
+          "database",
+          "networking",
+          "security",
+          "payments",
+          "generalist"
+        ],
+        "specialists": [
+          {
+            "specialist_id": "database.haiku",
+            "domain": "database",
+            "agent_id": "haiku",
+            "label": "Database Specialist \u00b7 Haiku"
+          },
+          {
+            "specialist_id": "database.sonnet",
+            "domain": "database",
+            "agent_id": "sonnet",
+            "label": "Database Specialist \u00b7 Sonnet"
+          },
+          {
+            "specialist_id": "database.opus",
+            "domain": "database",
+            "agent_id": "opus",
+            "label": "Database Specialist \u00b7 Opus"
+          },
+          {
+            "specialist_id": "networking.haiku",
+            "domain": "networking",
+            "agent_id": "haiku",
+            "label": "Networking Specialist \u00b7 Haiku"
+          },
+          {
+            "specialist_id": "networking.sonnet",
+            "domain": "networking",
+            "agent_id": "sonnet",
+            "label": "Networking Specialist \u00b7 Sonnet"
+          },
+          {
+            "specialist_id": "networking.opus",
+            "domain": "networking",
+            "agent_id": "opus",
+            "label": "Networking Specialist \u00b7 Opus"
+          },
+          {
+            "specialist_id": "security.haiku",
+            "domain": "security",
+            "agent_id": "haiku",
+            "label": "Security Specialist \u00b7 Haiku"
+          },
+          {
+            "specialist_id": "security.sonnet",
+            "domain": "security",
+            "agent_id": "sonnet",
+            "label": "Security Specialist \u00b7 Sonnet"
+          },
+          {
+            "specialist_id": "security.opus",
+            "domain": "security",
+            "agent_id": "opus",
+            "label": "Security Specialist \u00b7 Opus"
+          },
+          {
+            "specialist_id": "payments.haiku",
+            "domain": "payments",
+            "agent_id": "haiku",
+            "label": "Payments Specialist \u00b7 Haiku"
+          },
+          {
+            "specialist_id": "payments.sonnet",
+            "domain": "payments",
+            "agent_id": "sonnet",
+            "label": "Payments Specialist \u00b7 Sonnet"
+          },
+          {
+            "specialist_id": "payments.opus",
+            "domain": "payments",
+            "agent_id": "opus",
+            "label": "Payments Specialist \u00b7 Opus"
+          },
+          {
+            "specialist_id": "generalist.haiku",
+            "domain": "generalist",
+            "agent_id": "haiku",
+            "label": "Generalist \u00b7 Haiku"
+          },
+          {
+            "specialist_id": "generalist.sonnet",
+            "domain": "generalist",
+            "agent_id": "sonnet",
+            "label": "Generalist \u00b7 Sonnet"
+          },
+          {
+            "specialist_id": "generalist.opus",
+            "domain": "generalist",
+            "agent_id": "opus",
+            "label": "Generalist \u00b7 Opus"
+          }
+        ],
+        "scenarios": [
+          {
+            "scenario_id": "payments_pool",
+            "name": "Payments API \u00b7 DB pool exhaustion",
+            "service": "payments-api",
+            "region": "iad",
+            "source_system": "Datadog APM",
+            "alert": "payments-api HTTP 500 rate above 1% for 3 minutes"
+          },
+          {
+            "scenario_id": "ams_db_outage",
+            "name": "Orders DB \u00b7 Amsterdam primary down",
+            "service": "orders-api",
+            "region": "ams",
+            "source_system": "PagerDuty \u00b7 Postgres HA monitor",
+            "alert": "pg-ams-1 primary health probe failing; EU order writes erroring"
+          },
+          {
+            "scenario_id": "auth_attack",
+            "name": "Auth API \u00b7 credential-stuffing attack",
+            "service": "auth-api",
+            "region": "iad",
+            "source_system": "Okta System Log + WAF",
+            "alert": "failed logins 160x baseline; suspicious source concentration"
+          },
+          {
+            "scenario_id": "network_partition",
+            "name": "Checkout \u00b7 APAC network partition",
+            "service": "checkout-api",
+            "region": "fra",
+            "source_system": "Cloudflare + ThousandEyes",
+            "alert": "checkout unreachable from sin PoP; origin health checks green"
+          }
         ],
         "real_models": true,
         "fake_llm": false,
@@ -184,7 +373,8 @@
       "depends_on": [],
       "index": 0,
       "total": 3,
-      "est_input_tokens": 180
+      "est_input_tokens": 180,
+      "domain": null
     }
   },
   {
@@ -412,6 +602,7 @@
       "task_id": "t1",
       "agent_id": "haiku",
       "task_type": "research",
+      "rep_key": "research",
       "old": 1.0,
       "new": 0.925,
       "ratio": 0.75
@@ -487,7 +678,8 @@
       ],
       "index": 1,
       "total": 3,
-      "est_input_tokens": 420
+      "est_input_tokens": 420,
+      "domain": null
     }
   },
   {
@@ -715,6 +907,7 @@
       "task_id": "t2",
       "agent_id": "sonnet",
       "task_type": "writing",
+      "rep_key": "writing",
       "old": 1.0,
       "new": 1.0,
       "ratio": 1.0
@@ -790,7 +983,8 @@
       ],
       "index": 2,
       "total": 3,
-      "est_input_tokens": 380
+      "est_input_tokens": 380,
+      "domain": null
     }
   },
   {
@@ -1018,6 +1212,7 @@
       "task_id": "t3",
       "agent_id": "opus",
       "task_type": "checking",
+      "rep_key": "checking",
       "old": 1.0,
       "new": 0.97,
       "ratio": 0.9

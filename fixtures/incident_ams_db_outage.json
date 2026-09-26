@@ -1,0 +1,2861 @@
+[
+  {
+    "v": 1,
+    "seq": 0,
+    "t": 0,
+    "job_id": null,
+    "type": "hello",
+    "data": {
+      "agents": [
+        {
+          "agent_id": "haiku",
+          "display_name": "Haiku 4.5",
+          "model": "claude-haiku-4-5",
+          "color": "#4fb3a9"
+        },
+        {
+          "agent_id": "sonnet",
+          "display_name": "Sonnet 5",
+          "model": "claude-sonnet-5",
+          "color": "#e8a33d"
+        },
+        {
+          "agent_id": "opus",
+          "display_name": "Opus 5",
+          "model": "claude-opus-5",
+          "color": "#8e6cc9"
+        }
+      ],
+      "reputation": {
+        "haiku": {
+          "research": 1.0,
+          "writing": 1.0,
+          "checking": 1.0,
+          "database.diagnose": 1.0,
+          "database.remediate": 1.0,
+          "database.verify": 1.0,
+          "networking.diagnose": 1.0,
+          "networking.remediate": 1.0,
+          "networking.verify": 1.0,
+          "security.diagnose": 1.0,
+          "security.remediate": 1.0,
+          "security.verify": 1.0,
+          "payments.diagnose": 1.0,
+          "payments.remediate": 1.0,
+          "payments.verify": 1.0,
+          "generalist.diagnose": 1.0,
+          "generalist.remediate": 1.0,
+          "generalist.verify": 1.0
+        },
+        "sonnet": {
+          "research": 1.0,
+          "writing": 1.0,
+          "checking": 1.0,
+          "database.diagnose": 1.0,
+          "database.remediate": 1.0,
+          "database.verify": 1.0,
+          "networking.diagnose": 1.0,
+          "networking.remediate": 1.0,
+          "networking.verify": 1.0,
+          "security.diagnose": 1.0,
+          "security.remediate": 1.0,
+          "security.verify": 1.0,
+          "payments.diagnose": 1.0,
+          "payments.remediate": 1.0,
+          "payments.verify": 1.0,
+          "generalist.diagnose": 1.0,
+          "generalist.remediate": 1.0,
+          "generalist.verify": 1.0
+        },
+        "opus": {
+          "research": 1.0,
+          "writing": 1.0,
+          "checking": 1.0,
+          "database.diagnose": 1.0,
+          "database.remediate": 1.0,
+          "database.verify": 1.0,
+          "networking.diagnose": 1.0,
+          "networking.remediate": 1.0,
+          "networking.verify": 1.0,
+          "security.diagnose": 1.0,
+          "security.remediate": 1.0,
+          "security.verify": 1.0,
+          "payments.diagnose": 1.0,
+          "payments.remediate": 1.0,
+          "payments.verify": 1.0,
+          "generalist.diagnose": 1.0,
+          "generalist.remediate": 1.0,
+          "generalist.verify": 1.0
+        }
+      },
+      "config": {
+        "price_weight": 1.0,
+        "rep_init": 1.0,
+        "rep_alpha": 0.3,
+        "task_types": [
+          "research",
+          "writing",
+          "checking",
+          "diagnose",
+          "remediate",
+          "verify"
+        ],
+        "rep_keys": [
+          "research",
+          "writing",
+          "checking",
+          "database.diagnose",
+          "database.remediate",
+          "database.verify",
+          "networking.diagnose",
+          "networking.remediate",
+          "networking.verify",
+          "security.diagnose",
+          "security.remediate",
+          "security.verify",
+          "payments.diagnose",
+          "payments.remediate",
+          "payments.verify",
+          "generalist.diagnose",
+          "generalist.remediate",
+          "generalist.verify"
+        ],
+        "domains": [
+          "database",
+          "networking",
+          "security",
+          "payments",
+          "generalist"
+        ],
+        "specialists": [
+          {
+            "specialist_id": "database.haiku",
+            "domain": "database",
+            "agent_id": "haiku",
+            "label": "Database Specialist \u00b7 Haiku"
+          },
+          {
+            "specialist_id": "database.sonnet",
+            "domain": "database",
+            "agent_id": "sonnet",
+            "label": "Database Specialist \u00b7 Sonnet"
+          },
+          {
+            "specialist_id": "database.opus",
+            "domain": "database",
+            "agent_id": "opus",
+            "label": "Database Specialist \u00b7 Opus"
+          },
+          {
+            "specialist_id": "networking.haiku",
+            "domain": "networking",
+            "agent_id": "haiku",
+            "label": "Networking Specialist \u00b7 Haiku"
+          },
+          {
+            "specialist_id": "networking.sonnet",
+            "domain": "networking",
+            "agent_id": "sonnet",
+            "label": "Networking Specialist \u00b7 Sonnet"
+          },
+          {
+            "specialist_id": "networking.opus",
+            "domain": "networking",
+            "agent_id": "opus",
+            "label": "Networking Specialist \u00b7 Opus"
+          },
+          {
+            "specialist_id": "security.haiku",
+            "domain": "security",
+            "agent_id": "haiku",
+            "label": "Security Specialist \u00b7 Haiku"
+          },
+          {
+            "specialist_id": "security.sonnet",
+            "domain": "security",
+            "agent_id": "sonnet",
+            "label": "Security Specialist \u00b7 Sonnet"
+          },
+          {
+            "specialist_id": "security.opus",
+            "domain": "security",
+            "agent_id": "opus",
+            "label": "Security Specialist \u00b7 Opus"
+          },
+          {
+            "specialist_id": "payments.haiku",
+            "domain": "payments",
+            "agent_id": "haiku",
+            "label": "Payments Specialist \u00b7 Haiku"
+          },
+          {
+            "specialist_id": "payments.sonnet",
+            "domain": "payments",
+            "agent_id": "sonnet",
+            "label": "Payments Specialist \u00b7 Sonnet"
+          },
+          {
+            "specialist_id": "payments.opus",
+            "domain": "payments",
+            "agent_id": "opus",
+            "label": "Payments Specialist \u00b7 Opus"
+          },
+          {
+            "specialist_id": "generalist.haiku",
+            "domain": "generalist",
+            "agent_id": "haiku",
+            "label": "Generalist \u00b7 Haiku"
+          },
+          {
+            "specialist_id": "generalist.sonnet",
+            "domain": "generalist",
+            "agent_id": "sonnet",
+            "label": "Generalist \u00b7 Sonnet"
+          },
+          {
+            "specialist_id": "generalist.opus",
+            "domain": "generalist",
+            "agent_id": "opus",
+            "label": "Generalist \u00b7 Opus"
+          }
+        ],
+        "scenarios": [
+          {
+            "scenario_id": "payments_pool",
+            "name": "Payments API \u00b7 DB pool exhaustion",
+            "service": "payments-api",
+            "region": "iad",
+            "source_system": "Datadog APM",
+            "alert": "payments-api HTTP 500 rate above 1% for 3 minutes"
+          },
+          {
+            "scenario_id": "ams_db_outage",
+            "name": "Orders DB \u00b7 Amsterdam primary down",
+            "service": "orders-api",
+            "region": "ams",
+            "source_system": "PagerDuty \u00b7 Postgres HA monitor",
+            "alert": "pg-ams-1 primary health probe failing; EU order writes erroring"
+          },
+          {
+            "scenario_id": "auth_attack",
+            "name": "Auth API \u00b7 credential-stuffing attack",
+            "service": "auth-api",
+            "region": "iad",
+            "source_system": "Okta System Log + WAF",
+            "alert": "failed logins 160x baseline; suspicious source concentration"
+          },
+          {
+            "scenario_id": "network_partition",
+            "name": "Checkout \u00b7 APAC network partition",
+            "service": "checkout-api",
+            "region": "fra",
+            "source_system": "Cloudflare + ThousandEyes",
+            "alert": "checkout unreachable from sin PoP; origin health checks green"
+          }
+        ],
+        "real_models": false,
+        "fake_llm": true,
+        "orchestrator_model": "claude-sonnet-5",
+        "reviewer_model": "claude-sonnet-5"
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 1,
+    "t": 0,
+    "job_id": null,
+    "type": "incident_status",
+    "data": {
+      "status": "healthy",
+      "scenario_id": "ams_db_outage",
+      "service": "orders-api",
+      "region": "ams",
+      "severity": null,
+      "summary": "All systems operational.",
+      "telemetry": [
+        {
+          "key": "eu_error_rate",
+          "label": "EU error rate",
+          "value": 0.004,
+          "unit": "ratio",
+          "ok": true
+        },
+        {
+          "key": "eu_p95_latency_ms",
+          "label": "EU p95 latency",
+          "value": 140,
+          "unit": "ms",
+          "ok": true
+        },
+        {
+          "key": "db_primary_reachable",
+          "label": "DB primary reachable",
+          "value": 1,
+          "unit": "count",
+          "ok": true
+        },
+        {
+          "key": "db_writes_failing_per_min",
+          "label": "Failed writes",
+          "value": 0,
+          "unit": "per_min",
+          "ok": true
+        },
+        {
+          "key": "replica_lag_s",
+          "label": "Replica lag (fra)",
+          "value": 2.0,
+          "unit": "s",
+          "ok": true
+        }
+      ],
+      "logs": [
+        "INFO  orders-api(ams) p95=140ms errors=0.4%",
+        "INFO  postgres primary pg-ams accepting writes; replica lag 2.0s"
+      ],
+      "config_changes": []
+    }
+  },
+  {
+    "v": 1,
+    "seq": 2,
+    "t": 0,
+    "job_id": "j_5eb0a912",
+    "type": "incident_received",
+    "data": {
+      "scenario_id": "ams_db_outage",
+      "name": "Orders DB \u00b7 Amsterdam primary down",
+      "service": "orders-api",
+      "region": "ams",
+      "source_system": "PagerDuty \u00b7 Postgres HA monitor",
+      "alert": "pg-ams-1 primary health probe failing; EU order writes erroring",
+      "package": {
+        "service": "orders-api",
+        "region": "ams",
+        "source_system": "PagerDuty \u00b7 Postgres HA monitor",
+        "alert": "pg-ams-1 primary health probe failing; EU order writes erroring",
+        "breached": [
+          {
+            "key": "eu_error_rate",
+            "label": "EU error rate",
+            "value": 0.72,
+            "unit": "ratio",
+            "ok": false
+          },
+          {
+            "key": "eu_p95_latency_ms",
+            "label": "EU p95 latency",
+            "value": 5000,
+            "unit": "ms",
+            "ok": false
+          },
+          {
+            "key": "db_primary_reachable",
+            "label": "DB primary reachable",
+            "value": 0,
+            "unit": "count",
+            "ok": false
+          },
+          {
+            "key": "db_writes_failing_per_min",
+            "label": "Failed writes",
+            "value": 3024,
+            "unit": "per_min",
+            "ok": false
+          }
+        ],
+        "log_excerpt": [
+          "ERROR orders-api(ams) could not connect to postgres primary pg-ams-1:5432: connection refused",
+          "ERROR pg-ams-1 health probe failed 12/12 (host unreachable since 06:58 UTC)",
+          "WARN  3024 EU order writes failed in the last minute; EU traffic still routed to ams",
+          "INFO  replica pg-fra-2 healthy, replication lag 2.0s, promotable"
+        ],
+        "recent_changes": []
+      },
+      "package_tokens_est": 346,
+      "full_context_tokens_est": 480
+    }
+  },
+  {
+    "v": 1,
+    "seq": 3,
+    "t": 1400,
+    "job_id": "j_5eb0a912",
+    "type": "incident_status",
+    "data": {
+      "status": "outage",
+      "scenario_id": "ams_db_outage",
+      "service": "orders-api",
+      "region": "ams",
+      "severity": null,
+      "summary": "pg-ams-1 primary health probe failing; EU order writes erroring",
+      "telemetry": [
+        {
+          "key": "eu_error_rate",
+          "label": "EU error rate",
+          "value": 0.72,
+          "unit": "ratio",
+          "ok": false
+        },
+        {
+          "key": "eu_p95_latency_ms",
+          "label": "EU p95 latency",
+          "value": 5000,
+          "unit": "ms",
+          "ok": false
+        },
+        {
+          "key": "db_primary_reachable",
+          "label": "DB primary reachable",
+          "value": 0,
+          "unit": "count",
+          "ok": false
+        },
+        {
+          "key": "db_writes_failing_per_min",
+          "label": "Failed writes",
+          "value": 3024,
+          "unit": "per_min",
+          "ok": false
+        },
+        {
+          "key": "replica_lag_s",
+          "label": "Replica lag (fra)",
+          "value": 2.0,
+          "unit": "s",
+          "ok": true
+        }
+      ],
+      "logs": [
+        "ERROR orders-api(ams) could not connect to postgres primary pg-ams-1:5432: connection refused",
+        "ERROR pg-ams-1 health probe failed 12/12 (host unreachable since 06:58 UTC)",
+        "WARN  3024 EU order writes failed in the last minute; EU traffic still routed to ams",
+        "INFO  replica pg-fra-2 healthy, replication lag 2.0s, promotable"
+      ],
+      "config_changes": []
+    }
+  },
+  {
+    "v": 1,
+    "seq": 4,
+    "t": 3000,
+    "job_id": "j_5eb0a912",
+    "type": "commander_classified",
+    "data": {
+      "scenario_id": "ams_db_outage",
+      "domain": "database",
+      "secondary_domains": [
+        "networking"
+      ],
+      "severity": "SEV-1",
+      "required_specialties": [
+        "incident_command",
+        "database",
+        "postgres",
+        "networking",
+        "routing",
+        "customer_comms",
+        "support"
+      ],
+      "rationale": "Signal scores: database 7, networking 1. SEV-1 because EU error rate is 72%.",
+      "source": "model",
+      "fallback_reason": null,
+      "usage": {
+        "model": "claude-sonnet-5",
+        "input_tokens": 345,
+        "output_tokens": 193,
+        "cost_usd": 0.00262,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 5,
+    "t": 5200,
+    "job_id": "j_5eb0a912",
+    "type": "specialists_dispatched",
+    "data": {
+      "domain": "database",
+      "registered": 15,
+      "eligible": 3,
+      "specialists": [
+        {
+          "specialist_id": "database.haiku",
+          "domain": "database",
+          "agent_id": "haiku",
+          "label": "Database Specialist \u00b7 Haiku",
+          "dispatched": true
+        },
+        {
+          "specialist_id": "database.sonnet",
+          "domain": "database",
+          "agent_id": "sonnet",
+          "label": "Database Specialist \u00b7 Sonnet",
+          "dispatched": true
+        },
+        {
+          "specialist_id": "database.opus",
+          "domain": "database",
+          "agent_id": "opus",
+          "label": "Database Specialist \u00b7 Opus",
+          "dispatched": true
+        },
+        {
+          "specialist_id": "networking.haiku",
+          "domain": "networking",
+          "agent_id": "haiku",
+          "label": "Networking Specialist \u00b7 Haiku",
+          "dispatched": false
+        },
+        {
+          "specialist_id": "networking.sonnet",
+          "domain": "networking",
+          "agent_id": "sonnet",
+          "label": "Networking Specialist \u00b7 Sonnet",
+          "dispatched": false
+        },
+        {
+          "specialist_id": "networking.opus",
+          "domain": "networking",
+          "agent_id": "opus",
+          "label": "Networking Specialist \u00b7 Opus",
+          "dispatched": false
+        },
+        {
+          "specialist_id": "security.haiku",
+          "domain": "security",
+          "agent_id": "haiku",
+          "label": "Security Specialist \u00b7 Haiku",
+          "dispatched": false
+        },
+        {
+          "specialist_id": "security.sonnet",
+          "domain": "security",
+          "agent_id": "sonnet",
+          "label": "Security Specialist \u00b7 Sonnet",
+          "dispatched": false
+        },
+        {
+          "specialist_id": "security.opus",
+          "domain": "security",
+          "agent_id": "opus",
+          "label": "Security Specialist \u00b7 Opus",
+          "dispatched": false
+        },
+        {
+          "specialist_id": "payments.haiku",
+          "domain": "payments",
+          "agent_id": "haiku",
+          "label": "Payments Specialist \u00b7 Haiku",
+          "dispatched": false
+        },
+        {
+          "specialist_id": "payments.sonnet",
+          "domain": "payments",
+          "agent_id": "sonnet",
+          "label": "Payments Specialist \u00b7 Sonnet",
+          "dispatched": false
+        },
+        {
+          "specialist_id": "payments.opus",
+          "domain": "payments",
+          "agent_id": "opus",
+          "label": "Payments Specialist \u00b7 Opus",
+          "dispatched": false
+        },
+        {
+          "specialist_id": "generalist.haiku",
+          "domain": "generalist",
+          "agent_id": "haiku",
+          "label": "Generalist \u00b7 Haiku",
+          "dispatched": false
+        },
+        {
+          "specialist_id": "generalist.sonnet",
+          "domain": "generalist",
+          "agent_id": "sonnet",
+          "label": "Generalist \u00b7 Sonnet",
+          "dispatched": false
+        },
+        {
+          "specialist_id": "generalist.opus",
+          "domain": "generalist",
+          "agent_id": "opus",
+          "label": "Generalist \u00b7 Opus",
+          "dispatched": false
+        }
+      ],
+      "reason": "Only the 3 Database Specialist models receive the full incident; 12 other specialists are skipped."
+    }
+  },
+  {
+    "v": 1,
+    "seq": 6,
+    "t": 7000,
+    "job_id": "j_5eb0a912",
+    "type": "responders_selected",
+    "data": {
+      "required_skills": [
+        "incident_command",
+        "database",
+        "postgres",
+        "networking",
+        "routing",
+        "customer_comms",
+        "support"
+      ],
+      "responders": [
+        {
+          "responder_id": "zak",
+          "name": "Zak",
+          "role": "Incident Commander",
+          "selected": true,
+          "score": 8,
+          "matched_skills": [
+            "incident_command"
+          ],
+          "available": true,
+          "workload": 1,
+          "reason": "Matches incident_command; 1 open tickets."
+        },
+        {
+          "responder_id": "maya",
+          "name": "Maya",
+          "role": "Database Engineer",
+          "selected": true,
+          "score": 16,
+          "matched_skills": [
+            "database",
+            "postgres"
+          ],
+          "available": true,
+          "workload": 2,
+          "reason": "Matches database, postgres; 2 open tickets."
+        },
+        {
+          "responder_id": "alex",
+          "name": "Alex",
+          "role": "Backend Engineer",
+          "selected": false,
+          "score": -2,
+          "matched_skills": [],
+          "available": true,
+          "workload": 1,
+          "reason": "No backend/deploys/payments_api signal in this incident."
+        },
+        {
+          "responder_id": "riley",
+          "name": "Riley",
+          "role": "Network Engineer",
+          "selected": true,
+          "score": 18,
+          "matched_skills": [
+            "networking",
+            "routing"
+          ],
+          "available": true,
+          "workload": 1,
+          "reason": "Matches networking, routing; 1 open tickets."
+        },
+        {
+          "responder_id": "sam",
+          "name": "Sam",
+          "role": "Security Engineer",
+          "selected": false,
+          "score": 0,
+          "matched_skills": [],
+          "available": true,
+          "workload": 0,
+          "reason": "No access_control/auth/security signal in this incident."
+        },
+        {
+          "responder_id": "jordan",
+          "name": "Jordan",
+          "role": "Customer Support Lead",
+          "selected": true,
+          "score": 14,
+          "matched_skills": [
+            "customer_comms",
+            "support"
+          ],
+          "available": true,
+          "workload": 3,
+          "reason": "Matches customer_comms, support; 3 open tickets."
+        }
+      ],
+      "briefings": {
+        "engineering": "pg-ams-1 (primary) is unreachable; 3024/min EU writes failing, error rate 72%. Replica pg-fra-2 is healthy with 2.0 s lag (RPO 5 s).",
+        "support": "EU customers cannot place or update orders. Tell them orders are temporarily unavailable, no data has been lost, and service is being moved to a healthy region.",
+        "commander": "SEV-1 on orders-api in Amsterdam. Team: Zak, Maya, Riley, Jordan. The primary database host is down; a Frankfurt failover is being sandbox-tested. Your decision: approve the failover plan.",
+        "leadership": "EU ordering is down (about 3024 failed orders per minute). A tested failover to Frankfurt will restore it with at most a few seconds of replication lag."
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 7,
+    "t": 9200,
+    "job_id": "j_5eb0a912",
+    "type": "incident_status",
+    "data": {
+      "status": "investigating",
+      "scenario_id": "ams_db_outage",
+      "service": "orders-api",
+      "region": "ams",
+      "severity": "SEV-1",
+      "summary": "Database Specialists are bidding to diagnose.",
+      "telemetry": [
+        {
+          "key": "eu_error_rate",
+          "label": "EU error rate",
+          "value": 0.72,
+          "unit": "ratio",
+          "ok": false
+        },
+        {
+          "key": "eu_p95_latency_ms",
+          "label": "EU p95 latency",
+          "value": 5000,
+          "unit": "ms",
+          "ok": false
+        },
+        {
+          "key": "db_primary_reachable",
+          "label": "DB primary reachable",
+          "value": 0,
+          "unit": "count",
+          "ok": false
+        },
+        {
+          "key": "db_writes_failing_per_min",
+          "label": "Failed writes",
+          "value": 3024,
+          "unit": "per_min",
+          "ok": false
+        },
+        {
+          "key": "replica_lag_s",
+          "label": "Replica lag (fra)",
+          "value": 2.0,
+          "unit": "s",
+          "ok": true
+        }
+      ],
+      "logs": [
+        "ERROR orders-api(ams) could not connect to postgres primary pg-ams-1:5432: connection refused",
+        "ERROR pg-ams-1 health probe failed 12/12 (host unreachable since 06:58 UTC)",
+        "WARN  3024 EU order writes failed in the last minute; EU traffic still routed to ams",
+        "INFO  replica pg-fra-2 healthy, replication lag 2.0s, promotable"
+      ],
+      "config_changes": []
+    }
+  },
+  {
+    "v": 1,
+    "seq": 8,
+    "t": 10800,
+    "job_id": "j_5eb0a912",
+    "type": "task_posted",
+    "data": {
+      "task_id": "t1",
+      "type": "diagnose",
+      "title": "Diagnose the orders-api incident",
+      "brief": "Find the root cause of the orders-api incident from the telemetry, logs, and recent changes.",
+      "depends_on": [],
+      "index": 0,
+      "total": 3,
+      "est_input_tokens": 391,
+      "domain": "database"
+    }
+  },
+  {
+    "v": 1,
+    "seq": 9,
+    "t": 11700,
+    "job_id": "j_5eb0a912",
+    "type": "bid",
+    "data": {
+      "task_id": "t1",
+      "agent_id": "haiku",
+      "ok": true,
+      "error": null,
+      "predicted_output_tokens": 488,
+      "est_input_tokens": 391,
+      "predicted_cost_usd": 0.002831,
+      "promised_quality": 10,
+      "confidence": 0.73,
+      "eta_ms": 3253,
+      "pitch": "A careful, concise result at a competitive price.",
+      "reputation": 1.0,
+      "score": 9.717,
+      "usage": {
+        "model": "claude-haiku-4-5",
+        "input_tokens": 466,
+        "output_tokens": 34,
+        "cost_usd": 0.000636,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 10,
+    "t": 12400,
+    "job_id": "j_5eb0a912",
+    "type": "bid",
+    "data": {
+      "task_id": "t1",
+      "agent_id": "sonnet",
+      "ok": true,
+      "error": null,
+      "predicted_output_tokens": 481,
+      "est_input_tokens": 391,
+      "predicted_cost_usd": 0.005592,
+      "promised_quality": 9,
+      "confidence": 0.91,
+      "eta_ms": 6012,
+      "pitch": "A careful, concise result at a competitive price.",
+      "reputation": 1.0,
+      "score": 8.441,
+      "usage": {
+        "model": "claude-sonnet-5",
+        "input_tokens": 466,
+        "output_tokens": 184,
+        "cost_usd": 0.002772,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 11,
+    "t": 13100,
+    "job_id": "j_5eb0a912",
+    "type": "bid",
+    "data": {
+      "task_id": "t1",
+      "agent_id": "opus",
+      "ok": true,
+      "error": null,
+      "predicted_output_tokens": 674,
+      "est_input_tokens": 391,
+      "predicted_cost_usd": 0.018805,
+      "promised_quality": 6,
+      "confidence": 0.95,
+      "eta_ms": 13480,
+      "pitch": "A careful, concise result at a competitive price.",
+      "reputation": 1.0,
+      "score": 4.12,
+      "usage": {
+        "model": "claude-opus-5",
+        "input_tokens": 465,
+        "output_tokens": 334,
+        "cost_usd": 0.010675,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 12,
+    "t": 13800,
+    "job_id": "j_5eb0a912",
+    "type": "won",
+    "data": {
+      "task_id": "t1",
+      "agent_id": "haiku",
+      "mode": "auction",
+      "score": 9.717,
+      "runner_up_agent_id": "sonnet",
+      "runner_up_score": 8.441,
+      "scores": {
+        "haiku": 9.717,
+        "sonnet": 8.441,
+        "opus": 4.12
+      },
+      "price_weight": 1.0
+    }
+  },
+  {
+    "v": 1,
+    "seq": 13,
+    "t": 14700,
+    "job_id": "j_5eb0a912",
+    "type": "stats",
+    "data": {
+      "total_cost_usd": 0.016703,
+      "input_tokens": 1742,
+      "output_tokens": 745,
+      "calls": 4,
+      "by_purpose": {
+        "split": {
+          "cost_usd": 0.00262,
+          "calls": 1
+        },
+        "bid": {
+          "cost_usd": 0.014083,
+          "calls": 3
+        },
+        "work": {
+          "cost_usd": 0.0,
+          "calls": 0
+        },
+        "review": {
+          "cost_usd": 0.0,
+          "calls": 0
+        }
+      },
+      "by_agent": {
+        "haiku": {
+          "cost_usd": 0.000636,
+          "input_tokens": 466,
+          "output_tokens": 34,
+          "calls": 1,
+          "tasks_won": 1
+        },
+        "sonnet": {
+          "cost_usd": 0.002772,
+          "input_tokens": 466,
+          "output_tokens": 184,
+          "calls": 1,
+          "tasks_won": 0
+        },
+        "opus": {
+          "cost_usd": 0.010675,
+          "input_tokens": 465,
+          "output_tokens": 334,
+          "calls": 1,
+          "tasks_won": 0
+        }
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 14,
+    "t": 14850,
+    "job_id": "j_5eb0a912",
+    "type": "working",
+    "data": {
+      "task_id": "t1",
+      "agent_id": "haiku"
+    }
+  },
+  {
+    "v": 1,
+    "seq": 15,
+    "t": 17450,
+    "job_id": "j_5eb0a912",
+    "type": "done",
+    "data": {
+      "task_id": "t1",
+      "agent_id": "haiku",
+      "output": "Root cause: the Postgres primary pg-ams-1 in Amsterdam is down (host unreachable, 12/12 probes failed), so every EU order write fails. The Frankfurt replica pg-fra-2 is healthy with 2.0 s of replication lag, so failing over to fra and serving EU traffic from fra is safe.",
+      "predicted_output_tokens": 488,
+      "predicted_cost_usd": 0.002831,
+      "usage": {
+        "model": "claude-haiku-4-5",
+        "input_tokens": 390,
+        "output_tokens": 67,
+        "cost_usd": 0.000725,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 16,
+    "t": 18350,
+    "job_id": "j_5eb0a912",
+    "type": "graded",
+    "data": {
+      "task_id": "t1",
+      "agent_id": "haiku",
+      "grade": 5,
+      "promised_quality": 10,
+      "rationale": "The response is relevant, clear, and mostly accurate.",
+      "usage": {
+        "model": "claude-sonnet-5",
+        "input_tokens": 540,
+        "output_tokens": 170,
+        "cost_usd": 0.00278,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 17,
+    "t": 19050,
+    "job_id": "j_5eb0a912",
+    "type": "rep_update",
+    "data": {
+      "task_id": "t1",
+      "agent_id": "haiku",
+      "task_type": "diagnose",
+      "rep_key": "database.diagnose",
+      "old": 1.0,
+      "new": 0.85,
+      "ratio": 0.5
+    }
+  },
+  {
+    "v": 1,
+    "seq": 18,
+    "t": 19450,
+    "job_id": "j_5eb0a912",
+    "type": "stats",
+    "data": {
+      "total_cost_usd": 0.020208,
+      "input_tokens": 2672,
+      "output_tokens": 982,
+      "calls": 6,
+      "by_purpose": {
+        "split": {
+          "cost_usd": 0.00262,
+          "calls": 1
+        },
+        "bid": {
+          "cost_usd": 0.014083,
+          "calls": 3
+        },
+        "work": {
+          "cost_usd": 0.000725,
+          "calls": 1
+        },
+        "review": {
+          "cost_usd": 0.00278,
+          "calls": 1
+        }
+      },
+      "by_agent": {
+        "haiku": {
+          "cost_usd": 0.001361,
+          "input_tokens": 856,
+          "output_tokens": 101,
+          "calls": 2,
+          "tasks_won": 1
+        },
+        "sonnet": {
+          "cost_usd": 0.002772,
+          "input_tokens": 466,
+          "output_tokens": 184,
+          "calls": 1,
+          "tasks_won": 0
+        },
+        "opus": {
+          "cost_usd": 0.010675,
+          "input_tokens": 465,
+          "output_tokens": 334,
+          "calls": 1,
+          "tasks_won": 0
+        }
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 19,
+    "t": 19600,
+    "job_id": "j_5eb0a912",
+    "type": "incident_status",
+    "data": {
+      "status": "repairing",
+      "scenario_id": "ams_db_outage",
+      "service": "orders-api",
+      "region": "ams",
+      "severity": "SEV-1",
+      "summary": "Database Specialists are bidding to repair.",
+      "telemetry": [
+        {
+          "key": "eu_error_rate",
+          "label": "EU error rate",
+          "value": 0.72,
+          "unit": "ratio",
+          "ok": false
+        },
+        {
+          "key": "eu_p95_latency_ms",
+          "label": "EU p95 latency",
+          "value": 5000,
+          "unit": "ms",
+          "ok": false
+        },
+        {
+          "key": "db_primary_reachable",
+          "label": "DB primary reachable",
+          "value": 0,
+          "unit": "count",
+          "ok": false
+        },
+        {
+          "key": "db_writes_failing_per_min",
+          "label": "Failed writes",
+          "value": 3024,
+          "unit": "per_min",
+          "ok": false
+        },
+        {
+          "key": "replica_lag_s",
+          "label": "Replica lag (fra)",
+          "value": 2.0,
+          "unit": "s",
+          "ok": true
+        }
+      ],
+      "logs": [
+        "ERROR orders-api(ams) could not connect to postgres primary pg-ams-1:5432: connection refused",
+        "ERROR pg-ams-1 health probe failed 12/12 (host unreachable since 06:58 UTC)",
+        "WARN  3024 EU order writes failed in the last minute; EU traffic still routed to ams",
+        "INFO  replica pg-fra-2 healthy, replication lag 2.0s, promotable"
+      ],
+      "config_changes": []
+    }
+  },
+  {
+    "v": 1,
+    "seq": 20,
+    "t": 21200,
+    "job_id": "j_5eb0a912",
+    "type": "task_posted",
+    "data": {
+      "task_id": "t2",
+      "type": "remediate",
+      "title": "Repair attempt 1",
+      "brief": "Propose a remediation plan that restores orders-api.\nAllowed actions (regions: ams, fra, iad, sin):\n{\"action\": \"restart_db\", \"region\": \"<region>\"}\n{\"action\": \"failover_db\", \"region\": \"<region>\"}\n{\"action\": \"route_traffic\", \"region\": \"<region>\"}\n{\"action\": \"restart_service\"}\nPrevious failed attempts: none",
+      "depends_on": [
+        "t1"
+      ],
+      "index": 1,
+      "total": 3,
+      "est_input_tokens": 560,
+      "domain": "database"
+    }
+  },
+  {
+    "v": 1,
+    "seq": 21,
+    "t": 22100,
+    "job_id": "j_5eb0a912",
+    "type": "bid",
+    "data": {
+      "task_id": "t2",
+      "agent_id": "haiku",
+      "ok": true,
+      "error": null,
+      "predicted_output_tokens": 292,
+      "est_input_tokens": 560,
+      "predicted_cost_usd": 0.00202,
+      "promised_quality": 8,
+      "confidence": 0.9,
+      "eta_ms": 1947,
+      "pitch": "A careful, concise result at a competitive price.",
+      "reputation": 1.0,
+      "score": 7.798,
+      "usage": {
+        "model": "claude-haiku-4-5",
+        "input_tokens": 517,
+        "output_tokens": 34,
+        "cost_usd": 0.000687,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 22,
+    "t": 22800,
+    "job_id": "j_5eb0a912",
+    "type": "bid",
+    "data": {
+      "task_id": "t2",
+      "agent_id": "sonnet",
+      "ok": true,
+      "error": null,
+      "predicted_output_tokens": 611,
+      "est_input_tokens": 560,
+      "predicted_cost_usd": 0.00723,
+      "promised_quality": 9,
+      "confidence": 0.71,
+      "eta_ms": 7638,
+      "pitch": "A careful, concise result at a competitive price.",
+      "reputation": 1.0,
+      "score": 8.277,
+      "usage": {
+        "model": "claude-sonnet-5",
+        "input_tokens": 518,
+        "output_tokens": 184,
+        "cost_usd": 0.002876,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 23,
+    "t": 23500,
+    "job_id": "j_5eb0a912",
+    "type": "bid",
+    "data": {
+      "task_id": "t2",
+      "agent_id": "opus",
+      "ok": true,
+      "error": null,
+      "predicted_output_tokens": 169,
+      "est_input_tokens": 560,
+      "predicted_cost_usd": 0.007025,
+      "promised_quality": 9,
+      "confidence": 0.81,
+      "eta_ms": 3380,
+      "pitch": "A careful, concise result at a competitive price.",
+      "reputation": 1.0,
+      "score": 8.297,
+      "usage": {
+        "model": "claude-opus-5",
+        "input_tokens": 517,
+        "output_tokens": 334,
+        "cost_usd": 0.010935,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 24,
+    "t": 24200,
+    "job_id": "j_5eb0a912",
+    "type": "won",
+    "data": {
+      "task_id": "t2",
+      "agent_id": "opus",
+      "mode": "auction",
+      "score": 8.297,
+      "runner_up_agent_id": "sonnet",
+      "runner_up_score": 8.277,
+      "scores": {
+        "haiku": 7.798,
+        "sonnet": 8.277,
+        "opus": 8.297
+      },
+      "price_weight": 1.0
+    }
+  },
+  {
+    "v": 1,
+    "seq": 25,
+    "t": 25100,
+    "job_id": "j_5eb0a912",
+    "type": "stats",
+    "data": {
+      "total_cost_usd": 0.034706,
+      "input_tokens": 4224,
+      "output_tokens": 1534,
+      "calls": 9,
+      "by_purpose": {
+        "split": {
+          "cost_usd": 0.00262,
+          "calls": 1
+        },
+        "bid": {
+          "cost_usd": 0.028581,
+          "calls": 6
+        },
+        "work": {
+          "cost_usd": 0.000725,
+          "calls": 1
+        },
+        "review": {
+          "cost_usd": 0.00278,
+          "calls": 1
+        }
+      },
+      "by_agent": {
+        "haiku": {
+          "cost_usd": 0.002048,
+          "input_tokens": 1373,
+          "output_tokens": 135,
+          "calls": 3,
+          "tasks_won": 1
+        },
+        "sonnet": {
+          "cost_usd": 0.005648,
+          "input_tokens": 984,
+          "output_tokens": 368,
+          "calls": 2,
+          "tasks_won": 0
+        },
+        "opus": {
+          "cost_usd": 0.02161,
+          "input_tokens": 982,
+          "output_tokens": 668,
+          "calls": 2,
+          "tasks_won": 1
+        }
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 26,
+    "t": 25250,
+    "job_id": "j_5eb0a912",
+    "type": "working",
+    "data": {
+      "task_id": "t2",
+      "agent_id": "opus"
+    }
+  },
+  {
+    "v": 1,
+    "seq": 27,
+    "t": 27850,
+    "job_id": "j_5eb0a912",
+    "type": "done",
+    "data": {
+      "task_id": "t2",
+      "agent_id": "opus",
+      "output": "{\"steps\": [{\"action\": \"restart_db\", \"region\": \"ams\"}]}",
+      "predicted_output_tokens": 169,
+      "predicted_cost_usd": 0.007025,
+      "usage": {
+        "model": "claude-opus-5",
+        "input_tokens": 559,
+        "output_tokens": 313,
+        "cost_usd": 0.01062,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 28,
+    "t": 28750,
+    "job_id": "j_5eb0a912",
+    "type": "remediation_proposed",
+    "data": {
+      "task_id": "t2",
+      "agent_id": "opus",
+      "attempt": 1,
+      "steps": [
+        {
+          "action": "restart_db",
+          "value": null,
+          "region": "ams",
+          "ips": null
+        }
+      ],
+      "accepted": true,
+      "reason": "restart_db(ams) uses only allowlisted actions."
+    }
+  },
+  {
+    "v": 1,
+    "seq": 29,
+    "t": 29950,
+    "job_id": "j_5eb0a912",
+    "type": "sandbox_result",
+    "data": {
+      "task_id": "t2",
+      "agent_id": "opus",
+      "attempt": 1,
+      "steps": [
+        {
+          "action": "restart_db",
+          "value": null,
+          "region": "ams",
+          "ips": null
+        }
+      ],
+      "passed": false,
+      "checks": [
+        {
+          "name": "allowlisted plan",
+          "passed": true,
+          "detail": "restart_db(ams)"
+        },
+        {
+          "name": "database primary reachable",
+          "passed": false,
+          "detail": "primary in ams"
+        },
+        {
+          "name": "EU error rate",
+          "passed": false,
+          "detail": "72.0% (limit 1%)"
+        },
+        {
+          "name": "EU p95 latency",
+          "passed": false,
+          "detail": "5000 ms with EU traffic in ams (limit 300 ms)"
+        },
+        {
+          "name": "replication lag within RPO",
+          "passed": true,
+          "detail": "2.0 s (limit 5 s)"
+        }
+      ],
+      "telemetry": [
+        {
+          "key": "eu_error_rate",
+          "label": "EU error rate",
+          "value": 0.72,
+          "unit": "ratio",
+          "ok": false
+        },
+        {
+          "key": "eu_p95_latency_ms",
+          "label": "EU p95 latency",
+          "value": 5000,
+          "unit": "ms",
+          "ok": false
+        },
+        {
+          "key": "db_primary_reachable",
+          "label": "DB primary reachable",
+          "value": 0,
+          "unit": "count",
+          "ok": false
+        },
+        {
+          "key": "db_writes_failing_per_min",
+          "label": "Failed writes",
+          "value": 3024,
+          "unit": "per_min",
+          "ok": false
+        },
+        {
+          "key": "replica_lag_s",
+          "label": "Replica lag (fra)",
+          "value": 2.0,
+          "unit": "s",
+          "ok": true
+        }
+      ]
+    }
+  },
+  {
+    "v": 1,
+    "seq": 30,
+    "t": 32150,
+    "job_id": "j_5eb0a912",
+    "type": "graded",
+    "data": {
+      "task_id": "t2",
+      "agent_id": "opus",
+      "grade": 4,
+      "promised_quality": 9,
+      "rationale": "Sandbox rejected the plan. 2/5 checks passed. Failed: database primary reachable, EU error rate, EU p95 latency.",
+      "usage": {
+        "model": "deterministic-checks",
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cost_usd": 0.0,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 31,
+    "t": 32850,
+    "job_id": "j_5eb0a912",
+    "type": "rep_update",
+    "data": {
+      "task_id": "t2",
+      "agent_id": "opus",
+      "task_type": "remediate",
+      "rep_key": "database.remediate",
+      "old": 1.0,
+      "new": 0.8333,
+      "ratio": 0.4444
+    }
+  },
+  {
+    "v": 1,
+    "seq": 32,
+    "t": 33250,
+    "job_id": "j_5eb0a912",
+    "type": "stats",
+    "data": {
+      "total_cost_usd": 0.045326,
+      "input_tokens": 4783,
+      "output_tokens": 1847,
+      "calls": 10,
+      "by_purpose": {
+        "split": {
+          "cost_usd": 0.00262,
+          "calls": 1
+        },
+        "bid": {
+          "cost_usd": 0.028581,
+          "calls": 6
+        },
+        "work": {
+          "cost_usd": 0.011345,
+          "calls": 2
+        },
+        "review": {
+          "cost_usd": 0.00278,
+          "calls": 1
+        }
+      },
+      "by_agent": {
+        "haiku": {
+          "cost_usd": 0.002048,
+          "input_tokens": 1373,
+          "output_tokens": 135,
+          "calls": 3,
+          "tasks_won": 1
+        },
+        "sonnet": {
+          "cost_usd": 0.005648,
+          "input_tokens": 984,
+          "output_tokens": 368,
+          "calls": 2,
+          "tasks_won": 0
+        },
+        "opus": {
+          "cost_usd": 0.03223,
+          "input_tokens": 1541,
+          "output_tokens": 981,
+          "calls": 3,
+          "tasks_won": 1
+        }
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 33,
+    "t": 33400,
+    "job_id": "j_5eb0a912",
+    "type": "task_posted",
+    "data": {
+      "task_id": "t3",
+      "type": "remediate",
+      "title": "Repair attempt 2",
+      "brief": "Propose a remediation plan that restores orders-api.\nAllowed actions (regions: ams, fra, iad, sin):\n{\"action\": \"restart_db\", \"region\": \"<region>\"}\n{\"action\": \"failover_db\", \"region\": \"<region>\"}\n{\"action\": \"route_traffic\", \"region\": \"<region>\"}\n{\"action\": \"restart_service\"}\nPrevious failed attempts: restart_db(ams) failed the sandbox",
+      "depends_on": [
+        "t1"
+      ],
+      "index": 2,
+      "total": 4,
+      "est_input_tokens": 567,
+      "domain": "database"
+    }
+  },
+  {
+    "v": 1,
+    "seq": 34,
+    "t": 34300,
+    "job_id": "j_5eb0a912",
+    "type": "bid",
+    "data": {
+      "task_id": "t3",
+      "agent_id": "haiku",
+      "ok": true,
+      "error": null,
+      "predicted_output_tokens": 280,
+      "est_input_tokens": 567,
+      "predicted_cost_usd": 0.001967,
+      "promised_quality": 10,
+      "confidence": 0.88,
+      "eta_ms": 1867,
+      "pitch": "A careful, concise result at a competitive price.",
+      "reputation": 1.0,
+      "score": 9.803,
+      "usage": {
+        "model": "claude-haiku-4-5",
+        "input_tokens": 525,
+        "output_tokens": 34,
+        "cost_usd": 0.000695,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 35,
+    "t": 35000,
+    "job_id": "j_5eb0a912",
+    "type": "bid",
+    "data": {
+      "task_id": "t3",
+      "agent_id": "sonnet",
+      "ok": true,
+      "error": null,
+      "predicted_output_tokens": 600,
+      "est_input_tokens": 567,
+      "predicted_cost_usd": 0.007134,
+      "promised_quality": 6,
+      "confidence": 0.82,
+      "eta_ms": 7500,
+      "pitch": "A careful, concise result at a competitive price.",
+      "reputation": 1.0,
+      "score": 5.287,
+      "usage": {
+        "model": "claude-sonnet-5",
+        "input_tokens": 525,
+        "output_tokens": 184,
+        "cost_usd": 0.00289,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 36,
+    "t": 35700,
+    "job_id": "j_5eb0a912",
+    "type": "bid",
+    "data": {
+      "task_id": "t3",
+      "agent_id": "opus",
+      "ok": true,
+      "error": null,
+      "predicted_output_tokens": 249,
+      "est_input_tokens": 567,
+      "predicted_cost_usd": 0.00906,
+      "promised_quality": 8,
+      "confidence": 0.62,
+      "eta_ms": 4980,
+      "pitch": "A careful, concise result at a competitive price.",
+      "reputation": 0.8333,
+      "score": 5.76,
+      "usage": {
+        "model": "claude-opus-5",
+        "input_tokens": 525,
+        "output_tokens": 334,
+        "cost_usd": 0.010975,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 37,
+    "t": 36400,
+    "job_id": "j_5eb0a912",
+    "type": "won",
+    "data": {
+      "task_id": "t3",
+      "agent_id": "haiku",
+      "mode": "auction",
+      "score": 9.803,
+      "runner_up_agent_id": "opus",
+      "runner_up_score": 5.76,
+      "scores": {
+        "haiku": 9.803,
+        "sonnet": 5.287,
+        "opus": 5.76
+      },
+      "price_weight": 1.0
+    }
+  },
+  {
+    "v": 1,
+    "seq": 38,
+    "t": 37300,
+    "job_id": "j_5eb0a912",
+    "type": "stats",
+    "data": {
+      "total_cost_usd": 0.059886,
+      "input_tokens": 6358,
+      "output_tokens": 2399,
+      "calls": 13,
+      "by_purpose": {
+        "split": {
+          "cost_usd": 0.00262,
+          "calls": 1
+        },
+        "bid": {
+          "cost_usd": 0.043141,
+          "calls": 9
+        },
+        "work": {
+          "cost_usd": 0.011345,
+          "calls": 2
+        },
+        "review": {
+          "cost_usd": 0.00278,
+          "calls": 1
+        }
+      },
+      "by_agent": {
+        "haiku": {
+          "cost_usd": 0.002743,
+          "input_tokens": 1898,
+          "output_tokens": 169,
+          "calls": 4,
+          "tasks_won": 2
+        },
+        "sonnet": {
+          "cost_usd": 0.008538,
+          "input_tokens": 1509,
+          "output_tokens": 552,
+          "calls": 3,
+          "tasks_won": 0
+        },
+        "opus": {
+          "cost_usd": 0.043205,
+          "input_tokens": 2066,
+          "output_tokens": 1315,
+          "calls": 4,
+          "tasks_won": 1
+        }
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 39,
+    "t": 37450,
+    "job_id": "j_5eb0a912",
+    "type": "working",
+    "data": {
+      "task_id": "t3",
+      "agent_id": "haiku"
+    }
+  },
+  {
+    "v": 1,
+    "seq": 40,
+    "t": 40050,
+    "job_id": "j_5eb0a912",
+    "type": "done",
+    "data": {
+      "task_id": "t3",
+      "agent_id": "haiku",
+      "output": "{\"steps\": [{\"action\": \"failover_db\", \"region\": \"fra\"}, {\"action\": \"route_traffic\", \"region\": \"fra\"}]}",
+      "predicted_output_tokens": 280,
+      "predicted_cost_usd": 0.001967,
+      "usage": {
+        "model": "claude-haiku-4-5",
+        "input_tokens": 566,
+        "output_tokens": 25,
+        "cost_usd": 0.000691,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 41,
+    "t": 40950,
+    "job_id": "j_5eb0a912",
+    "type": "remediation_proposed",
+    "data": {
+      "task_id": "t3",
+      "agent_id": "haiku",
+      "attempt": 2,
+      "steps": [
+        {
+          "action": "failover_db",
+          "value": null,
+          "region": "fra",
+          "ips": null
+        },
+        {
+          "action": "route_traffic",
+          "value": null,
+          "region": "fra",
+          "ips": null
+        }
+      ],
+      "accepted": true,
+      "reason": "failover_db(fra) + route_traffic(fra) uses only allowlisted actions."
+    }
+  },
+  {
+    "v": 1,
+    "seq": 42,
+    "t": 42150,
+    "job_id": "j_5eb0a912",
+    "type": "sandbox_result",
+    "data": {
+      "task_id": "t3",
+      "agent_id": "haiku",
+      "attempt": 2,
+      "steps": [
+        {
+          "action": "failover_db",
+          "value": null,
+          "region": "fra",
+          "ips": null
+        },
+        {
+          "action": "route_traffic",
+          "value": null,
+          "region": "fra",
+          "ips": null
+        }
+      ],
+      "passed": true,
+      "checks": [
+        {
+          "name": "allowlisted plan",
+          "passed": true,
+          "detail": "failover_db(fra) + route_traffic(fra)"
+        },
+        {
+          "name": "database primary reachable",
+          "passed": true,
+          "detail": "primary in fra"
+        },
+        {
+          "name": "EU error rate",
+          "passed": true,
+          "detail": "0.4% (limit 1%)"
+        },
+        {
+          "name": "EU p95 latency",
+          "passed": true,
+          "detail": "140 ms with EU traffic in fra (limit 300 ms)"
+        },
+        {
+          "name": "replication lag within RPO",
+          "passed": true,
+          "detail": "2.0 s (limit 5 s)"
+        }
+      ],
+      "telemetry": [
+        {
+          "key": "eu_error_rate",
+          "label": "EU error rate",
+          "value": 0.004,
+          "unit": "ratio",
+          "ok": true
+        },
+        {
+          "key": "eu_p95_latency_ms",
+          "label": "EU p95 latency",
+          "value": 140,
+          "unit": "ms",
+          "ok": true
+        },
+        {
+          "key": "db_primary_reachable",
+          "label": "DB primary reachable",
+          "value": 1,
+          "unit": "count",
+          "ok": true
+        },
+        {
+          "key": "db_writes_failing_per_min",
+          "label": "Failed writes",
+          "value": 0,
+          "unit": "per_min",
+          "ok": true
+        },
+        {
+          "key": "replica_lag_s",
+          "label": "Replica lag (fra)",
+          "value": 2.0,
+          "unit": "s",
+          "ok": true
+        }
+      ]
+    }
+  },
+  {
+    "v": 1,
+    "seq": 43,
+    "t": 44350,
+    "job_id": "j_5eb0a912",
+    "type": "graded",
+    "data": {
+      "task_id": "t3",
+      "agent_id": "haiku",
+      "grade": 10,
+      "promised_quality": 10,
+      "rationale": "Sandbox passed. 5/5 checks passed.",
+      "usage": {
+        "model": "deterministic-checks",
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cost_usd": 0.0,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 44,
+    "t": 45050,
+    "job_id": "j_5eb0a912",
+    "type": "rep_update",
+    "data": {
+      "task_id": "t3",
+      "agent_id": "haiku",
+      "task_type": "remediate",
+      "rep_key": "database.remediate",
+      "old": 1.0,
+      "new": 1.0,
+      "ratio": 1.0
+    }
+  },
+  {
+    "v": 1,
+    "seq": 45,
+    "t": 45450,
+    "job_id": "j_5eb0a912",
+    "type": "stats",
+    "data": {
+      "total_cost_usd": 0.060577,
+      "input_tokens": 6924,
+      "output_tokens": 2424,
+      "calls": 14,
+      "by_purpose": {
+        "split": {
+          "cost_usd": 0.00262,
+          "calls": 1
+        },
+        "bid": {
+          "cost_usd": 0.043141,
+          "calls": 9
+        },
+        "work": {
+          "cost_usd": 0.012036,
+          "calls": 3
+        },
+        "review": {
+          "cost_usd": 0.00278,
+          "calls": 1
+        }
+      },
+      "by_agent": {
+        "haiku": {
+          "cost_usd": 0.003434,
+          "input_tokens": 2464,
+          "output_tokens": 194,
+          "calls": 5,
+          "tasks_won": 2
+        },
+        "sonnet": {
+          "cost_usd": 0.008538,
+          "input_tokens": 1509,
+          "output_tokens": 552,
+          "calls": 3,
+          "tasks_won": 0
+        },
+        "opus": {
+          "cost_usd": 0.043205,
+          "input_tokens": 2066,
+          "output_tokens": 1315,
+          "calls": 4,
+          "tasks_won": 1
+        }
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 46,
+    "t": 45600,
+    "job_id": "j_5eb0a912",
+    "type": "remediation_plan_created",
+    "data": {
+      "task_id": "t3",
+      "agent_id": "haiku",
+      "attempt": 2,
+      "steps": [
+        {
+          "index": 0,
+          "action": {
+            "action": "failover_db",
+            "value": null,
+            "region": "fra",
+            "ips": null
+          },
+          "description": "failover_db(fra)",
+          "owner_domain": "database"
+        },
+        {
+          "index": 1,
+          "action": {
+            "action": "route_traffic",
+            "value": null,
+            "region": "fra",
+            "ips": null
+          },
+          "description": "route_traffic(fra)",
+          "owner_domain": "networking"
+        }
+      ],
+      "summary": "failover_db(fra) + route_traffic(fra) passed all 5 sandbox checks.",
+      "confidence": 0.88
+    }
+  },
+  {
+    "v": 1,
+    "seq": 47,
+    "t": 47100,
+    "job_id": "j_5eb0a912",
+    "type": "human_assignments_created",
+    "data": {
+      "task_id": "t3",
+      "assignments": [
+        {
+          "assignment_id": "a1",
+          "step_index": 0,
+          "action": {
+            "action": "failover_db",
+            "value": null,
+            "region": "fra",
+            "ips": null
+          },
+          "description": "Execute failover_db(fra)",
+          "responder_id": "maya",
+          "name": "Maya",
+          "role": "Database Engineer",
+          "reason": "Database Engineer owns database changes.",
+          "approval_required": true,
+          "status": "pending"
+        },
+        {
+          "assignment_id": "a2",
+          "step_index": 1,
+          "action": {
+            "action": "route_traffic",
+            "value": null,
+            "region": "fra",
+            "ips": null
+          },
+          "description": "Execute route_traffic(fra)",
+          "responder_id": "riley",
+          "name": "Riley",
+          "role": "Network Engineer",
+          "reason": "Network Engineer owns networking changes.",
+          "approval_required": true,
+          "status": "pending"
+        },
+        {
+          "assignment_id": "a3",
+          "step_index": null,
+          "action": null,
+          "description": "Final go/no-go for a SEV-1 production change",
+          "responder_id": "zak",
+          "name": "Zak",
+          "role": "Incident Commander",
+          "reason": "SEV-1 changes need the Incident Commander's sign-off.",
+          "approval_required": true,
+          "status": "pending"
+        },
+        {
+          "assignment_id": "a4",
+          "step_index": null,
+          "action": null,
+          "description": "Send the customer update",
+          "responder_id": "jordan",
+          "name": "Jordan",
+          "role": "Customer Support Lead",
+          "reason": "Customers are affected; support owns communication.",
+          "approval_required": false,
+          "status": "notify"
+        }
+      ],
+      "required_approvers": [
+        "Maya",
+        "Riley",
+        "Zak"
+      ]
+    }
+  },
+  {
+    "v": 1,
+    "seq": 48,
+    "t": 48600,
+    "job_id": "j_5eb0a912",
+    "type": "incident_status",
+    "data": {
+      "status": "awaiting_approval",
+      "scenario_id": "ams_db_outage",
+      "service": "orders-api",
+      "region": "ams",
+      "severity": "SEV-1",
+      "summary": "failover_db(fra) + route_traffic(fra) passed the sandbox. Waiting for Maya, Riley, Zak.",
+      "telemetry": [
+        {
+          "key": "eu_error_rate",
+          "label": "EU error rate",
+          "value": 0.72,
+          "unit": "ratio",
+          "ok": false
+        },
+        {
+          "key": "eu_p95_latency_ms",
+          "label": "EU p95 latency",
+          "value": 5000,
+          "unit": "ms",
+          "ok": false
+        },
+        {
+          "key": "db_primary_reachable",
+          "label": "DB primary reachable",
+          "value": 0,
+          "unit": "count",
+          "ok": false
+        },
+        {
+          "key": "db_writes_failing_per_min",
+          "label": "Failed writes",
+          "value": 3024,
+          "unit": "per_min",
+          "ok": false
+        },
+        {
+          "key": "replica_lag_s",
+          "label": "Replica lag (fra)",
+          "value": 2.0,
+          "unit": "s",
+          "ok": true
+        }
+      ],
+      "logs": [
+        "ERROR orders-api(ams) could not connect to postgres primary pg-ams-1:5432: connection refused",
+        "ERROR pg-ams-1 health probe failed 12/12 (host unreachable since 06:58 UTC)",
+        "WARN  3024 EU order writes failed in the last minute; EU traffic still routed to ams",
+        "INFO  replica pg-fra-2 healthy, replication lag 2.0s, promotable"
+      ],
+      "config_changes": []
+    }
+  },
+  {
+    "v": 1,
+    "seq": 49,
+    "t": 50200,
+    "job_id": "j_5eb0a912",
+    "type": "approval_required",
+    "data": {
+      "task_id": "t3",
+      "agent_id": "haiku",
+      "attempt": 2,
+      "steps": [
+        {
+          "action": "failover_db",
+          "value": null,
+          "region": "fra",
+          "ips": null
+        },
+        {
+          "action": "route_traffic",
+          "value": null,
+          "region": "fra",
+          "ips": null
+        }
+      ],
+      "summary": "Deploy failover_db(fra) + route_traffic(fra) to production. All sandbox checks passed.",
+      "approvers": [
+        "Maya",
+        "Riley",
+        "Zak"
+      ]
+    }
+  },
+  {
+    "v": 1,
+    "seq": 50,
+    "t": 56200,
+    "job_id": "j_5eb0a912",
+    "type": "approval_granted",
+    "data": {
+      "task_id": "t3",
+      "approved": [
+        "a1",
+        "a2",
+        "a3"
+      ],
+      "approved_by": [
+        "Maya",
+        "Riley",
+        "Zak"
+      ]
+    }
+  },
+  {
+    "v": 1,
+    "seq": 51,
+    "t": 57400,
+    "job_id": "j_5eb0a912",
+    "type": "incident_status",
+    "data": {
+      "status": "recovering",
+      "scenario_id": "ams_db_outage",
+      "service": "orders-api",
+      "region": "ams",
+      "severity": "SEV-1",
+      "summary": "Deploying failover_db(fra) + route_traffic(fra) and verifying production.",
+      "telemetry": [
+        {
+          "key": "eu_error_rate",
+          "label": "EU error rate",
+          "value": 0.004,
+          "unit": "ratio",
+          "ok": true
+        },
+        {
+          "key": "eu_p95_latency_ms",
+          "label": "EU p95 latency",
+          "value": 140,
+          "unit": "ms",
+          "ok": true
+        },
+        {
+          "key": "db_primary_reachable",
+          "label": "DB primary reachable",
+          "value": 1,
+          "unit": "count",
+          "ok": true
+        },
+        {
+          "key": "db_writes_failing_per_min",
+          "label": "Failed writes",
+          "value": 0,
+          "unit": "per_min",
+          "ok": true
+        },
+        {
+          "key": "replica_lag_s",
+          "label": "Replica lag (fra)",
+          "value": 2.0,
+          "unit": "s",
+          "ok": true
+        }
+      ],
+      "logs": [
+        "INFO  orders-api(fra) p95=140ms errors=0.4%",
+        "INFO  postgres primary pg-fra accepting writes; replica lag 2.0s"
+      ],
+      "config_changes": [
+        {
+          "change_id": "chg-1",
+          "key": "db.orders.primary",
+          "old": "ams",
+          "new": "fra",
+          "author": "mayday",
+          "minutes_ago": 0
+        },
+        {
+          "change_id": "chg-2",
+          "key": "traffic.eu.region",
+          "old": "ams",
+          "new": "fra",
+          "author": "mayday",
+          "minutes_ago": 0
+        }
+      ]
+    }
+  },
+  {
+    "v": 1,
+    "seq": 52,
+    "t": 59000,
+    "job_id": "j_5eb0a912",
+    "type": "task_posted",
+    "data": {
+      "task_id": "t4",
+      "type": "verify",
+      "title": "Verify production recovery",
+      "brief": "Verify orders-api after failover_db(fra) + route_traffic(fra). Production telemetry now: [{\"key\": \"eu_error_rate\", \"label\": \"EU error rate\", \"ok\": true, \"unit\": \"ratio\", \"value\": 0.004}, {\"key\": \"eu_p95_latency_ms\", \"label\": \"EU p95 latency\", \"ok\": true, \"unit\": \"ms\", \"value\": 140}, {\"key\": \"db_primary_reachable\", \"label\": \"DB primary reachable\", \"ok\": true, \"unit\": \"count\", \"value\": 1}, {\"key\": \"db_writes_failing_per_min\", \"label\": \"Failed writes\", \"ok\": true, \"unit\": \"per_min\", \"value\": 0}, {\"key\": \"replica_lag_s\", \"label\": \"Replica lag (fra)\", \"ok\": true, \"unit\": \"s\", \"value\": 2.0}]",
+      "depends_on": [
+        "t3"
+      ],
+      "index": 3,
+      "total": 4,
+      "est_input_tokens": 532,
+      "domain": "database"
+    }
+  },
+  {
+    "v": 1,
+    "seq": 53,
+    "t": 59900,
+    "job_id": "j_5eb0a912",
+    "type": "bid",
+    "data": {
+      "task_id": "t4",
+      "agent_id": "haiku",
+      "ok": true,
+      "error": null,
+      "predicted_output_tokens": 490,
+      "est_input_tokens": 532,
+      "predicted_cost_usd": 0.002982,
+      "promised_quality": 6,
+      "confidence": 0.81,
+      "eta_ms": 3267,
+      "pitch": "A careful, concise result at a competitive price.",
+      "reputation": 1.0,
+      "score": 5.702,
+      "usage": {
+        "model": "claude-haiku-4-5",
+        "input_tokens": 591,
+        "output_tokens": 34,
+        "cost_usd": 0.000761,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 54,
+    "t": 60600,
+    "job_id": "j_5eb0a912",
+    "type": "bid",
+    "data": {
+      "task_id": "t4",
+      "agent_id": "sonnet",
+      "ok": true,
+      "error": null,
+      "predicted_output_tokens": 639,
+      "est_input_tokens": 532,
+      "predicted_cost_usd": 0.007454,
+      "promised_quality": 8,
+      "confidence": 0.87,
+      "eta_ms": 7988,
+      "pitch": "A careful, concise result at a competitive price.",
+      "reputation": 1.0,
+      "score": 7.255,
+      "usage": {
+        "model": "claude-sonnet-5",
+        "input_tokens": 591,
+        "output_tokens": 184,
+        "cost_usd": 0.003022,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 55,
+    "t": 61300,
+    "job_id": "j_5eb0a912",
+    "type": "bid",
+    "data": {
+      "task_id": "t4",
+      "agent_id": "opus",
+      "ok": true,
+      "error": null,
+      "predicted_output_tokens": 226,
+      "est_input_tokens": 532,
+      "predicted_cost_usd": 0.00831,
+      "promised_quality": 8,
+      "confidence": 0.93,
+      "eta_ms": 4520,
+      "pitch": "A careful, concise result at a competitive price.",
+      "reputation": 1.0,
+      "score": 7.169,
+      "usage": {
+        "model": "claude-opus-5",
+        "input_tokens": 590,
+        "output_tokens": 334,
+        "cost_usd": 0.0113,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 56,
+    "t": 62000,
+    "job_id": "j_5eb0a912",
+    "type": "won",
+    "data": {
+      "task_id": "t4",
+      "agent_id": "sonnet",
+      "mode": "auction",
+      "score": 7.255,
+      "runner_up_agent_id": "opus",
+      "runner_up_score": 7.169,
+      "scores": {
+        "haiku": 5.702,
+        "sonnet": 7.255,
+        "opus": 7.169
+      },
+      "price_weight": 1.0
+    }
+  },
+  {
+    "v": 1,
+    "seq": 57,
+    "t": 62900,
+    "job_id": "j_5eb0a912",
+    "type": "stats",
+    "data": {
+      "total_cost_usd": 0.07566,
+      "input_tokens": 8696,
+      "output_tokens": 2976,
+      "calls": 17,
+      "by_purpose": {
+        "split": {
+          "cost_usd": 0.00262,
+          "calls": 1
+        },
+        "bid": {
+          "cost_usd": 0.058224,
+          "calls": 12
+        },
+        "work": {
+          "cost_usd": 0.012036,
+          "calls": 3
+        },
+        "review": {
+          "cost_usd": 0.00278,
+          "calls": 1
+        }
+      },
+      "by_agent": {
+        "haiku": {
+          "cost_usd": 0.004195,
+          "input_tokens": 3055,
+          "output_tokens": 228,
+          "calls": 6,
+          "tasks_won": 2
+        },
+        "sonnet": {
+          "cost_usd": 0.01156,
+          "input_tokens": 2100,
+          "output_tokens": 736,
+          "calls": 4,
+          "tasks_won": 1
+        },
+        "opus": {
+          "cost_usd": 0.054505,
+          "input_tokens": 2656,
+          "output_tokens": 1649,
+          "calls": 5,
+          "tasks_won": 1
+        }
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 58,
+    "t": 63050,
+    "job_id": "j_5eb0a912",
+    "type": "working",
+    "data": {
+      "task_id": "t4",
+      "agent_id": "sonnet"
+    }
+  },
+  {
+    "v": 1,
+    "seq": 59,
+    "t": 65650,
+    "job_id": "j_5eb0a912",
+    "type": "done",
+    "data": {
+      "task_id": "t4",
+      "agent_id": "sonnet",
+      "output": "Verdict: recovered. Every production health target is back inside its limit after the approved plan was deployed.",
+      "predicted_output_tokens": 639,
+      "predicted_cost_usd": 0.007454,
+      "usage": {
+        "model": "claude-sonnet-5",
+        "input_tokens": 531,
+        "output_tokens": 178,
+        "cost_usd": 0.002842,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 60,
+    "t": 66550,
+    "job_id": "j_5eb0a912",
+    "type": "graded",
+    "data": {
+      "task_id": "t4",
+      "agent_id": "sonnet",
+      "grade": 10,
+      "promised_quality": 8,
+      "rationale": "Production health checks: 4/4 checks passed.",
+      "usage": {
+        "model": "deterministic-checks",
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cost_usd": 0.0,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 61,
+    "t": 67250,
+    "job_id": "j_5eb0a912",
+    "type": "rep_update",
+    "data": {
+      "task_id": "t4",
+      "agent_id": "sonnet",
+      "task_type": "verify",
+      "rep_key": "database.verify",
+      "old": 1.0,
+      "new": 1.075,
+      "ratio": 1.25
+    }
+  },
+  {
+    "v": 1,
+    "seq": 62,
+    "t": 67650,
+    "job_id": "j_5eb0a912",
+    "type": "stats",
+    "data": {
+      "total_cost_usd": 0.078502,
+      "input_tokens": 9227,
+      "output_tokens": 3154,
+      "calls": 18,
+      "by_purpose": {
+        "split": {
+          "cost_usd": 0.00262,
+          "calls": 1
+        },
+        "bid": {
+          "cost_usd": 0.058224,
+          "calls": 12
+        },
+        "work": {
+          "cost_usd": 0.014878,
+          "calls": 4
+        },
+        "review": {
+          "cost_usd": 0.00278,
+          "calls": 1
+        }
+      },
+      "by_agent": {
+        "haiku": {
+          "cost_usd": 0.004195,
+          "input_tokens": 3055,
+          "output_tokens": 228,
+          "calls": 6,
+          "tasks_won": 2
+        },
+        "sonnet": {
+          "cost_usd": 0.014402,
+          "input_tokens": 2631,
+          "output_tokens": 914,
+          "calls": 5,
+          "tasks_won": 1
+        },
+        "opus": {
+          "cost_usd": 0.054505,
+          "input_tokens": 2656,
+          "output_tokens": 1649,
+          "calls": 5,
+          "tasks_won": 1
+        }
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 63,
+    "t": 67800,
+    "job_id": "j_5eb0a912",
+    "type": "incident_status",
+    "data": {
+      "status": "restored",
+      "scenario_id": "ams_db_outage",
+      "service": "orders-api",
+      "region": "ams",
+      "severity": null,
+      "summary": "orders-api restored and verified.",
+      "telemetry": [
+        {
+          "key": "eu_error_rate",
+          "label": "EU error rate",
+          "value": 0.004,
+          "unit": "ratio",
+          "ok": true
+        },
+        {
+          "key": "eu_p95_latency_ms",
+          "label": "EU p95 latency",
+          "value": 140,
+          "unit": "ms",
+          "ok": true
+        },
+        {
+          "key": "db_primary_reachable",
+          "label": "DB primary reachable",
+          "value": 1,
+          "unit": "count",
+          "ok": true
+        },
+        {
+          "key": "db_writes_failing_per_min",
+          "label": "Failed writes",
+          "value": 0,
+          "unit": "per_min",
+          "ok": true
+        },
+        {
+          "key": "replica_lag_s",
+          "label": "Replica lag (fra)",
+          "value": 2.0,
+          "unit": "s",
+          "ok": true
+        }
+      ],
+      "logs": [
+        "INFO  orders-api(fra) p95=140ms errors=0.4%",
+        "INFO  postgres primary pg-fra accepting writes; replica lag 2.0s"
+      ],
+      "config_changes": [
+        {
+          "change_id": "chg-1",
+          "key": "db.orders.primary",
+          "old": "ams",
+          "new": "fra",
+          "author": "mayday",
+          "minutes_ago": 0
+        },
+        {
+          "change_id": "chg-2",
+          "key": "traffic.eu.region",
+          "old": "ams",
+          "new": "fra",
+          "author": "mayday",
+          "minutes_ago": 0
+        }
+      ]
+    }
+  },
+  {
+    "v": 1,
+    "seq": 64,
+    "t": 69400,
+    "job_id": "j_5eb0a912",
+    "type": "service_restored",
+    "data": {
+      "scenario_id": "ams_db_outage",
+      "domain": "database",
+      "mttr_ms": 69400,
+      "total_cost_usd": 0.078502,
+      "repair_attempts": 2,
+      "failed_attempts": 1,
+      "steps": [
+        {
+          "action": "failover_db",
+          "value": null,
+          "region": "fra",
+          "ips": null
+        },
+        {
+          "action": "route_traffic",
+          "value": null,
+          "region": "fra",
+          "ips": null
+        }
+      ],
+      "confidence": 0.88,
+      "approved_by": [
+        "Maya",
+        "Riley",
+        "Zak"
+      ],
+      "verification": [
+        {
+          "name": "database primary reachable",
+          "passed": true,
+          "detail": "primary in fra"
+        },
+        {
+          "name": "EU error rate",
+          "passed": true,
+          "detail": "0.4% (limit 1%)"
+        },
+        {
+          "name": "EU p95 latency",
+          "passed": true,
+          "detail": "140 ms with EU traffic in fra (limit 300 ms)"
+        },
+        {
+          "name": "replication lag within RPO",
+          "passed": true,
+          "detail": "2.0 s (limit 5 s)"
+        }
+      ],
+      "grades": [
+        {
+          "task_id": "t1",
+          "type": "diagnose",
+          "agent_id": "haiku",
+          "grade": 5,
+          "promised_quality": 10,
+          "cost_usd": 0.017588
+        },
+        {
+          "task_id": "t2",
+          "type": "remediate",
+          "agent_id": "opus",
+          "grade": 4,
+          "promised_quality": 9,
+          "cost_usd": 0.025118
+        },
+        {
+          "task_id": "t3",
+          "type": "remediate",
+          "agent_id": "haiku",
+          "grade": 10,
+          "promised_quality": 10,
+          "cost_usd": 0.015251
+        },
+        {
+          "task_id": "t4",
+          "type": "verify",
+          "agent_id": "sonnet",
+          "grade": 10,
+          "promised_quality": 8,
+          "cost_usd": 0.017925
+        }
+      ],
+      "rep_changes": [
+        {
+          "agent_id": "haiku",
+          "task_type": "diagnose",
+          "rep_key": "database.diagnose",
+          "old": 1.0,
+          "new": 0.85
+        },
+        {
+          "agent_id": "opus",
+          "task_type": "remediate",
+          "rep_key": "database.remediate",
+          "old": 1.0,
+          "new": 0.8333
+        },
+        {
+          "agent_id": "haiku",
+          "task_type": "remediate",
+          "rep_key": "database.remediate",
+          "old": 1.0,
+          "new": 1.0
+        },
+        {
+          "agent_id": "sonnet",
+          "task_type": "verify",
+          "rep_key": "database.verify",
+          "old": 1.0,
+          "new": 1.075
+        }
+      ],
+      "telemetry": [
+        {
+          "key": "eu_error_rate",
+          "label": "EU error rate",
+          "value": 0.004,
+          "unit": "ratio",
+          "ok": true
+        },
+        {
+          "key": "eu_p95_latency_ms",
+          "label": "EU p95 latency",
+          "value": 140,
+          "unit": "ms",
+          "ok": true
+        },
+        {
+          "key": "db_primary_reachable",
+          "label": "DB primary reachable",
+          "value": 1,
+          "unit": "count",
+          "ok": true
+        },
+        {
+          "key": "db_writes_failing_per_min",
+          "label": "Failed writes",
+          "value": 0,
+          "unit": "per_min",
+          "ok": true
+        },
+        {
+          "key": "replica_lag_s",
+          "label": "Replica lag (fra)",
+          "value": 2.0,
+          "unit": "s",
+          "ok": true
+        }
+      ]
+    }
+  },
+  {
+    "v": 1,
+    "seq": 65,
+    "t": 70900,
+    "job_id": "j_5eb0a912",
+    "type": "routing_stats",
+    "data": {
+      "domain": "database",
+      "registered_specialists": 15,
+      "eligible_specialists": 3,
+      "auctions": 4,
+      "models_contacted": 12,
+      "models_skipped": 48,
+      "actual_input_tokens": 9227,
+      "actual_output_tokens": 3154,
+      "actual_cost_usd": 0.078502,
+      "actual_calls": 18,
+      "commander_package_tokens_est": 346,
+      "full_context_tokens_est": 480,
+      "avoided_input_tokens_est": 25316,
+      "avoided_cost_usd_est": 0.067396,
+      "method": "Estimate: for each auction, every skipped specialist x the bid prompt it would have received (characters / 4), plus the raw incident context the Commander did not read, priced at each model's input rate. Actual figures come from the ledger."
+    }
+  },
+  {
+    "v": 1,
+    "seq": 66,
+    "t": 71700,
+    "job_id": "j_5eb0a912",
+    "type": "final",
+    "data": {
+      "status": "ok",
+      "deliverable_task_id": "t1",
+      "deliverable": "Root cause: the Postgres primary pg-ams-1 in Amsterdam is down (host unreachable, 12/12 probes failed), so every EU order write fails. The Frankfurt replica pg-fra-2 is healthy with 2.0 s of replication lag, so failing over to fra and serving EU traffic from fra is safe.",
+      "tasks": [
+        {
+          "task_id": "t1",
+          "type": "diagnose",
+          "agent_id": "haiku",
+          "grade": 5,
+          "promised_quality": 10,
+          "cost_usd": 0.017588
+        },
+        {
+          "task_id": "t2",
+          "type": "remediate",
+          "agent_id": "opus",
+          "grade": 4,
+          "promised_quality": 9,
+          "cost_usd": 0.025118
+        },
+        {
+          "task_id": "t3",
+          "type": "remediate",
+          "agent_id": "haiku",
+          "grade": 10,
+          "promised_quality": 10,
+          "cost_usd": 0.015251
+        },
+        {
+          "task_id": "t4",
+          "type": "verify",
+          "agent_id": "sonnet",
+          "grade": 10,
+          "promised_quality": 8,
+          "cost_usd": 0.017925
+        }
+      ],
+      "total_cost_usd": 0.078502,
+      "mean_grade": 7.25,
+      "duration_ms": 71700
+    }
+  }
+]

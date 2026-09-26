@@ -1,0 +1,2767 @@
+[
+  {
+    "v": 1,
+    "seq": 0,
+    "t": 0,
+    "job_id": null,
+    "type": "hello",
+    "data": {
+      "agents": [
+        {
+          "agent_id": "haiku",
+          "display_name": "Haiku 4.5",
+          "model": "claude-haiku-4-5",
+          "color": "#4fb3a9"
+        },
+        {
+          "agent_id": "sonnet",
+          "display_name": "Sonnet 5",
+          "model": "claude-sonnet-5",
+          "color": "#e8a33d"
+        },
+        {
+          "agent_id": "opus",
+          "display_name": "Opus 5",
+          "model": "claude-opus-5",
+          "color": "#8e6cc9"
+        }
+      ],
+      "reputation": {
+        "haiku": {
+          "research": 1.0,
+          "writing": 1.0,
+          "checking": 1.0,
+          "database.diagnose": 1.0,
+          "database.remediate": 1.0,
+          "database.verify": 1.0,
+          "networking.diagnose": 1.0,
+          "networking.remediate": 1.0,
+          "networking.verify": 1.0,
+          "security.diagnose": 1.0,
+          "security.remediate": 1.0,
+          "security.verify": 1.0,
+          "payments.diagnose": 1.0,
+          "payments.remediate": 1.0,
+          "payments.verify": 1.0,
+          "generalist.diagnose": 1.0,
+          "generalist.remediate": 1.0,
+          "generalist.verify": 1.0
+        },
+        "sonnet": {
+          "research": 1.0,
+          "writing": 1.0,
+          "checking": 1.0,
+          "database.diagnose": 1.0,
+          "database.remediate": 1.0,
+          "database.verify": 1.0,
+          "networking.diagnose": 1.0,
+          "networking.remediate": 1.0,
+          "networking.verify": 1.0,
+          "security.diagnose": 1.0,
+          "security.remediate": 1.0,
+          "security.verify": 1.0,
+          "payments.diagnose": 1.0,
+          "payments.remediate": 1.0,
+          "payments.verify": 1.0,
+          "generalist.diagnose": 1.0,
+          "generalist.remediate": 1.0,
+          "generalist.verify": 1.0
+        },
+        "opus": {
+          "research": 1.0,
+          "writing": 1.0,
+          "checking": 1.0,
+          "database.diagnose": 1.0,
+          "database.remediate": 1.0,
+          "database.verify": 1.0,
+          "networking.diagnose": 1.0,
+          "networking.remediate": 1.0,
+          "networking.verify": 1.0,
+          "security.diagnose": 1.0,
+          "security.remediate": 1.0,
+          "security.verify": 1.0,
+          "payments.diagnose": 1.0,
+          "payments.remediate": 1.0,
+          "payments.verify": 1.0,
+          "generalist.diagnose": 1.0,
+          "generalist.remediate": 1.0,
+          "generalist.verify": 1.0
+        }
+      },
+      "config": {
+        "price_weight": 1.0,
+        "rep_init": 1.0,
+        "rep_alpha": 0.3,
+        "task_types": [
+          "research",
+          "writing",
+          "checking",
+          "diagnose",
+          "remediate",
+          "verify"
+        ],
+        "rep_keys": [
+          "research",
+          "writing",
+          "checking",
+          "database.diagnose",
+          "database.remediate",
+          "database.verify",
+          "networking.diagnose",
+          "networking.remediate",
+          "networking.verify",
+          "security.diagnose",
+          "security.remediate",
+          "security.verify",
+          "payments.diagnose",
+          "payments.remediate",
+          "payments.verify",
+          "generalist.diagnose",
+          "generalist.remediate",
+          "generalist.verify"
+        ],
+        "domains": [
+          "database",
+          "networking",
+          "security",
+          "payments",
+          "generalist"
+        ],
+        "specialists": [
+          {
+            "specialist_id": "database.haiku",
+            "domain": "database",
+            "agent_id": "haiku",
+            "label": "Database Specialist \u00b7 Haiku"
+          },
+          {
+            "specialist_id": "database.sonnet",
+            "domain": "database",
+            "agent_id": "sonnet",
+            "label": "Database Specialist \u00b7 Sonnet"
+          },
+          {
+            "specialist_id": "database.opus",
+            "domain": "database",
+            "agent_id": "opus",
+            "label": "Database Specialist \u00b7 Opus"
+          },
+          {
+            "specialist_id": "networking.haiku",
+            "domain": "networking",
+            "agent_id": "haiku",
+            "label": "Networking Specialist \u00b7 Haiku"
+          },
+          {
+            "specialist_id": "networking.sonnet",
+            "domain": "networking",
+            "agent_id": "sonnet",
+            "label": "Networking Specialist \u00b7 Sonnet"
+          },
+          {
+            "specialist_id": "networking.opus",
+            "domain": "networking",
+            "agent_id": "opus",
+            "label": "Networking Specialist \u00b7 Opus"
+          },
+          {
+            "specialist_id": "security.haiku",
+            "domain": "security",
+            "agent_id": "haiku",
+            "label": "Security Specialist \u00b7 Haiku"
+          },
+          {
+            "specialist_id": "security.sonnet",
+            "domain": "security",
+            "agent_id": "sonnet",
+            "label": "Security Specialist \u00b7 Sonnet"
+          },
+          {
+            "specialist_id": "security.opus",
+            "domain": "security",
+            "agent_id": "opus",
+            "label": "Security Specialist \u00b7 Opus"
+          },
+          {
+            "specialist_id": "payments.haiku",
+            "domain": "payments",
+            "agent_id": "haiku",
+            "label": "Payments Specialist \u00b7 Haiku"
+          },
+          {
+            "specialist_id": "payments.sonnet",
+            "domain": "payments",
+            "agent_id": "sonnet",
+            "label": "Payments Specialist \u00b7 Sonnet"
+          },
+          {
+            "specialist_id": "payments.opus",
+            "domain": "payments",
+            "agent_id": "opus",
+            "label": "Payments Specialist \u00b7 Opus"
+          },
+          {
+            "specialist_id": "generalist.haiku",
+            "domain": "generalist",
+            "agent_id": "haiku",
+            "label": "Generalist \u00b7 Haiku"
+          },
+          {
+            "specialist_id": "generalist.sonnet",
+            "domain": "generalist",
+            "agent_id": "sonnet",
+            "label": "Generalist \u00b7 Sonnet"
+          },
+          {
+            "specialist_id": "generalist.opus",
+            "domain": "generalist",
+            "agent_id": "opus",
+            "label": "Generalist \u00b7 Opus"
+          }
+        ],
+        "scenarios": [
+          {
+            "scenario_id": "payments_pool",
+            "name": "Payments API \u00b7 DB pool exhaustion",
+            "service": "payments-api",
+            "region": "iad",
+            "source_system": "Datadog APM",
+            "alert": "payments-api HTTP 500 rate above 1% for 3 minutes"
+          },
+          {
+            "scenario_id": "ams_db_outage",
+            "name": "Orders DB \u00b7 Amsterdam primary down",
+            "service": "orders-api",
+            "region": "ams",
+            "source_system": "PagerDuty \u00b7 Postgres HA monitor",
+            "alert": "pg-ams-1 primary health probe failing; EU order writes erroring"
+          },
+          {
+            "scenario_id": "auth_attack",
+            "name": "Auth API \u00b7 credential-stuffing attack",
+            "service": "auth-api",
+            "region": "iad",
+            "source_system": "Okta System Log + WAF",
+            "alert": "failed logins 160x baseline; suspicious source concentration"
+          },
+          {
+            "scenario_id": "network_partition",
+            "name": "Checkout \u00b7 APAC network partition",
+            "service": "checkout-api",
+            "region": "fra",
+            "source_system": "Cloudflare + ThousandEyes",
+            "alert": "checkout unreachable from sin PoP; origin health checks green"
+          }
+        ],
+        "real_models": false,
+        "fake_llm": true,
+        "orchestrator_model": "claude-sonnet-5",
+        "reviewer_model": "claude-sonnet-5"
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 1,
+    "t": 0,
+    "job_id": null,
+    "type": "incident_status",
+    "data": {
+      "status": "healthy",
+      "scenario_id": "network_partition",
+      "service": "checkout-api",
+      "region": "fra",
+      "severity": null,
+      "summary": "All systems operational.",
+      "telemetry": [
+        {
+          "key": "apac_reachability",
+          "label": "APAC reachability",
+          "value": 0.999,
+          "unit": "ratio",
+          "ok": true
+        },
+        {
+          "key": "apac_p95_latency_ms",
+          "label": "APAC p95 latency",
+          "value": 210,
+          "unit": "ms",
+          "ok": true
+        },
+        {
+          "key": "global_error_rate",
+          "label": "Global error rate",
+          "value": 0.0003,
+          "unit": "ratio",
+          "ok": true
+        },
+        {
+          "key": "origin_health",
+          "label": "Origin health (fra)",
+          "value": 1.0,
+          "unit": "ratio",
+          "ok": true
+        }
+      ],
+      "logs": [
+        "INFO  checkout-api APAC via fra: reachability 99.9%, p95 210ms",
+        "INFO  origin fra health checks 100% green"
+      ],
+      "config_changes": []
+    }
+  },
+  {
+    "v": 1,
+    "seq": 2,
+    "t": 0,
+    "job_id": "j_5eb0a914",
+    "type": "incident_received",
+    "data": {
+      "scenario_id": "network_partition",
+      "name": "Checkout \u00b7 APAC network partition",
+      "service": "checkout-api",
+      "region": "fra",
+      "source_system": "Cloudflare + ThousandEyes",
+      "alert": "checkout unreachable from sin PoP; origin health checks green",
+      "package": {
+        "service": "checkout-api",
+        "region": "fra",
+        "source_system": "Cloudflare + ThousandEyes",
+        "alert": "checkout unreachable from sin PoP; origin health checks green",
+        "breached": [
+          {
+            "key": "apac_reachability",
+            "label": "APAC reachability",
+            "value": 0.04,
+            "unit": "ratio",
+            "ok": false
+          },
+          {
+            "key": "apac_p95_latency_ms",
+            "label": "APAC p95 latency",
+            "value": 10000,
+            "unit": "ms",
+            "ok": false
+          },
+          {
+            "key": "global_error_rate",
+            "label": "Global error rate",
+            "value": 0.288,
+            "unit": "ratio",
+            "ok": false
+          }
+        ],
+        "log_excerpt": [
+          "ERROR edge sin -> origin fra: 96% of requests timed out (connect timeout 10s)",
+          "INFO  origin fra health checks 100% green from fra and iad probes",
+          "WARN  ThousandEyes: packet loss 96% on sin -> fra path via cogent",
+          "WARN  global error rate 28.8%, all from APAC users"
+        ],
+        "recent_changes": [
+          {
+            "change_id": "net-118",
+            "key": "transit.sin.primary",
+            "old": "telia",
+            "new": "cogent",
+            "author": "netops-bot",
+            "minutes_ago": 11
+          }
+        ]
+      },
+      "package_tokens_est": 336,
+      "full_context_tokens_est": 487
+    }
+  },
+  {
+    "v": 1,
+    "seq": 3,
+    "t": 1400,
+    "job_id": "j_5eb0a914",
+    "type": "incident_status",
+    "data": {
+      "status": "outage",
+      "scenario_id": "network_partition",
+      "service": "checkout-api",
+      "region": "fra",
+      "severity": null,
+      "summary": "checkout unreachable from sin PoP; origin health checks green",
+      "telemetry": [
+        {
+          "key": "apac_reachability",
+          "label": "APAC reachability",
+          "value": 0.04,
+          "unit": "ratio",
+          "ok": false
+        },
+        {
+          "key": "apac_p95_latency_ms",
+          "label": "APAC p95 latency",
+          "value": 10000,
+          "unit": "ms",
+          "ok": false
+        },
+        {
+          "key": "global_error_rate",
+          "label": "Global error rate",
+          "value": 0.288,
+          "unit": "ratio",
+          "ok": false
+        },
+        {
+          "key": "origin_health",
+          "label": "Origin health (fra)",
+          "value": 1.0,
+          "unit": "ratio",
+          "ok": true
+        }
+      ],
+      "logs": [
+        "ERROR edge sin -> origin fra: 96% of requests timed out (connect timeout 10s)",
+        "INFO  origin fra health checks 100% green from fra and iad probes",
+        "WARN  ThousandEyes: packet loss 96% on sin -> fra path via cogent",
+        "WARN  global error rate 28.8%, all from APAC users",
+        "INFO  change net-118 by netops-bot: transit.sin.primary telia -> cogent"
+      ],
+      "config_changes": [
+        {
+          "change_id": "net-118",
+          "key": "transit.sin.primary",
+          "old": "telia",
+          "new": "cogent",
+          "author": "netops-bot",
+          "minutes_ago": 11
+        }
+      ]
+    }
+  },
+  {
+    "v": 1,
+    "seq": 4,
+    "t": 3000,
+    "job_id": "j_5eb0a914",
+    "type": "commander_classified",
+    "data": {
+      "scenario_id": "network_partition",
+      "domain": "networking",
+      "secondary_domains": [],
+      "severity": "SEV-1",
+      "required_specialties": [
+        "incident_command",
+        "networking",
+        "routing",
+        "customer_comms",
+        "support"
+      ],
+      "rationale": "Signal scores: networking 9. SEV-1 because APAC reachability is 4%.",
+      "source": "model",
+      "fallback_reason": null,
+      "usage": {
+        "model": "claude-sonnet-5",
+        "input_tokens": 335,
+        "output_tokens": 188,
+        "cost_usd": 0.00255,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 5,
+    "t": 5200,
+    "job_id": "j_5eb0a914",
+    "type": "specialists_dispatched",
+    "data": {
+      "domain": "networking",
+      "registered": 15,
+      "eligible": 3,
+      "specialists": [
+        {
+          "specialist_id": "database.haiku",
+          "domain": "database",
+          "agent_id": "haiku",
+          "label": "Database Specialist \u00b7 Haiku",
+          "dispatched": false
+        },
+        {
+          "specialist_id": "database.sonnet",
+          "domain": "database",
+          "agent_id": "sonnet",
+          "label": "Database Specialist \u00b7 Sonnet",
+          "dispatched": false
+        },
+        {
+          "specialist_id": "database.opus",
+          "domain": "database",
+          "agent_id": "opus",
+          "label": "Database Specialist \u00b7 Opus",
+          "dispatched": false
+        },
+        {
+          "specialist_id": "networking.haiku",
+          "domain": "networking",
+          "agent_id": "haiku",
+          "label": "Networking Specialist \u00b7 Haiku",
+          "dispatched": true
+        },
+        {
+          "specialist_id": "networking.sonnet",
+          "domain": "networking",
+          "agent_id": "sonnet",
+          "label": "Networking Specialist \u00b7 Sonnet",
+          "dispatched": true
+        },
+        {
+          "specialist_id": "networking.opus",
+          "domain": "networking",
+          "agent_id": "opus",
+          "label": "Networking Specialist \u00b7 Opus",
+          "dispatched": true
+        },
+        {
+          "specialist_id": "security.haiku",
+          "domain": "security",
+          "agent_id": "haiku",
+          "label": "Security Specialist \u00b7 Haiku",
+          "dispatched": false
+        },
+        {
+          "specialist_id": "security.sonnet",
+          "domain": "security",
+          "agent_id": "sonnet",
+          "label": "Security Specialist \u00b7 Sonnet",
+          "dispatched": false
+        },
+        {
+          "specialist_id": "security.opus",
+          "domain": "security",
+          "agent_id": "opus",
+          "label": "Security Specialist \u00b7 Opus",
+          "dispatched": false
+        },
+        {
+          "specialist_id": "payments.haiku",
+          "domain": "payments",
+          "agent_id": "haiku",
+          "label": "Payments Specialist \u00b7 Haiku",
+          "dispatched": false
+        },
+        {
+          "specialist_id": "payments.sonnet",
+          "domain": "payments",
+          "agent_id": "sonnet",
+          "label": "Payments Specialist \u00b7 Sonnet",
+          "dispatched": false
+        },
+        {
+          "specialist_id": "payments.opus",
+          "domain": "payments",
+          "agent_id": "opus",
+          "label": "Payments Specialist \u00b7 Opus",
+          "dispatched": false
+        },
+        {
+          "specialist_id": "generalist.haiku",
+          "domain": "generalist",
+          "agent_id": "haiku",
+          "label": "Generalist \u00b7 Haiku",
+          "dispatched": false
+        },
+        {
+          "specialist_id": "generalist.sonnet",
+          "domain": "generalist",
+          "agent_id": "sonnet",
+          "label": "Generalist \u00b7 Sonnet",
+          "dispatched": false
+        },
+        {
+          "specialist_id": "generalist.opus",
+          "domain": "generalist",
+          "agent_id": "opus",
+          "label": "Generalist \u00b7 Opus",
+          "dispatched": false
+        }
+      ],
+      "reason": "Only the 3 Networking Specialist models receive the full incident; 12 other specialists are skipped."
+    }
+  },
+  {
+    "v": 1,
+    "seq": 6,
+    "t": 7000,
+    "job_id": "j_5eb0a914",
+    "type": "responders_selected",
+    "data": {
+      "required_skills": [
+        "incident_command",
+        "networking",
+        "routing",
+        "customer_comms",
+        "support"
+      ],
+      "responders": [
+        {
+          "responder_id": "zak",
+          "name": "Zak",
+          "role": "Incident Commander",
+          "selected": true,
+          "score": 8,
+          "matched_skills": [
+            "incident_command"
+          ],
+          "available": true,
+          "workload": 1,
+          "reason": "Matches incident_command; 1 open tickets."
+        },
+        {
+          "responder_id": "maya",
+          "name": "Maya",
+          "role": "Database Engineer",
+          "selected": false,
+          "score": -4,
+          "matched_skills": [],
+          "available": true,
+          "workload": 2,
+          "reason": "No connection_pooling/database/postgres signal in this incident."
+        },
+        {
+          "responder_id": "alex",
+          "name": "Alex",
+          "role": "Backend Engineer",
+          "selected": false,
+          "score": -2,
+          "matched_skills": [],
+          "available": true,
+          "workload": 1,
+          "reason": "No backend/deploys/payments_api signal in this incident."
+        },
+        {
+          "responder_id": "riley",
+          "name": "Riley",
+          "role": "Network Engineer",
+          "selected": true,
+          "score": 18,
+          "matched_skills": [
+            "networking",
+            "routing"
+          ],
+          "available": true,
+          "workload": 1,
+          "reason": "Matches networking, routing; 1 open tickets."
+        },
+        {
+          "responder_id": "sam",
+          "name": "Sam",
+          "role": "Security Engineer",
+          "selected": false,
+          "score": 0,
+          "matched_skills": [],
+          "available": true,
+          "workload": 0,
+          "reason": "No access_control/auth/security signal in this incident."
+        },
+        {
+          "responder_id": "jordan",
+          "name": "Jordan",
+          "role": "Customer Support Lead",
+          "selected": true,
+          "score": 14,
+          "matched_skills": [
+            "customer_comms",
+            "support"
+          ],
+          "available": true,
+          "workload": 3,
+          "reason": "Matches customer_comms, support; 3 open tickets."
+        }
+      ],
+      "briefings": {
+        "engineering": "APAC users can't reach checkout: reachability 4% via fra, packet loss 96% on the sin -> fra transit path since net-118. The origin itself is healthy.",
+        "support": "Customers in Asia-Pacific cannot complete checkout. Tell them it is a regional network problem, their carts are saved, and traffic is being rerouted.",
+        "commander": "SEV-1 on checkout-api: regional network partition. Team: Zak, Riley, Jordan. A reroute to a healthy region is being sandbox-tested. Your decision: approve the traffic change.",
+        "leadership": "Checkout is unavailable for APAC customers (29% of global traffic failing). The platform is healthy; a network reroute will restore access."
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 7,
+    "t": 9200,
+    "job_id": "j_5eb0a914",
+    "type": "incident_status",
+    "data": {
+      "status": "investigating",
+      "scenario_id": "network_partition",
+      "service": "checkout-api",
+      "region": "fra",
+      "severity": "SEV-1",
+      "summary": "Networking Specialists are bidding to diagnose.",
+      "telemetry": [
+        {
+          "key": "apac_reachability",
+          "label": "APAC reachability",
+          "value": 0.04,
+          "unit": "ratio",
+          "ok": false
+        },
+        {
+          "key": "apac_p95_latency_ms",
+          "label": "APAC p95 latency",
+          "value": 10000,
+          "unit": "ms",
+          "ok": false
+        },
+        {
+          "key": "global_error_rate",
+          "label": "Global error rate",
+          "value": 0.288,
+          "unit": "ratio",
+          "ok": false
+        },
+        {
+          "key": "origin_health",
+          "label": "Origin health (fra)",
+          "value": 1.0,
+          "unit": "ratio",
+          "ok": true
+        }
+      ],
+      "logs": [
+        "ERROR edge sin -> origin fra: 96% of requests timed out (connect timeout 10s)",
+        "INFO  origin fra health checks 100% green from fra and iad probes",
+        "WARN  ThousandEyes: packet loss 96% on sin -> fra path via cogent",
+        "WARN  global error rate 28.8%, all from APAC users",
+        "INFO  change net-118 by netops-bot: transit.sin.primary telia -> cogent"
+      ],
+      "config_changes": [
+        {
+          "change_id": "net-118",
+          "key": "transit.sin.primary",
+          "old": "telia",
+          "new": "cogent",
+          "author": "netops-bot",
+          "minutes_ago": 11
+        }
+      ]
+    }
+  },
+  {
+    "v": 1,
+    "seq": 8,
+    "t": 10800,
+    "job_id": "j_5eb0a914",
+    "type": "task_posted",
+    "data": {
+      "task_id": "t1",
+      "type": "diagnose",
+      "title": "Diagnose the checkout-api incident",
+      "brief": "Find the root cause of the checkout-api incident from the telemetry, logs, and recent changes.",
+      "depends_on": [],
+      "index": 0,
+      "total": 3,
+      "est_input_tokens": 401,
+      "domain": "networking"
+    }
+  },
+  {
+    "v": 1,
+    "seq": 9,
+    "t": 11700,
+    "job_id": "j_5eb0a914",
+    "type": "bid",
+    "data": {
+      "task_id": "t1",
+      "agent_id": "haiku",
+      "ok": true,
+      "error": null,
+      "predicted_output_tokens": 336,
+      "est_input_tokens": 401,
+      "predicted_cost_usd": 0.002081,
+      "promised_quality": 6,
+      "confidence": 0.73,
+      "eta_ms": 2240,
+      "pitch": "A careful, concise result at a competitive price.",
+      "reputation": 1.0,
+      "score": 5.792,
+      "usage": {
+        "model": "claude-haiku-4-5",
+        "input_tokens": 477,
+        "output_tokens": 34,
+        "cost_usd": 0.000647,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 10,
+    "t": 12400,
+    "job_id": "j_5eb0a914",
+    "type": "bid",
+    "data": {
+      "task_id": "t1",
+      "agent_id": "sonnet",
+      "ok": true,
+      "error": null,
+      "predicted_output_tokens": 586,
+      "est_input_tokens": 401,
+      "predicted_cost_usd": 0.006662,
+      "promised_quality": 6,
+      "confidence": 0.94,
+      "eta_ms": 7325,
+      "pitch": "A careful, concise result at a competitive price.",
+      "reputation": 1.0,
+      "score": 5.334,
+      "usage": {
+        "model": "claude-sonnet-5",
+        "input_tokens": 477,
+        "output_tokens": 184,
+        "cost_usd": 0.002794,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 11,
+    "t": 13100,
+    "job_id": "j_5eb0a914",
+    "type": "bid",
+    "data": {
+      "task_id": "t1",
+      "agent_id": "opus",
+      "ok": true,
+      "error": null,
+      "predicted_output_tokens": 550,
+      "est_input_tokens": 401,
+      "predicted_cost_usd": 0.015755,
+      "promised_quality": 8,
+      "confidence": 0.84,
+      "eta_ms": 11000,
+      "pitch": "A careful, concise result at a competitive price.",
+      "reputation": 1.0,
+      "score": 6.425,
+      "usage": {
+        "model": "claude-opus-5",
+        "input_tokens": 476,
+        "output_tokens": 334,
+        "cost_usd": 0.01073,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 12,
+    "t": 13800,
+    "job_id": "j_5eb0a914",
+    "type": "won",
+    "data": {
+      "task_id": "t1",
+      "agent_id": "opus",
+      "mode": "auction",
+      "score": 6.425,
+      "runner_up_agent_id": "haiku",
+      "runner_up_score": 5.792,
+      "scores": {
+        "haiku": 5.792,
+        "sonnet": 5.334,
+        "opus": 6.425
+      },
+      "price_weight": 1.0
+    }
+  },
+  {
+    "v": 1,
+    "seq": 13,
+    "t": 14700,
+    "job_id": "j_5eb0a914",
+    "type": "stats",
+    "data": {
+      "total_cost_usd": 0.016721,
+      "input_tokens": 1765,
+      "output_tokens": 740,
+      "calls": 4,
+      "by_purpose": {
+        "split": {
+          "cost_usd": 0.00255,
+          "calls": 1
+        },
+        "bid": {
+          "cost_usd": 0.014171,
+          "calls": 3
+        },
+        "work": {
+          "cost_usd": 0.0,
+          "calls": 0
+        },
+        "review": {
+          "cost_usd": 0.0,
+          "calls": 0
+        }
+      },
+      "by_agent": {
+        "haiku": {
+          "cost_usd": 0.000647,
+          "input_tokens": 477,
+          "output_tokens": 34,
+          "calls": 1,
+          "tasks_won": 0
+        },
+        "sonnet": {
+          "cost_usd": 0.002794,
+          "input_tokens": 477,
+          "output_tokens": 184,
+          "calls": 1,
+          "tasks_won": 0
+        },
+        "opus": {
+          "cost_usd": 0.01073,
+          "input_tokens": 476,
+          "output_tokens": 334,
+          "calls": 1,
+          "tasks_won": 1
+        }
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 14,
+    "t": 14850,
+    "job_id": "j_5eb0a914",
+    "type": "working",
+    "data": {
+      "task_id": "t1",
+      "agent_id": "opus"
+    }
+  },
+  {
+    "v": 1,
+    "seq": 15,
+    "t": 17450,
+    "job_id": "j_5eb0a914",
+    "type": "done",
+    "data": {
+      "task_id": "t1",
+      "agent_id": "opus",
+      "output": "Root cause: a network partition between the Singapore edge and the Frankfurt origin after transit change net-118. The origin is healthy locally (100% health checks) but 96% of APAC requests time out. Routing APAC traffic to the healthy iad origin restores reachability.",
+      "predicted_output_tokens": 550,
+      "predicted_cost_usd": 0.015755,
+      "usage": {
+        "model": "claude-opus-5",
+        "input_tokens": 400,
+        "output_tokens": 367,
+        "cost_usd": 0.011175,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 16,
+    "t": 18350,
+    "job_id": "j_5eb0a914",
+    "type": "graded",
+    "data": {
+      "task_id": "t1",
+      "agent_id": "opus",
+      "grade": 8,
+      "promised_quality": 8,
+      "rationale": "The response is relevant, clear, and mostly accurate.",
+      "usage": {
+        "model": "claude-sonnet-5",
+        "input_tokens": 550,
+        "output_tokens": 170,
+        "cost_usd": 0.0028,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 17,
+    "t": 19050,
+    "job_id": "j_5eb0a914",
+    "type": "rep_update",
+    "data": {
+      "task_id": "t1",
+      "agent_id": "opus",
+      "task_type": "diagnose",
+      "rep_key": "networking.diagnose",
+      "old": 1.0,
+      "new": 1.0,
+      "ratio": 1.0
+    }
+  },
+  {
+    "v": 1,
+    "seq": 18,
+    "t": 19450,
+    "job_id": "j_5eb0a914",
+    "type": "stats",
+    "data": {
+      "total_cost_usd": 0.030696,
+      "input_tokens": 2715,
+      "output_tokens": 1277,
+      "calls": 6,
+      "by_purpose": {
+        "split": {
+          "cost_usd": 0.00255,
+          "calls": 1
+        },
+        "bid": {
+          "cost_usd": 0.014171,
+          "calls": 3
+        },
+        "work": {
+          "cost_usd": 0.011175,
+          "calls": 1
+        },
+        "review": {
+          "cost_usd": 0.0028,
+          "calls": 1
+        }
+      },
+      "by_agent": {
+        "haiku": {
+          "cost_usd": 0.000647,
+          "input_tokens": 477,
+          "output_tokens": 34,
+          "calls": 1,
+          "tasks_won": 0
+        },
+        "sonnet": {
+          "cost_usd": 0.002794,
+          "input_tokens": 477,
+          "output_tokens": 184,
+          "calls": 1,
+          "tasks_won": 0
+        },
+        "opus": {
+          "cost_usd": 0.021905,
+          "input_tokens": 876,
+          "output_tokens": 701,
+          "calls": 2,
+          "tasks_won": 1
+        }
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 19,
+    "t": 19600,
+    "job_id": "j_5eb0a914",
+    "type": "incident_status",
+    "data": {
+      "status": "repairing",
+      "scenario_id": "network_partition",
+      "service": "checkout-api",
+      "region": "fra",
+      "severity": "SEV-1",
+      "summary": "Networking Specialists are bidding to repair.",
+      "telemetry": [
+        {
+          "key": "apac_reachability",
+          "label": "APAC reachability",
+          "value": 0.04,
+          "unit": "ratio",
+          "ok": false
+        },
+        {
+          "key": "apac_p95_latency_ms",
+          "label": "APAC p95 latency",
+          "value": 10000,
+          "unit": "ms",
+          "ok": false
+        },
+        {
+          "key": "global_error_rate",
+          "label": "Global error rate",
+          "value": 0.288,
+          "unit": "ratio",
+          "ok": false
+        },
+        {
+          "key": "origin_health",
+          "label": "Origin health (fra)",
+          "value": 1.0,
+          "unit": "ratio",
+          "ok": true
+        }
+      ],
+      "logs": [
+        "ERROR edge sin -> origin fra: 96% of requests timed out (connect timeout 10s)",
+        "INFO  origin fra health checks 100% green from fra and iad probes",
+        "WARN  ThousandEyes: packet loss 96% on sin -> fra path via cogent",
+        "WARN  global error rate 28.8%, all from APAC users",
+        "INFO  change net-118 by netops-bot: transit.sin.primary telia -> cogent"
+      ],
+      "config_changes": [
+        {
+          "change_id": "net-118",
+          "key": "transit.sin.primary",
+          "old": "telia",
+          "new": "cogent",
+          "author": "netops-bot",
+          "minutes_ago": 11
+        }
+      ]
+    }
+  },
+  {
+    "v": 1,
+    "seq": 20,
+    "t": 21200,
+    "job_id": "j_5eb0a914",
+    "type": "task_posted",
+    "data": {
+      "task_id": "t2",
+      "type": "remediate",
+      "title": "Repair attempt 1",
+      "brief": "Propose a remediation plan that restores checkout-api.\nAllowed actions (regions: ams, fra, iad, sin):\n{\"action\": \"route_traffic\", \"region\": \"<region>\"}\n{\"action\": \"restart_service\"}\n{\"action\": \"restart_db\", \"region\": \"<region>\"}\n{\"action\": \"failover_db\", \"region\": \"<region>\"}\nPrevious failed attempts: none",
+      "depends_on": [
+        "t1"
+      ],
+      "index": 1,
+      "total": 3,
+      "est_input_tokens": 569,
+      "domain": "networking"
+    }
+  },
+  {
+    "v": 1,
+    "seq": 21,
+    "t": 22100,
+    "job_id": "j_5eb0a914",
+    "type": "bid",
+    "data": {
+      "task_id": "t2",
+      "agent_id": "haiku",
+      "ok": true,
+      "error": null,
+      "predicted_output_tokens": 296,
+      "est_input_tokens": 569,
+      "predicted_cost_usd": 0.002049,
+      "promised_quality": 10,
+      "confidence": 0.61,
+      "eta_ms": 1973,
+      "pitch": "A careful, concise result at a competitive price.",
+      "reputation": 1.0,
+      "score": 9.795,
+      "usage": {
+        "model": "claude-haiku-4-5",
+        "input_tokens": 528,
+        "output_tokens": 34,
+        "cost_usd": 0.000698,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 22,
+    "t": 22800,
+    "job_id": "j_5eb0a914",
+    "type": "bid",
+    "data": {
+      "task_id": "t2",
+      "agent_id": "sonnet",
+      "ok": true,
+      "error": null,
+      "predicted_output_tokens": 406,
+      "est_input_tokens": 569,
+      "predicted_cost_usd": 0.005198,
+      "promised_quality": 6,
+      "confidence": 0.85,
+      "eta_ms": 5075,
+      "pitch": "A careful, concise result at a competitive price.",
+      "reputation": 1.0,
+      "score": 5.48,
+      "usage": {
+        "model": "claude-sonnet-5",
+        "input_tokens": 528,
+        "output_tokens": 184,
+        "cost_usd": 0.002896,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 23,
+    "t": 23500,
+    "job_id": "j_5eb0a914",
+    "type": "bid",
+    "data": {
+      "task_id": "t2",
+      "agent_id": "opus",
+      "ok": true,
+      "error": null,
+      "predicted_output_tokens": 366,
+      "est_input_tokens": 569,
+      "predicted_cost_usd": 0.011995,
+      "promised_quality": 8,
+      "confidence": 0.7,
+      "eta_ms": 7320,
+      "pitch": "A careful, concise result at a competitive price.",
+      "reputation": 1.0,
+      "score": 6.8,
+      "usage": {
+        "model": "claude-opus-5",
+        "input_tokens": 527,
+        "output_tokens": 334,
+        "cost_usd": 0.010985,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 24,
+    "t": 24200,
+    "job_id": "j_5eb0a914",
+    "type": "won",
+    "data": {
+      "task_id": "t2",
+      "agent_id": "haiku",
+      "mode": "auction",
+      "score": 9.795,
+      "runner_up_agent_id": "opus",
+      "runner_up_score": 6.8,
+      "scores": {
+        "haiku": 9.795,
+        "sonnet": 5.48,
+        "opus": 6.8
+      },
+      "price_weight": 1.0
+    }
+  },
+  {
+    "v": 1,
+    "seq": 25,
+    "t": 25100,
+    "job_id": "j_5eb0a914",
+    "type": "stats",
+    "data": {
+      "total_cost_usd": 0.045275,
+      "input_tokens": 4298,
+      "output_tokens": 1829,
+      "calls": 9,
+      "by_purpose": {
+        "split": {
+          "cost_usd": 0.00255,
+          "calls": 1
+        },
+        "bid": {
+          "cost_usd": 0.02875,
+          "calls": 6
+        },
+        "work": {
+          "cost_usd": 0.011175,
+          "calls": 1
+        },
+        "review": {
+          "cost_usd": 0.0028,
+          "calls": 1
+        }
+      },
+      "by_agent": {
+        "haiku": {
+          "cost_usd": 0.001345,
+          "input_tokens": 1005,
+          "output_tokens": 68,
+          "calls": 2,
+          "tasks_won": 1
+        },
+        "sonnet": {
+          "cost_usd": 0.00569,
+          "input_tokens": 1005,
+          "output_tokens": 368,
+          "calls": 2,
+          "tasks_won": 0
+        },
+        "opus": {
+          "cost_usd": 0.03289,
+          "input_tokens": 1403,
+          "output_tokens": 1035,
+          "calls": 3,
+          "tasks_won": 1
+        }
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 26,
+    "t": 25250,
+    "job_id": "j_5eb0a914",
+    "type": "working",
+    "data": {
+      "task_id": "t2",
+      "agent_id": "haiku"
+    }
+  },
+  {
+    "v": 1,
+    "seq": 27,
+    "t": 27850,
+    "job_id": "j_5eb0a914",
+    "type": "done",
+    "data": {
+      "task_id": "t2",
+      "agent_id": "haiku",
+      "output": "{\"steps\": [{\"action\": \"restart_service\"}]}",
+      "predicted_output_tokens": 296,
+      "predicted_cost_usd": 0.002049,
+      "usage": {
+        "model": "claude-haiku-4-5",
+        "input_tokens": 568,
+        "output_tokens": 10,
+        "cost_usd": 0.000618,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 28,
+    "t": 28750,
+    "job_id": "j_5eb0a914",
+    "type": "remediation_proposed",
+    "data": {
+      "task_id": "t2",
+      "agent_id": "haiku",
+      "attempt": 1,
+      "steps": [
+        {
+          "action": "restart_service",
+          "value": null,
+          "region": null,
+          "ips": null
+        }
+      ],
+      "accepted": true,
+      "reason": "restart_service uses only allowlisted actions."
+    }
+  },
+  {
+    "v": 1,
+    "seq": 29,
+    "t": 29950,
+    "job_id": "j_5eb0a914",
+    "type": "sandbox_result",
+    "data": {
+      "task_id": "t2",
+      "agent_id": "haiku",
+      "attempt": 1,
+      "steps": [
+        {
+          "action": "restart_service",
+          "value": null,
+          "region": null,
+          "ips": null
+        }
+      ],
+      "passed": false,
+      "checks": [
+        {
+          "name": "allowlisted plan",
+          "passed": true,
+          "detail": "restart_service"
+        },
+        {
+          "name": "APAC reachability",
+          "passed": false,
+          "detail": "4.0% via fra (min 99%)"
+        },
+        {
+          "name": "APAC p95 latency",
+          "passed": false,
+          "detail": "10000 ms (limit 300 ms)"
+        },
+        {
+          "name": "global error rate",
+          "passed": false,
+          "detail": "28.8% (limit 1%)"
+        },
+        {
+          "name": "origin healthy",
+          "passed": true,
+          "detail": "fra origin 100% healthy locally"
+        }
+      ],
+      "telemetry": [
+        {
+          "key": "apac_reachability",
+          "label": "APAC reachability",
+          "value": 0.04,
+          "unit": "ratio",
+          "ok": false
+        },
+        {
+          "key": "apac_p95_latency_ms",
+          "label": "APAC p95 latency",
+          "value": 10000,
+          "unit": "ms",
+          "ok": false
+        },
+        {
+          "key": "global_error_rate",
+          "label": "Global error rate",
+          "value": 0.288,
+          "unit": "ratio",
+          "ok": false
+        },
+        {
+          "key": "origin_health",
+          "label": "Origin health (fra)",
+          "value": 1.0,
+          "unit": "ratio",
+          "ok": true
+        }
+      ]
+    }
+  },
+  {
+    "v": 1,
+    "seq": 30,
+    "t": 32150,
+    "job_id": "j_5eb0a914",
+    "type": "graded",
+    "data": {
+      "task_id": "t2",
+      "agent_id": "haiku",
+      "grade": 4,
+      "promised_quality": 10,
+      "rationale": "Sandbox rejected the plan. 2/5 checks passed. Failed: APAC reachability, APAC p95 latency, global error rate.",
+      "usage": {
+        "model": "deterministic-checks",
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cost_usd": 0.0,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 31,
+    "t": 32850,
+    "job_id": "j_5eb0a914",
+    "type": "rep_update",
+    "data": {
+      "task_id": "t2",
+      "agent_id": "haiku",
+      "task_type": "remediate",
+      "rep_key": "networking.remediate",
+      "old": 1.0,
+      "new": 0.82,
+      "ratio": 0.4
+    }
+  },
+  {
+    "v": 1,
+    "seq": 32,
+    "t": 33250,
+    "job_id": "j_5eb0a914",
+    "type": "stats",
+    "data": {
+      "total_cost_usd": 0.045893,
+      "input_tokens": 4866,
+      "output_tokens": 1839,
+      "calls": 10,
+      "by_purpose": {
+        "split": {
+          "cost_usd": 0.00255,
+          "calls": 1
+        },
+        "bid": {
+          "cost_usd": 0.02875,
+          "calls": 6
+        },
+        "work": {
+          "cost_usd": 0.011793,
+          "calls": 2
+        },
+        "review": {
+          "cost_usd": 0.0028,
+          "calls": 1
+        }
+      },
+      "by_agent": {
+        "haiku": {
+          "cost_usd": 0.001963,
+          "input_tokens": 1573,
+          "output_tokens": 78,
+          "calls": 3,
+          "tasks_won": 1
+        },
+        "sonnet": {
+          "cost_usd": 0.00569,
+          "input_tokens": 1005,
+          "output_tokens": 368,
+          "calls": 2,
+          "tasks_won": 0
+        },
+        "opus": {
+          "cost_usd": 0.03289,
+          "input_tokens": 1403,
+          "output_tokens": 1035,
+          "calls": 3,
+          "tasks_won": 1
+        }
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 33,
+    "t": 33400,
+    "job_id": "j_5eb0a914",
+    "type": "task_posted",
+    "data": {
+      "task_id": "t3",
+      "type": "remediate",
+      "title": "Repair attempt 2",
+      "brief": "Propose a remediation plan that restores checkout-api.\nAllowed actions (regions: ams, fra, iad, sin):\n{\"action\": \"route_traffic\", \"region\": \"<region>\"}\n{\"action\": \"restart_service\"}\n{\"action\": \"restart_db\", \"region\": \"<region>\"}\n{\"action\": \"failover_db\", \"region\": \"<region>\"}\nPrevious failed attempts: restart_service failed the sandbox",
+      "depends_on": [
+        "t1"
+      ],
+      "index": 2,
+      "total": 4,
+      "est_input_tokens": 577,
+      "domain": "networking"
+    }
+  },
+  {
+    "v": 1,
+    "seq": 34,
+    "t": 34300,
+    "job_id": "j_5eb0a914",
+    "type": "bid",
+    "data": {
+      "task_id": "t3",
+      "agent_id": "haiku",
+      "ok": true,
+      "error": null,
+      "predicted_output_tokens": 602,
+      "est_input_tokens": 577,
+      "predicted_cost_usd": 0.003587,
+      "promised_quality": 7,
+      "confidence": 0.79,
+      "eta_ms": 4013,
+      "pitch": "A careful, concise result at a competitive price.",
+      "reputation": 0.82,
+      "score": 5.381,
+      "usage": {
+        "model": "claude-haiku-4-5",
+        "input_tokens": 536,
+        "output_tokens": 34,
+        "cost_usd": 0.000706,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 35,
+    "t": 35000,
+    "job_id": "j_5eb0a914",
+    "type": "bid",
+    "data": {
+      "task_id": "t3",
+      "agent_id": "sonnet",
+      "ok": true,
+      "error": null,
+      "predicted_output_tokens": 597,
+      "est_input_tokens": 577,
+      "predicted_cost_usd": 0.007124,
+      "promised_quality": 6,
+      "confidence": 0.79,
+      "eta_ms": 7462,
+      "pitch": "A careful, concise result at a competitive price.",
+      "reputation": 1.0,
+      "score": 5.288,
+      "usage": {
+        "model": "claude-sonnet-5",
+        "input_tokens": 536,
+        "output_tokens": 184,
+        "cost_usd": 0.002912,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 36,
+    "t": 35700,
+    "job_id": "j_5eb0a914",
+    "type": "bid",
+    "data": {
+      "task_id": "t3",
+      "agent_id": "opus",
+      "ok": true,
+      "error": null,
+      "predicted_output_tokens": 334,
+      "est_input_tokens": 577,
+      "predicted_cost_usd": 0.011235,
+      "promised_quality": 6,
+      "confidence": 0.63,
+      "eta_ms": 6680,
+      "pitch": "A careful, concise result at a competitive price.",
+      "reputation": 1.0,
+      "score": 4.877,
+      "usage": {
+        "model": "claude-opus-5",
+        "input_tokens": 535,
+        "output_tokens": 334,
+        "cost_usd": 0.011025,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 37,
+    "t": 36400,
+    "job_id": "j_5eb0a914",
+    "type": "won",
+    "data": {
+      "task_id": "t3",
+      "agent_id": "haiku",
+      "mode": "auction",
+      "score": 5.381,
+      "runner_up_agent_id": "sonnet",
+      "runner_up_score": 5.288,
+      "scores": {
+        "haiku": 5.381,
+        "sonnet": 5.288,
+        "opus": 4.877
+      },
+      "price_weight": 1.0
+    }
+  },
+  {
+    "v": 1,
+    "seq": 38,
+    "t": 37300,
+    "job_id": "j_5eb0a914",
+    "type": "stats",
+    "data": {
+      "total_cost_usd": 0.060536,
+      "input_tokens": 6473,
+      "output_tokens": 2391,
+      "calls": 13,
+      "by_purpose": {
+        "split": {
+          "cost_usd": 0.00255,
+          "calls": 1
+        },
+        "bid": {
+          "cost_usd": 0.043393,
+          "calls": 9
+        },
+        "work": {
+          "cost_usd": 0.011793,
+          "calls": 2
+        },
+        "review": {
+          "cost_usd": 0.0028,
+          "calls": 1
+        }
+      },
+      "by_agent": {
+        "haiku": {
+          "cost_usd": 0.002669,
+          "input_tokens": 2109,
+          "output_tokens": 112,
+          "calls": 4,
+          "tasks_won": 2
+        },
+        "sonnet": {
+          "cost_usd": 0.008602,
+          "input_tokens": 1541,
+          "output_tokens": 552,
+          "calls": 3,
+          "tasks_won": 0
+        },
+        "opus": {
+          "cost_usd": 0.043915,
+          "input_tokens": 1938,
+          "output_tokens": 1369,
+          "calls": 4,
+          "tasks_won": 1
+        }
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 39,
+    "t": 37450,
+    "job_id": "j_5eb0a914",
+    "type": "working",
+    "data": {
+      "task_id": "t3",
+      "agent_id": "haiku"
+    }
+  },
+  {
+    "v": 1,
+    "seq": 40,
+    "t": 40050,
+    "job_id": "j_5eb0a914",
+    "type": "done",
+    "data": {
+      "task_id": "t3",
+      "agent_id": "haiku",
+      "output": "{\"steps\": [{\"action\": \"route_traffic\", \"region\": \"iad\"}]}",
+      "predicted_output_tokens": 602,
+      "predicted_cost_usd": 0.003587,
+      "usage": {
+        "model": "claude-haiku-4-5",
+        "input_tokens": 576,
+        "output_tokens": 14,
+        "cost_usd": 0.000646,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 41,
+    "t": 40950,
+    "job_id": "j_5eb0a914",
+    "type": "remediation_proposed",
+    "data": {
+      "task_id": "t3",
+      "agent_id": "haiku",
+      "attempt": 2,
+      "steps": [
+        {
+          "action": "route_traffic",
+          "value": null,
+          "region": "iad",
+          "ips": null
+        }
+      ],
+      "accepted": true,
+      "reason": "route_traffic(iad) uses only allowlisted actions."
+    }
+  },
+  {
+    "v": 1,
+    "seq": 42,
+    "t": 42150,
+    "job_id": "j_5eb0a914",
+    "type": "sandbox_result",
+    "data": {
+      "task_id": "t3",
+      "agent_id": "haiku",
+      "attempt": 2,
+      "steps": [
+        {
+          "action": "route_traffic",
+          "value": null,
+          "region": "iad",
+          "ips": null
+        }
+      ],
+      "passed": true,
+      "checks": [
+        {
+          "name": "allowlisted plan",
+          "passed": true,
+          "detail": "route_traffic(iad)"
+        },
+        {
+          "name": "APAC reachability",
+          "passed": true,
+          "detail": "99.9% via iad (min 99%)"
+        },
+        {
+          "name": "APAC p95 latency",
+          "passed": true,
+          "detail": "240 ms (limit 300 ms)"
+        },
+        {
+          "name": "global error rate",
+          "passed": true,
+          "detail": "0.0% (limit 1%)"
+        },
+        {
+          "name": "origin healthy",
+          "passed": true,
+          "detail": "fra origin 100% healthy locally"
+        }
+      ],
+      "telemetry": [
+        {
+          "key": "apac_reachability",
+          "label": "APAC reachability",
+          "value": 0.999,
+          "unit": "ratio",
+          "ok": true
+        },
+        {
+          "key": "apac_p95_latency_ms",
+          "label": "APAC p95 latency",
+          "value": 240,
+          "unit": "ms",
+          "ok": true
+        },
+        {
+          "key": "global_error_rate",
+          "label": "Global error rate",
+          "value": 0.0003,
+          "unit": "ratio",
+          "ok": true
+        },
+        {
+          "key": "origin_health",
+          "label": "Origin health (fra)",
+          "value": 1.0,
+          "unit": "ratio",
+          "ok": true
+        }
+      ]
+    }
+  },
+  {
+    "v": 1,
+    "seq": 43,
+    "t": 44350,
+    "job_id": "j_5eb0a914",
+    "type": "graded",
+    "data": {
+      "task_id": "t3",
+      "agent_id": "haiku",
+      "grade": 10,
+      "promised_quality": 7,
+      "rationale": "Sandbox passed. 5/5 checks passed.",
+      "usage": {
+        "model": "deterministic-checks",
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cost_usd": 0.0,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 44,
+    "t": 45050,
+    "job_id": "j_5eb0a914",
+    "type": "rep_update",
+    "data": {
+      "task_id": "t3",
+      "agent_id": "haiku",
+      "task_type": "remediate",
+      "rep_key": "networking.remediate",
+      "old": 0.82,
+      "new": 1.0026,
+      "ratio": 1.4286
+    }
+  },
+  {
+    "v": 1,
+    "seq": 45,
+    "t": 45450,
+    "job_id": "j_5eb0a914",
+    "type": "stats",
+    "data": {
+      "total_cost_usd": 0.061182,
+      "input_tokens": 7049,
+      "output_tokens": 2405,
+      "calls": 14,
+      "by_purpose": {
+        "split": {
+          "cost_usd": 0.00255,
+          "calls": 1
+        },
+        "bid": {
+          "cost_usd": 0.043393,
+          "calls": 9
+        },
+        "work": {
+          "cost_usd": 0.012439,
+          "calls": 3
+        },
+        "review": {
+          "cost_usd": 0.0028,
+          "calls": 1
+        }
+      },
+      "by_agent": {
+        "haiku": {
+          "cost_usd": 0.003315,
+          "input_tokens": 2685,
+          "output_tokens": 126,
+          "calls": 5,
+          "tasks_won": 2
+        },
+        "sonnet": {
+          "cost_usd": 0.008602,
+          "input_tokens": 1541,
+          "output_tokens": 552,
+          "calls": 3,
+          "tasks_won": 0
+        },
+        "opus": {
+          "cost_usd": 0.043915,
+          "input_tokens": 1938,
+          "output_tokens": 1369,
+          "calls": 4,
+          "tasks_won": 1
+        }
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 46,
+    "t": 45600,
+    "job_id": "j_5eb0a914",
+    "type": "remediation_plan_created",
+    "data": {
+      "task_id": "t3",
+      "agent_id": "haiku",
+      "attempt": 2,
+      "steps": [
+        {
+          "index": 0,
+          "action": {
+            "action": "route_traffic",
+            "value": null,
+            "region": "iad",
+            "ips": null
+          },
+          "description": "route_traffic(iad)",
+          "owner_domain": "networking"
+        }
+      ],
+      "summary": "route_traffic(iad) passed all 5 sandbox checks.",
+      "confidence": 0.79
+    }
+  },
+  {
+    "v": 1,
+    "seq": 47,
+    "t": 47100,
+    "job_id": "j_5eb0a914",
+    "type": "human_assignments_created",
+    "data": {
+      "task_id": "t3",
+      "assignments": [
+        {
+          "assignment_id": "a1",
+          "step_index": 0,
+          "action": {
+            "action": "route_traffic",
+            "value": null,
+            "region": "iad",
+            "ips": null
+          },
+          "description": "Execute route_traffic(iad)",
+          "responder_id": "riley",
+          "name": "Riley",
+          "role": "Network Engineer",
+          "reason": "Network Engineer owns networking changes.",
+          "approval_required": true,
+          "status": "pending"
+        },
+        {
+          "assignment_id": "a2",
+          "step_index": null,
+          "action": null,
+          "description": "Final go/no-go for a SEV-1 production change",
+          "responder_id": "zak",
+          "name": "Zak",
+          "role": "Incident Commander",
+          "reason": "SEV-1 changes need the Incident Commander's sign-off.",
+          "approval_required": true,
+          "status": "pending"
+        },
+        {
+          "assignment_id": "a3",
+          "step_index": null,
+          "action": null,
+          "description": "Send the customer update",
+          "responder_id": "jordan",
+          "name": "Jordan",
+          "role": "Customer Support Lead",
+          "reason": "Customers are affected; support owns communication.",
+          "approval_required": false,
+          "status": "notify"
+        }
+      ],
+      "required_approvers": [
+        "Riley",
+        "Zak"
+      ]
+    }
+  },
+  {
+    "v": 1,
+    "seq": 48,
+    "t": 48600,
+    "job_id": "j_5eb0a914",
+    "type": "incident_status",
+    "data": {
+      "status": "awaiting_approval",
+      "scenario_id": "network_partition",
+      "service": "checkout-api",
+      "region": "fra",
+      "severity": "SEV-1",
+      "summary": "route_traffic(iad) passed the sandbox. Waiting for Riley, Zak.",
+      "telemetry": [
+        {
+          "key": "apac_reachability",
+          "label": "APAC reachability",
+          "value": 0.04,
+          "unit": "ratio",
+          "ok": false
+        },
+        {
+          "key": "apac_p95_latency_ms",
+          "label": "APAC p95 latency",
+          "value": 10000,
+          "unit": "ms",
+          "ok": false
+        },
+        {
+          "key": "global_error_rate",
+          "label": "Global error rate",
+          "value": 0.288,
+          "unit": "ratio",
+          "ok": false
+        },
+        {
+          "key": "origin_health",
+          "label": "Origin health (fra)",
+          "value": 1.0,
+          "unit": "ratio",
+          "ok": true
+        }
+      ],
+      "logs": [
+        "ERROR edge sin -> origin fra: 96% of requests timed out (connect timeout 10s)",
+        "INFO  origin fra health checks 100% green from fra and iad probes",
+        "WARN  ThousandEyes: packet loss 96% on sin -> fra path via cogent",
+        "WARN  global error rate 28.8%, all from APAC users",
+        "INFO  change net-118 by netops-bot: transit.sin.primary telia -> cogent"
+      ],
+      "config_changes": [
+        {
+          "change_id": "net-118",
+          "key": "transit.sin.primary",
+          "old": "telia",
+          "new": "cogent",
+          "author": "netops-bot",
+          "minutes_ago": 11
+        }
+      ]
+    }
+  },
+  {
+    "v": 1,
+    "seq": 49,
+    "t": 50200,
+    "job_id": "j_5eb0a914",
+    "type": "approval_required",
+    "data": {
+      "task_id": "t3",
+      "agent_id": "haiku",
+      "attempt": 2,
+      "steps": [
+        {
+          "action": "route_traffic",
+          "value": null,
+          "region": "iad",
+          "ips": null
+        }
+      ],
+      "summary": "Deploy route_traffic(iad) to production. All sandbox checks passed.",
+      "approvers": [
+        "Riley",
+        "Zak"
+      ]
+    }
+  },
+  {
+    "v": 1,
+    "seq": 50,
+    "t": 56200,
+    "job_id": "j_5eb0a914",
+    "type": "approval_granted",
+    "data": {
+      "task_id": "t3",
+      "approved": [
+        "a1",
+        "a2"
+      ],
+      "approved_by": [
+        "Riley",
+        "Zak"
+      ]
+    }
+  },
+  {
+    "v": 1,
+    "seq": 51,
+    "t": 57400,
+    "job_id": "j_5eb0a914",
+    "type": "incident_status",
+    "data": {
+      "status": "recovering",
+      "scenario_id": "network_partition",
+      "service": "checkout-api",
+      "region": "fra",
+      "severity": "SEV-1",
+      "summary": "Deploying route_traffic(iad) and verifying production.",
+      "telemetry": [
+        {
+          "key": "apac_reachability",
+          "label": "APAC reachability",
+          "value": 0.999,
+          "unit": "ratio",
+          "ok": true
+        },
+        {
+          "key": "apac_p95_latency_ms",
+          "label": "APAC p95 latency",
+          "value": 240,
+          "unit": "ms",
+          "ok": true
+        },
+        {
+          "key": "global_error_rate",
+          "label": "Global error rate",
+          "value": 0.0003,
+          "unit": "ratio",
+          "ok": true
+        },
+        {
+          "key": "origin_health",
+          "label": "Origin health (fra)",
+          "value": 1.0,
+          "unit": "ratio",
+          "ok": true
+        }
+      ],
+      "logs": [
+        "INFO  checkout-api APAC via iad: reachability 99.9%, p95 240ms",
+        "INFO  origin fra health checks 100% green"
+      ],
+      "config_changes": [
+        {
+          "change_id": "net-118",
+          "key": "transit.sin.primary",
+          "old": "telia",
+          "new": "cogent",
+          "author": "netops-bot",
+          "minutes_ago": 11
+        },
+        {
+          "change_id": "chg-2",
+          "key": "traffic.apac.region",
+          "old": "fra",
+          "new": "iad",
+          "author": "mayday",
+          "minutes_ago": 0
+        }
+      ]
+    }
+  },
+  {
+    "v": 1,
+    "seq": 52,
+    "t": 59000,
+    "job_id": "j_5eb0a914",
+    "type": "task_posted",
+    "data": {
+      "task_id": "t4",
+      "type": "verify",
+      "title": "Verify production recovery",
+      "brief": "Verify checkout-api after route_traffic(iad). Production telemetry now: [{\"key\": \"apac_reachability\", \"label\": \"APAC reachability\", \"ok\": true, \"unit\": \"ratio\", \"value\": 0.999}, {\"key\": \"apac_p95_latency_ms\", \"label\": \"APAC p95 latency\", \"ok\": true, \"unit\": \"ms\", \"value\": 240}, {\"key\": \"global_error_rate\", \"label\": \"Global error rate\", \"ok\": true, \"unit\": \"ratio\", \"value\": 0.0003}, {\"key\": \"origin_health\", \"label\": \"Origin health (fra)\", \"ok\": true, \"unit\": \"ratio\", \"value\": 1.0}]",
+      "depends_on": [
+        "t3"
+      ],
+      "index": 3,
+      "total": 4,
+      "est_input_tokens": 504,
+      "domain": "networking"
+    }
+  },
+  {
+    "v": 1,
+    "seq": 53,
+    "t": 59900,
+    "job_id": "j_5eb0a914",
+    "type": "bid",
+    "data": {
+      "task_id": "t4",
+      "agent_id": "haiku",
+      "ok": true,
+      "error": null,
+      "predicted_output_tokens": 188,
+      "est_input_tokens": 504,
+      "predicted_cost_usd": 0.001444,
+      "promised_quality": 7,
+      "confidence": 0.73,
+      "eta_ms": 1253,
+      "pitch": "A careful, concise result at a competitive price.",
+      "reputation": 1.0,
+      "score": 6.856,
+      "usage": {
+        "model": "claude-haiku-4-5",
+        "input_tokens": 574,
+        "output_tokens": 34,
+        "cost_usd": 0.000744,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 54,
+    "t": 60600,
+    "job_id": "j_5eb0a914",
+    "type": "bid",
+    "data": {
+      "task_id": "t4",
+      "agent_id": "sonnet",
+      "ok": true,
+      "error": null,
+      "predicted_output_tokens": 352,
+      "est_input_tokens": 504,
+      "predicted_cost_usd": 0.004528,
+      "promised_quality": 9,
+      "confidence": 0.81,
+      "eta_ms": 4400,
+      "pitch": "A careful, concise result at a competitive price.",
+      "reputation": 1.0,
+      "score": 8.547,
+      "usage": {
+        "model": "claude-sonnet-5",
+        "input_tokens": 574,
+        "output_tokens": 184,
+        "cost_usd": 0.002988,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 55,
+    "t": 61300,
+    "job_id": "j_5eb0a914",
+    "type": "bid",
+    "data": {
+      "task_id": "t4",
+      "agent_id": "opus",
+      "ok": true,
+      "error": null,
+      "predicted_output_tokens": 370,
+      "est_input_tokens": 504,
+      "predicted_cost_usd": 0.01177,
+      "promised_quality": 8,
+      "confidence": 0.6,
+      "eta_ms": 7400,
+      "pitch": "A careful, concise result at a competitive price.",
+      "reputation": 1.0,
+      "score": 6.823,
+      "usage": {
+        "model": "claude-opus-5",
+        "input_tokens": 573,
+        "output_tokens": 334,
+        "cost_usd": 0.011215,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 56,
+    "t": 62000,
+    "job_id": "j_5eb0a914",
+    "type": "won",
+    "data": {
+      "task_id": "t4",
+      "agent_id": "sonnet",
+      "mode": "auction",
+      "score": 8.547,
+      "runner_up_agent_id": "haiku",
+      "runner_up_score": 6.856,
+      "scores": {
+        "haiku": 6.856,
+        "sonnet": 8.547,
+        "opus": 6.823
+      },
+      "price_weight": 1.0
+    }
+  },
+  {
+    "v": 1,
+    "seq": 57,
+    "t": 62900,
+    "job_id": "j_5eb0a914",
+    "type": "stats",
+    "data": {
+      "total_cost_usd": 0.076129,
+      "input_tokens": 8770,
+      "output_tokens": 2957,
+      "calls": 17,
+      "by_purpose": {
+        "split": {
+          "cost_usd": 0.00255,
+          "calls": 1
+        },
+        "bid": {
+          "cost_usd": 0.05834,
+          "calls": 12
+        },
+        "work": {
+          "cost_usd": 0.012439,
+          "calls": 3
+        },
+        "review": {
+          "cost_usd": 0.0028,
+          "calls": 1
+        }
+      },
+      "by_agent": {
+        "haiku": {
+          "cost_usd": 0.004059,
+          "input_tokens": 3259,
+          "output_tokens": 160,
+          "calls": 6,
+          "tasks_won": 2
+        },
+        "sonnet": {
+          "cost_usd": 0.01159,
+          "input_tokens": 2115,
+          "output_tokens": 736,
+          "calls": 4,
+          "tasks_won": 1
+        },
+        "opus": {
+          "cost_usd": 0.05513,
+          "input_tokens": 2511,
+          "output_tokens": 1703,
+          "calls": 5,
+          "tasks_won": 1
+        }
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 58,
+    "t": 63050,
+    "job_id": "j_5eb0a914",
+    "type": "working",
+    "data": {
+      "task_id": "t4",
+      "agent_id": "sonnet"
+    }
+  },
+  {
+    "v": 1,
+    "seq": 59,
+    "t": 65650,
+    "job_id": "j_5eb0a914",
+    "type": "done",
+    "data": {
+      "task_id": "t4",
+      "agent_id": "sonnet",
+      "output": "Verdict: recovered. Every production health target is back inside its limit after the approved plan was deployed.",
+      "predicted_output_tokens": 352,
+      "predicted_cost_usd": 0.004528,
+      "usage": {
+        "model": "claude-sonnet-5",
+        "input_tokens": 503,
+        "output_tokens": 178,
+        "cost_usd": 0.002786,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 60,
+    "t": 66550,
+    "job_id": "j_5eb0a914",
+    "type": "graded",
+    "data": {
+      "task_id": "t4",
+      "agent_id": "sonnet",
+      "grade": 10,
+      "promised_quality": 9,
+      "rationale": "Production health checks: 4/4 checks passed.",
+      "usage": {
+        "model": "deterministic-checks",
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cost_usd": 0.0,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 61,
+    "t": 67250,
+    "job_id": "j_5eb0a914",
+    "type": "rep_update",
+    "data": {
+      "task_id": "t4",
+      "agent_id": "sonnet",
+      "task_type": "verify",
+      "rep_key": "networking.verify",
+      "old": 1.0,
+      "new": 1.0333,
+      "ratio": 1.1111
+    }
+  },
+  {
+    "v": 1,
+    "seq": 62,
+    "t": 67650,
+    "job_id": "j_5eb0a914",
+    "type": "stats",
+    "data": {
+      "total_cost_usd": 0.078915,
+      "input_tokens": 9273,
+      "output_tokens": 3135,
+      "calls": 18,
+      "by_purpose": {
+        "split": {
+          "cost_usd": 0.00255,
+          "calls": 1
+        },
+        "bid": {
+          "cost_usd": 0.05834,
+          "calls": 12
+        },
+        "work": {
+          "cost_usd": 0.015225,
+          "calls": 4
+        },
+        "review": {
+          "cost_usd": 0.0028,
+          "calls": 1
+        }
+      },
+      "by_agent": {
+        "haiku": {
+          "cost_usd": 0.004059,
+          "input_tokens": 3259,
+          "output_tokens": 160,
+          "calls": 6,
+          "tasks_won": 2
+        },
+        "sonnet": {
+          "cost_usd": 0.014376,
+          "input_tokens": 2618,
+          "output_tokens": 914,
+          "calls": 5,
+          "tasks_won": 1
+        },
+        "opus": {
+          "cost_usd": 0.05513,
+          "input_tokens": 2511,
+          "output_tokens": 1703,
+          "calls": 5,
+          "tasks_won": 1
+        }
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 63,
+    "t": 67800,
+    "job_id": "j_5eb0a914",
+    "type": "incident_status",
+    "data": {
+      "status": "restored",
+      "scenario_id": "network_partition",
+      "service": "checkout-api",
+      "region": "fra",
+      "severity": null,
+      "summary": "checkout-api restored and verified.",
+      "telemetry": [
+        {
+          "key": "apac_reachability",
+          "label": "APAC reachability",
+          "value": 0.999,
+          "unit": "ratio",
+          "ok": true
+        },
+        {
+          "key": "apac_p95_latency_ms",
+          "label": "APAC p95 latency",
+          "value": 240,
+          "unit": "ms",
+          "ok": true
+        },
+        {
+          "key": "global_error_rate",
+          "label": "Global error rate",
+          "value": 0.0003,
+          "unit": "ratio",
+          "ok": true
+        },
+        {
+          "key": "origin_health",
+          "label": "Origin health (fra)",
+          "value": 1.0,
+          "unit": "ratio",
+          "ok": true
+        }
+      ],
+      "logs": [
+        "INFO  checkout-api APAC via iad: reachability 99.9%, p95 240ms",
+        "INFO  origin fra health checks 100% green"
+      ],
+      "config_changes": [
+        {
+          "change_id": "net-118",
+          "key": "transit.sin.primary",
+          "old": "telia",
+          "new": "cogent",
+          "author": "netops-bot",
+          "minutes_ago": 11
+        },
+        {
+          "change_id": "chg-2",
+          "key": "traffic.apac.region",
+          "old": "fra",
+          "new": "iad",
+          "author": "mayday",
+          "minutes_ago": 0
+        }
+      ]
+    }
+  },
+  {
+    "v": 1,
+    "seq": 64,
+    "t": 69400,
+    "job_id": "j_5eb0a914",
+    "type": "service_restored",
+    "data": {
+      "scenario_id": "network_partition",
+      "domain": "networking",
+      "mttr_ms": 69400,
+      "total_cost_usd": 0.078915,
+      "repair_attempts": 2,
+      "failed_attempts": 1,
+      "steps": [
+        {
+          "action": "route_traffic",
+          "value": null,
+          "region": "iad",
+          "ips": null
+        }
+      ],
+      "confidence": 0.79,
+      "approved_by": [
+        "Riley",
+        "Zak"
+      ],
+      "verification": [
+        {
+          "name": "APAC reachability",
+          "passed": true,
+          "detail": "99.9% via iad (min 99%)"
+        },
+        {
+          "name": "APAC p95 latency",
+          "passed": true,
+          "detail": "240 ms (limit 300 ms)"
+        },
+        {
+          "name": "global error rate",
+          "passed": true,
+          "detail": "0.0% (limit 1%)"
+        },
+        {
+          "name": "origin healthy",
+          "passed": true,
+          "detail": "fra origin 100% healthy locally"
+        }
+      ],
+      "grades": [
+        {
+          "task_id": "t1",
+          "type": "diagnose",
+          "agent_id": "opus",
+          "grade": 8,
+          "promised_quality": 8,
+          "cost_usd": 0.028146
+        },
+        {
+          "task_id": "t2",
+          "type": "remediate",
+          "agent_id": "haiku",
+          "grade": 4,
+          "promised_quality": 10,
+          "cost_usd": 0.015197
+        },
+        {
+          "task_id": "t3",
+          "type": "remediate",
+          "agent_id": "haiku",
+          "grade": 10,
+          "promised_quality": 7,
+          "cost_usd": 0.015289
+        },
+        {
+          "task_id": "t4",
+          "type": "verify",
+          "agent_id": "sonnet",
+          "grade": 10,
+          "promised_quality": 9,
+          "cost_usd": 0.017733
+        }
+      ],
+      "rep_changes": [
+        {
+          "agent_id": "opus",
+          "task_type": "diagnose",
+          "rep_key": "networking.diagnose",
+          "old": 1.0,
+          "new": 1.0
+        },
+        {
+          "agent_id": "haiku",
+          "task_type": "remediate",
+          "rep_key": "networking.remediate",
+          "old": 1.0,
+          "new": 0.82
+        },
+        {
+          "agent_id": "haiku",
+          "task_type": "remediate",
+          "rep_key": "networking.remediate",
+          "old": 0.82,
+          "new": 1.0026
+        },
+        {
+          "agent_id": "sonnet",
+          "task_type": "verify",
+          "rep_key": "networking.verify",
+          "old": 1.0,
+          "new": 1.0333
+        }
+      ],
+      "telemetry": [
+        {
+          "key": "apac_reachability",
+          "label": "APAC reachability",
+          "value": 0.999,
+          "unit": "ratio",
+          "ok": true
+        },
+        {
+          "key": "apac_p95_latency_ms",
+          "label": "APAC p95 latency",
+          "value": 240,
+          "unit": "ms",
+          "ok": true
+        },
+        {
+          "key": "global_error_rate",
+          "label": "Global error rate",
+          "value": 0.0003,
+          "unit": "ratio",
+          "ok": true
+        },
+        {
+          "key": "origin_health",
+          "label": "Origin health (fra)",
+          "value": 1.0,
+          "unit": "ratio",
+          "ok": true
+        }
+      ]
+    }
+  },
+  {
+    "v": 1,
+    "seq": 65,
+    "t": 70900,
+    "job_id": "j_5eb0a914",
+    "type": "routing_stats",
+    "data": {
+      "domain": "networking",
+      "registered_specialists": 15,
+      "eligible_specialists": 3,
+      "auctions": 4,
+      "models_contacted": 12,
+      "models_skipped": 48,
+      "actual_input_tokens": 9273,
+      "actual_output_tokens": 3135,
+      "actual_cost_usd": 0.078915,
+      "actual_calls": 18,
+      "commander_package_tokens_est": 336,
+      "full_context_tokens_est": 487,
+      "avoided_input_tokens_est": 25453,
+      "avoided_cost_usd_est": 0.06775,
+      "method": "Estimate: for each auction, every skipped specialist x the bid prompt it would have received (characters / 4), plus the raw incident context the Commander did not read, priced at each model's input rate. Actual figures come from the ledger."
+    }
+  },
+  {
+    "v": 1,
+    "seq": 66,
+    "t": 71700,
+    "job_id": "j_5eb0a914",
+    "type": "final",
+    "data": {
+      "status": "ok",
+      "deliverable_task_id": "t1",
+      "deliverable": "Root cause: a network partition between the Singapore edge and the Frankfurt origin after transit change net-118. The origin is healthy locally (100% health checks) but 96% of APAC requests time out. Routing APAC traffic to the healthy iad origin restores reachability.",
+      "tasks": [
+        {
+          "task_id": "t1",
+          "type": "diagnose",
+          "agent_id": "opus",
+          "grade": 8,
+          "promised_quality": 8,
+          "cost_usd": 0.028146
+        },
+        {
+          "task_id": "t2",
+          "type": "remediate",
+          "agent_id": "haiku",
+          "grade": 4,
+          "promised_quality": 10,
+          "cost_usd": 0.015197
+        },
+        {
+          "task_id": "t3",
+          "type": "remediate",
+          "agent_id": "haiku",
+          "grade": 10,
+          "promised_quality": 7,
+          "cost_usd": 0.015289
+        },
+        {
+          "task_id": "t4",
+          "type": "verify",
+          "agent_id": "sonnet",
+          "grade": 10,
+          "promised_quality": 9,
+          "cost_usd": 0.017733
+        }
+      ],
+      "total_cost_usd": 0.078915,
+      "mean_grade": 8.0,
+      "duration_ms": 71700
+    }
+  }
+]

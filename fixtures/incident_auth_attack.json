@@ -1,0 +1,2789 @@
+[
+  {
+    "v": 1,
+    "seq": 0,
+    "t": 0,
+    "job_id": null,
+    "type": "hello",
+    "data": {
+      "agents": [
+        {
+          "agent_id": "haiku",
+          "display_name": "Haiku 4.5",
+          "model": "claude-haiku-4-5",
+          "color": "#4fb3a9"
+        },
+        {
+          "agent_id": "sonnet",
+          "display_name": "Sonnet 5",
+          "model": "claude-sonnet-5",
+          "color": "#e8a33d"
+        },
+        {
+          "agent_id": "opus",
+          "display_name": "Opus 5",
+          "model": "claude-opus-5",
+          "color": "#8e6cc9"
+        }
+      ],
+      "reputation": {
+        "haiku": {
+          "research": 1.0,
+          "writing": 1.0,
+          "checking": 1.0,
+          "database.diagnose": 1.0,
+          "database.remediate": 1.0,
+          "database.verify": 1.0,
+          "networking.diagnose": 1.0,
+          "networking.remediate": 1.0,
+          "networking.verify": 1.0,
+          "security.diagnose": 1.0,
+          "security.remediate": 1.0,
+          "security.verify": 1.0,
+          "payments.diagnose": 1.0,
+          "payments.remediate": 1.0,
+          "payments.verify": 1.0,
+          "generalist.diagnose": 1.0,
+          "generalist.remediate": 1.0,
+          "generalist.verify": 1.0
+        },
+        "sonnet": {
+          "research": 1.0,
+          "writing": 1.0,
+          "checking": 1.0,
+          "database.diagnose": 1.0,
+          "database.remediate": 1.0,
+          "database.verify": 1.0,
+          "networking.diagnose": 1.0,
+          "networking.remediate": 1.0,
+          "networking.verify": 1.0,
+          "security.diagnose": 1.0,
+          "security.remediate": 1.0,
+          "security.verify": 1.0,
+          "payments.diagnose": 1.0,
+          "payments.remediate": 1.0,
+          "payments.verify": 1.0,
+          "generalist.diagnose": 1.0,
+          "generalist.remediate": 1.0,
+          "generalist.verify": 1.0
+        },
+        "opus": {
+          "research": 1.0,
+          "writing": 1.0,
+          "checking": 1.0,
+          "database.diagnose": 1.0,
+          "database.remediate": 1.0,
+          "database.verify": 1.0,
+          "networking.diagnose": 1.0,
+          "networking.remediate": 1.0,
+          "networking.verify": 1.0,
+          "security.diagnose": 1.0,
+          "security.remediate": 1.0,
+          "security.verify": 1.0,
+          "payments.diagnose": 1.0,
+          "payments.remediate": 1.0,
+          "payments.verify": 1.0,
+          "generalist.diagnose": 1.0,
+          "generalist.remediate": 1.0,
+          "generalist.verify": 1.0
+        }
+      },
+      "config": {
+        "price_weight": 1.0,
+        "rep_init": 1.0,
+        "rep_alpha": 0.3,
+        "task_types": [
+          "research",
+          "writing",
+          "checking",
+          "diagnose",
+          "remediate",
+          "verify"
+        ],
+        "rep_keys": [
+          "research",
+          "writing",
+          "checking",
+          "database.diagnose",
+          "database.remediate",
+          "database.verify",
+          "networking.diagnose",
+          "networking.remediate",
+          "networking.verify",
+          "security.diagnose",
+          "security.remediate",
+          "security.verify",
+          "payments.diagnose",
+          "payments.remediate",
+          "payments.verify",
+          "generalist.diagnose",
+          "generalist.remediate",
+          "generalist.verify"
+        ],
+        "domains": [
+          "database",
+          "networking",
+          "security",
+          "payments",
+          "generalist"
+        ],
+        "specialists": [
+          {
+            "specialist_id": "database.haiku",
+            "domain": "database",
+            "agent_id": "haiku",
+            "label": "Database Specialist \u00b7 Haiku"
+          },
+          {
+            "specialist_id": "database.sonnet",
+            "domain": "database",
+            "agent_id": "sonnet",
+            "label": "Database Specialist \u00b7 Sonnet"
+          },
+          {
+            "specialist_id": "database.opus",
+            "domain": "database",
+            "agent_id": "opus",
+            "label": "Database Specialist \u00b7 Opus"
+          },
+          {
+            "specialist_id": "networking.haiku",
+            "domain": "networking",
+            "agent_id": "haiku",
+            "label": "Networking Specialist \u00b7 Haiku"
+          },
+          {
+            "specialist_id": "networking.sonnet",
+            "domain": "networking",
+            "agent_id": "sonnet",
+            "label": "Networking Specialist \u00b7 Sonnet"
+          },
+          {
+            "specialist_id": "networking.opus",
+            "domain": "networking",
+            "agent_id": "opus",
+            "label": "Networking Specialist \u00b7 Opus"
+          },
+          {
+            "specialist_id": "security.haiku",
+            "domain": "security",
+            "agent_id": "haiku",
+            "label": "Security Specialist \u00b7 Haiku"
+          },
+          {
+            "specialist_id": "security.sonnet",
+            "domain": "security",
+            "agent_id": "sonnet",
+            "label": "Security Specialist \u00b7 Sonnet"
+          },
+          {
+            "specialist_id": "security.opus",
+            "domain": "security",
+            "agent_id": "opus",
+            "label": "Security Specialist \u00b7 Opus"
+          },
+          {
+            "specialist_id": "payments.haiku",
+            "domain": "payments",
+            "agent_id": "haiku",
+            "label": "Payments Specialist \u00b7 Haiku"
+          },
+          {
+            "specialist_id": "payments.sonnet",
+            "domain": "payments",
+            "agent_id": "sonnet",
+            "label": "Payments Specialist \u00b7 Sonnet"
+          },
+          {
+            "specialist_id": "payments.opus",
+            "domain": "payments",
+            "agent_id": "opus",
+            "label": "Payments Specialist \u00b7 Opus"
+          },
+          {
+            "specialist_id": "generalist.haiku",
+            "domain": "generalist",
+            "agent_id": "haiku",
+            "label": "Generalist \u00b7 Haiku"
+          },
+          {
+            "specialist_id": "generalist.sonnet",
+            "domain": "generalist",
+            "agent_id": "sonnet",
+            "label": "Generalist \u00b7 Sonnet"
+          },
+          {
+            "specialist_id": "generalist.opus",
+            "domain": "generalist",
+            "agent_id": "opus",
+            "label": "Generalist \u00b7 Opus"
+          }
+        ],
+        "scenarios": [
+          {
+            "scenario_id": "payments_pool",
+            "name": "Payments API \u00b7 DB pool exhaustion",
+            "service": "payments-api",
+            "region": "iad",
+            "source_system": "Datadog APM",
+            "alert": "payments-api HTTP 500 rate above 1% for 3 minutes"
+          },
+          {
+            "scenario_id": "ams_db_outage",
+            "name": "Orders DB \u00b7 Amsterdam primary down",
+            "service": "orders-api",
+            "region": "ams",
+            "source_system": "PagerDuty \u00b7 Postgres HA monitor",
+            "alert": "pg-ams-1 primary health probe failing; EU order writes erroring"
+          },
+          {
+            "scenario_id": "auth_attack",
+            "name": "Auth API \u00b7 credential-stuffing attack",
+            "service": "auth-api",
+            "region": "iad",
+            "source_system": "Okta System Log + WAF",
+            "alert": "failed logins 160x baseline; suspicious source concentration"
+          },
+          {
+            "scenario_id": "network_partition",
+            "name": "Checkout \u00b7 APAC network partition",
+            "service": "checkout-api",
+            "region": "fra",
+            "source_system": "Cloudflare + ThousandEyes",
+            "alert": "checkout unreachable from sin PoP; origin health checks green"
+          }
+        ],
+        "real_models": false,
+        "fake_llm": true,
+        "orchestrator_model": "claude-sonnet-5",
+        "reviewer_model": "claude-sonnet-5"
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 1,
+    "t": 0,
+    "job_id": null,
+    "type": "incident_status",
+    "data": {
+      "status": "healthy",
+      "scenario_id": "auth_attack",
+      "service": "auth-api",
+      "region": "iad",
+      "severity": null,
+      "summary": "All systems operational.",
+      "telemetry": [
+        {
+          "key": "failed_logins_per_min",
+          "label": "Failed logins",
+          "value": 300,
+          "unit": "per_min",
+          "ok": true
+        },
+        {
+          "key": "login_success_rate",
+          "label": "Real-user login success",
+          "value": 0.995,
+          "unit": "ratio",
+          "ok": true
+        },
+        {
+          "key": "p95_latency_ms",
+          "label": "Login p95 latency",
+          "value": 180,
+          "unit": "ms",
+          "ok": true
+        },
+        {
+          "key": "malicious_sources_open",
+          "label": "Malicious sources unblocked",
+          "value": 0,
+          "unit": "count",
+          "ok": true
+        }
+      ],
+      "logs": [
+        "INFO  auth-api logins ok: success=99.5% p95=180ms",
+        "INFO  failed logins 300/min"
+      ],
+      "config_changes": []
+    }
+  },
+  {
+    "v": 1,
+    "seq": 2,
+    "t": 0,
+    "job_id": "j_5eb0a913",
+    "type": "incident_received",
+    "data": {
+      "scenario_id": "auth_attack",
+      "name": "Auth API \u00b7 credential-stuffing attack",
+      "service": "auth-api",
+      "region": "iad",
+      "source_system": "Okta System Log + WAF",
+      "alert": "failed logins 160x baseline; suspicious source concentration",
+      "package": {
+        "service": "auth-api",
+        "region": "iad",
+        "source_system": "Okta System Log + WAF",
+        "alert": "failed logins 160x baseline; suspicious source concentration",
+        "breached": [
+          {
+            "key": "failed_logins_per_min",
+            "label": "Failed logins",
+            "value": 48300,
+            "unit": "per_min",
+            "ok": false
+          },
+          {
+            "key": "login_success_rate",
+            "label": "Real-user login success",
+            "value": 0.895,
+            "unit": "ratio",
+            "ok": false
+          },
+          {
+            "key": "p95_latency_ms",
+            "label": "Login p95 latency",
+            "value": 1080,
+            "unit": "ms",
+            "ok": false
+          },
+          {
+            "key": "malicious_sources_open",
+            "label": "Malicious sources unblocked",
+            "value": 3,
+            "unit": "count",
+            "ok": false
+          }
+        ],
+        "log_excerpt": [
+          "WARN  auth-api failed logins 48,300/min (baseline 300/min)",
+          "WARN  credential stuffing from 203.0.113.24: 16,320/min, 98% invalid passwords",
+          "WARN  credential stuffing from 198.51.100.77: 13,440/min, 98% invalid passwords",
+          "WARN  credential stuffing from 192.0.2.199: 8,640/min, 98% invalid passwords"
+        ],
+        "recent_changes": []
+      },
+      "package_tokens_est": 340,
+      "full_context_tokens_est": 488
+    }
+  },
+  {
+    "v": 1,
+    "seq": 3,
+    "t": 1400,
+    "job_id": "j_5eb0a913",
+    "type": "incident_status",
+    "data": {
+      "status": "outage",
+      "scenario_id": "auth_attack",
+      "service": "auth-api",
+      "region": "iad",
+      "severity": null,
+      "summary": "failed logins 160x baseline; suspicious source concentration",
+      "telemetry": [
+        {
+          "key": "failed_logins_per_min",
+          "label": "Failed logins",
+          "value": 48300,
+          "unit": "per_min",
+          "ok": false
+        },
+        {
+          "key": "login_success_rate",
+          "label": "Real-user login success",
+          "value": 0.895,
+          "unit": "ratio",
+          "ok": false
+        },
+        {
+          "key": "p95_latency_ms",
+          "label": "Login p95 latency",
+          "value": 1080,
+          "unit": "ms",
+          "ok": false
+        },
+        {
+          "key": "malicious_sources_open",
+          "label": "Malicious sources unblocked",
+          "value": 3,
+          "unit": "count",
+          "ok": false
+        }
+      ],
+      "logs": [
+        "WARN  auth-api failed logins 48,300/min (baseline 300/min)",
+        "WARN  credential stuffing from 203.0.113.24: 16,320/min, 98% invalid passwords",
+        "WARN  credential stuffing from 198.51.100.77: 13,440/min, 98% invalid passwords",
+        "WARN  credential stuffing from 192.0.2.199: 8,640/min, 98% invalid passwords",
+        "INFO  remaining failures spread across ~1,900 rotating IPs (~200 attempts/min each)",
+        "WARN  real-user login success 89.5%, p95 1080ms"
+      ],
+      "config_changes": []
+    }
+  },
+  {
+    "v": 1,
+    "seq": 4,
+    "t": 3000,
+    "job_id": "j_5eb0a913",
+    "type": "commander_classified",
+    "data": {
+      "scenario_id": "auth_attack",
+      "domain": "security",
+      "secondary_domains": [],
+      "severity": "SEV-2",
+      "required_specialties": [
+        "security",
+        "auth",
+        "customer_comms",
+        "support"
+      ],
+      "rationale": "Signal scores: security 9. SEV-2 because 4 health targets breached, no majority outage.",
+      "source": "model",
+      "fallback_reason": null,
+      "usage": {
+        "model": "claude-sonnet-5",
+        "input_tokens": 340,
+        "output_tokens": 193,
+        "cost_usd": 0.00261,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 5,
+    "t": 5200,
+    "job_id": "j_5eb0a913",
+    "type": "specialists_dispatched",
+    "data": {
+      "domain": "security",
+      "registered": 15,
+      "eligible": 3,
+      "specialists": [
+        {
+          "specialist_id": "database.haiku",
+          "domain": "database",
+          "agent_id": "haiku",
+          "label": "Database Specialist \u00b7 Haiku",
+          "dispatched": false
+        },
+        {
+          "specialist_id": "database.sonnet",
+          "domain": "database",
+          "agent_id": "sonnet",
+          "label": "Database Specialist \u00b7 Sonnet",
+          "dispatched": false
+        },
+        {
+          "specialist_id": "database.opus",
+          "domain": "database",
+          "agent_id": "opus",
+          "label": "Database Specialist \u00b7 Opus",
+          "dispatched": false
+        },
+        {
+          "specialist_id": "networking.haiku",
+          "domain": "networking",
+          "agent_id": "haiku",
+          "label": "Networking Specialist \u00b7 Haiku",
+          "dispatched": false
+        },
+        {
+          "specialist_id": "networking.sonnet",
+          "domain": "networking",
+          "agent_id": "sonnet",
+          "label": "Networking Specialist \u00b7 Sonnet",
+          "dispatched": false
+        },
+        {
+          "specialist_id": "networking.opus",
+          "domain": "networking",
+          "agent_id": "opus",
+          "label": "Networking Specialist \u00b7 Opus",
+          "dispatched": false
+        },
+        {
+          "specialist_id": "security.haiku",
+          "domain": "security",
+          "agent_id": "haiku",
+          "label": "Security Specialist \u00b7 Haiku",
+          "dispatched": true
+        },
+        {
+          "specialist_id": "security.sonnet",
+          "domain": "security",
+          "agent_id": "sonnet",
+          "label": "Security Specialist \u00b7 Sonnet",
+          "dispatched": true
+        },
+        {
+          "specialist_id": "security.opus",
+          "domain": "security",
+          "agent_id": "opus",
+          "label": "Security Specialist \u00b7 Opus",
+          "dispatched": true
+        },
+        {
+          "specialist_id": "payments.haiku",
+          "domain": "payments",
+          "agent_id": "haiku",
+          "label": "Payments Specialist \u00b7 Haiku",
+          "dispatched": false
+        },
+        {
+          "specialist_id": "payments.sonnet",
+          "domain": "payments",
+          "agent_id": "sonnet",
+          "label": "Payments Specialist \u00b7 Sonnet",
+          "dispatched": false
+        },
+        {
+          "specialist_id": "payments.opus",
+          "domain": "payments",
+          "agent_id": "opus",
+          "label": "Payments Specialist \u00b7 Opus",
+          "dispatched": false
+        },
+        {
+          "specialist_id": "generalist.haiku",
+          "domain": "generalist",
+          "agent_id": "haiku",
+          "label": "Generalist \u00b7 Haiku",
+          "dispatched": false
+        },
+        {
+          "specialist_id": "generalist.sonnet",
+          "domain": "generalist",
+          "agent_id": "sonnet",
+          "label": "Generalist \u00b7 Sonnet",
+          "dispatched": false
+        },
+        {
+          "specialist_id": "generalist.opus",
+          "domain": "generalist",
+          "agent_id": "opus",
+          "label": "Generalist \u00b7 Opus",
+          "dispatched": false
+        }
+      ],
+      "reason": "Only the 3 Security Specialist models receive the full incident; 12 other specialists are skipped."
+    }
+  },
+  {
+    "v": 1,
+    "seq": 6,
+    "t": 7000,
+    "job_id": "j_5eb0a913",
+    "type": "responders_selected",
+    "data": {
+      "required_skills": [
+        "security",
+        "auth",
+        "customer_comms",
+        "support"
+      ],
+      "responders": [
+        {
+          "responder_id": "zak",
+          "name": "Zak",
+          "role": "Incident Commander",
+          "selected": false,
+          "score": -2,
+          "matched_skills": [],
+          "available": true,
+          "workload": 1,
+          "reason": "No communication/incident_command signal in this incident."
+        },
+        {
+          "responder_id": "maya",
+          "name": "Maya",
+          "role": "Database Engineer",
+          "selected": false,
+          "score": -4,
+          "matched_skills": [],
+          "available": true,
+          "workload": 2,
+          "reason": "No connection_pooling/database/postgres signal in this incident."
+        },
+        {
+          "responder_id": "alex",
+          "name": "Alex",
+          "role": "Backend Engineer",
+          "selected": false,
+          "score": -2,
+          "matched_skills": [],
+          "available": true,
+          "workload": 1,
+          "reason": "No backend/deploys/payments_api signal in this incident."
+        },
+        {
+          "responder_id": "riley",
+          "name": "Riley",
+          "role": "Network Engineer",
+          "selected": false,
+          "score": -2,
+          "matched_skills": [],
+          "available": true,
+          "workload": 1,
+          "reason": "No cdn/networking/routing signal in this incident."
+        },
+        {
+          "responder_id": "sam",
+          "name": "Sam",
+          "role": "Security Engineer",
+          "selected": true,
+          "score": 20,
+          "matched_skills": [
+            "auth",
+            "security"
+          ],
+          "available": true,
+          "workload": 0,
+          "reason": "Matches auth, security; 0 open tickets."
+        },
+        {
+          "responder_id": "jordan",
+          "name": "Jordan",
+          "role": "Customer Support Lead",
+          "selected": true,
+          "score": 14,
+          "matched_skills": [
+            "customer_comms",
+            "support"
+          ],
+          "available": true,
+          "workload": 3,
+          "reason": "Matches customer_comms, support; 3 open tickets."
+        }
+      ],
+      "briefings": {
+        "engineering": "Credential stuffing: 48,300 failed logins/min. Three sources carry 80% of the attack; the rest is a rotating botnet at ~200 attempts/min per IP. Real-user success 89.5%, p95 1080 ms.",
+        "support": "Some customers see slow or failed logins. Tell them there is no evidence of account compromise yet, and recommend a password reset if they reused their password elsewhere.",
+        "commander": "SEV-2 security incident on auth-api. Team: Sam, Jordan. A rate limit plus blocklist is being sandbox-tested. Your decision: approve the security controls.",
+        "leadership": "An automated login attack is degrading sign-in for real users (10% failing). No confirmed data breach; protective controls are being deployed."
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 7,
+    "t": 9200,
+    "job_id": "j_5eb0a913",
+    "type": "incident_status",
+    "data": {
+      "status": "investigating",
+      "scenario_id": "auth_attack",
+      "service": "auth-api",
+      "region": "iad",
+      "severity": "SEV-2",
+      "summary": "Security Specialists are bidding to diagnose.",
+      "telemetry": [
+        {
+          "key": "failed_logins_per_min",
+          "label": "Failed logins",
+          "value": 48300,
+          "unit": "per_min",
+          "ok": false
+        },
+        {
+          "key": "login_success_rate",
+          "label": "Real-user login success",
+          "value": 0.895,
+          "unit": "ratio",
+          "ok": false
+        },
+        {
+          "key": "p95_latency_ms",
+          "label": "Login p95 latency",
+          "value": 1080,
+          "unit": "ms",
+          "ok": false
+        },
+        {
+          "key": "malicious_sources_open",
+          "label": "Malicious sources unblocked",
+          "value": 3,
+          "unit": "count",
+          "ok": false
+        }
+      ],
+      "logs": [
+        "WARN  auth-api failed logins 48,300/min (baseline 300/min)",
+        "WARN  credential stuffing from 203.0.113.24: 16,320/min, 98% invalid passwords",
+        "WARN  credential stuffing from 198.51.100.77: 13,440/min, 98% invalid passwords",
+        "WARN  credential stuffing from 192.0.2.199: 8,640/min, 98% invalid passwords",
+        "INFO  remaining failures spread across ~1,900 rotating IPs (~200 attempts/min each)",
+        "WARN  real-user login success 89.5%, p95 1080ms"
+      ],
+      "config_changes": []
+    }
+  },
+  {
+    "v": 1,
+    "seq": 8,
+    "t": 10800,
+    "job_id": "j_5eb0a913",
+    "type": "task_posted",
+    "data": {
+      "task_id": "t1",
+      "type": "diagnose",
+      "title": "Diagnose the auth-api incident",
+      "brief": "Find the root cause of the auth-api incident from the telemetry, logs, and recent changes.",
+      "depends_on": [],
+      "index": 0,
+      "total": 3,
+      "est_input_tokens": 396,
+      "domain": "security"
+    }
+  },
+  {
+    "v": 1,
+    "seq": 9,
+    "t": 11700,
+    "job_id": "j_5eb0a913",
+    "type": "bid",
+    "data": {
+      "task_id": "t1",
+      "agent_id": "haiku",
+      "ok": true,
+      "error": null,
+      "predicted_output_tokens": 558,
+      "est_input_tokens": 396,
+      "predicted_cost_usd": 0.003186,
+      "promised_quality": 6,
+      "confidence": 0.92,
+      "eta_ms": 3720,
+      "pitch": "A careful, concise result at a competitive price.",
+      "reputation": 1.0,
+      "score": 5.681,
+      "usage": {
+        "model": "claude-haiku-4-5",
+        "input_tokens": 471,
+        "output_tokens": 34,
+        "cost_usd": 0.000641,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 10,
+    "t": 12400,
+    "job_id": "j_5eb0a913",
+    "type": "bid",
+    "data": {
+      "task_id": "t1",
+      "agent_id": "sonnet",
+      "ok": true,
+      "error": null,
+      "predicted_output_tokens": 423,
+      "est_input_tokens": 396,
+      "predicted_cost_usd": 0.005022,
+      "promised_quality": 9,
+      "confidence": 0.94,
+      "eta_ms": 5288,
+      "pitch": "A careful, concise result at a competitive price.",
+      "reputation": 1.0,
+      "score": 8.498,
+      "usage": {
+        "model": "claude-sonnet-5",
+        "input_tokens": 471,
+        "output_tokens": 184,
+        "cost_usd": 0.002782,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 11,
+    "t": 13100,
+    "job_id": "j_5eb0a913",
+    "type": "bid",
+    "data": {
+      "task_id": "t1",
+      "agent_id": "opus",
+      "ok": true,
+      "error": null,
+      "predicted_output_tokens": 326,
+      "est_input_tokens": 396,
+      "predicted_cost_usd": 0.01013,
+      "promised_quality": 9,
+      "confidence": 0.91,
+      "eta_ms": 6520,
+      "pitch": "A careful, concise result at a competitive price.",
+      "reputation": 1.0,
+      "score": 7.987,
+      "usage": {
+        "model": "claude-opus-5",
+        "input_tokens": 470,
+        "output_tokens": 334,
+        "cost_usd": 0.0107,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 12,
+    "t": 13800,
+    "job_id": "j_5eb0a913",
+    "type": "won",
+    "data": {
+      "task_id": "t1",
+      "agent_id": "sonnet",
+      "mode": "auction",
+      "score": 8.498,
+      "runner_up_agent_id": "opus",
+      "runner_up_score": 7.987,
+      "scores": {
+        "haiku": 5.681,
+        "sonnet": 8.498,
+        "opus": 7.987
+      },
+      "price_weight": 1.0
+    }
+  },
+  {
+    "v": 1,
+    "seq": 13,
+    "t": 14700,
+    "job_id": "j_5eb0a913",
+    "type": "stats",
+    "data": {
+      "total_cost_usd": 0.016733,
+      "input_tokens": 1752,
+      "output_tokens": 745,
+      "calls": 4,
+      "by_purpose": {
+        "split": {
+          "cost_usd": 0.00261,
+          "calls": 1
+        },
+        "bid": {
+          "cost_usd": 0.014123,
+          "calls": 3
+        },
+        "work": {
+          "cost_usd": 0.0,
+          "calls": 0
+        },
+        "review": {
+          "cost_usd": 0.0,
+          "calls": 0
+        }
+      },
+      "by_agent": {
+        "haiku": {
+          "cost_usd": 0.000641,
+          "input_tokens": 471,
+          "output_tokens": 34,
+          "calls": 1,
+          "tasks_won": 0
+        },
+        "sonnet": {
+          "cost_usd": 0.002782,
+          "input_tokens": 471,
+          "output_tokens": 184,
+          "calls": 1,
+          "tasks_won": 1
+        },
+        "opus": {
+          "cost_usd": 0.0107,
+          "input_tokens": 470,
+          "output_tokens": 334,
+          "calls": 1,
+          "tasks_won": 0
+        }
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 14,
+    "t": 14850,
+    "job_id": "j_5eb0a913",
+    "type": "working",
+    "data": {
+      "task_id": "t1",
+      "agent_id": "sonnet"
+    }
+  },
+  {
+    "v": 1,
+    "seq": 15,
+    "t": 17450,
+    "job_id": "j_5eb0a913",
+    "type": "done",
+    "data": {
+      "task_id": "t1",
+      "agent_id": "sonnet",
+      "output": "Root cause: a credential-stuffing attack. Failed logins jumped from about 300/min to 48,000/min; three sources (203.0.113.24, 198.51.100.77, 192.0.2.199) carry 80% of them and the rest come from a rotating botnet. Real users see slow, failing logins. Nothing indicates a service or database fault.",
+      "predicted_output_tokens": 423,
+      "predicted_cost_usd": 0.005022,
+      "usage": {
+        "model": "claude-sonnet-5",
+        "input_tokens": 395,
+        "output_tokens": 224,
+        "cost_usd": 0.00303,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 16,
+    "t": 18350,
+    "job_id": "j_5eb0a913",
+    "type": "graded",
+    "data": {
+      "task_id": "t1",
+      "agent_id": "sonnet",
+      "grade": 5,
+      "promised_quality": 9,
+      "rationale": "The response is relevant, clear, and mostly accurate.",
+      "usage": {
+        "model": "claude-sonnet-5",
+        "input_tokens": 552,
+        "output_tokens": 170,
+        "cost_usd": 0.002804,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 17,
+    "t": 19050,
+    "job_id": "j_5eb0a913",
+    "type": "rep_update",
+    "data": {
+      "task_id": "t1",
+      "agent_id": "sonnet",
+      "task_type": "diagnose",
+      "rep_key": "security.diagnose",
+      "old": 1.0,
+      "new": 0.8667,
+      "ratio": 0.5556
+    }
+  },
+  {
+    "v": 1,
+    "seq": 18,
+    "t": 19450,
+    "job_id": "j_5eb0a913",
+    "type": "stats",
+    "data": {
+      "total_cost_usd": 0.022567,
+      "input_tokens": 2699,
+      "output_tokens": 1139,
+      "calls": 6,
+      "by_purpose": {
+        "split": {
+          "cost_usd": 0.00261,
+          "calls": 1
+        },
+        "bid": {
+          "cost_usd": 0.014123,
+          "calls": 3
+        },
+        "work": {
+          "cost_usd": 0.00303,
+          "calls": 1
+        },
+        "review": {
+          "cost_usd": 0.002804,
+          "calls": 1
+        }
+      },
+      "by_agent": {
+        "haiku": {
+          "cost_usd": 0.000641,
+          "input_tokens": 471,
+          "output_tokens": 34,
+          "calls": 1,
+          "tasks_won": 0
+        },
+        "sonnet": {
+          "cost_usd": 0.005812,
+          "input_tokens": 866,
+          "output_tokens": 408,
+          "calls": 2,
+          "tasks_won": 1
+        },
+        "opus": {
+          "cost_usd": 0.0107,
+          "input_tokens": 470,
+          "output_tokens": 334,
+          "calls": 1,
+          "tasks_won": 0
+        }
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 19,
+    "t": 19600,
+    "job_id": "j_5eb0a913",
+    "type": "incident_status",
+    "data": {
+      "status": "repairing",
+      "scenario_id": "auth_attack",
+      "service": "auth-api",
+      "region": "iad",
+      "severity": "SEV-2",
+      "summary": "Security Specialists are bidding to repair.",
+      "telemetry": [
+        {
+          "key": "failed_logins_per_min",
+          "label": "Failed logins",
+          "value": 48300,
+          "unit": "per_min",
+          "ok": false
+        },
+        {
+          "key": "login_success_rate",
+          "label": "Real-user login success",
+          "value": 0.895,
+          "unit": "ratio",
+          "ok": false
+        },
+        {
+          "key": "p95_latency_ms",
+          "label": "Login p95 latency",
+          "value": 1080,
+          "unit": "ms",
+          "ok": false
+        },
+        {
+          "key": "malicious_sources_open",
+          "label": "Malicious sources unblocked",
+          "value": 3,
+          "unit": "count",
+          "ok": false
+        }
+      ],
+      "logs": [
+        "WARN  auth-api failed logins 48,300/min (baseline 300/min)",
+        "WARN  credential stuffing from 203.0.113.24: 16,320/min, 98% invalid passwords",
+        "WARN  credential stuffing from 198.51.100.77: 13,440/min, 98% invalid passwords",
+        "WARN  credential stuffing from 192.0.2.199: 8,640/min, 98% invalid passwords",
+        "INFO  remaining failures spread across ~1,900 rotating IPs (~200 attempts/min each)",
+        "WARN  real-user login success 89.5%, p95 1080ms"
+      ],
+      "config_changes": []
+    }
+  },
+  {
+    "v": 1,
+    "seq": 20,
+    "t": 21200,
+    "job_id": "j_5eb0a913",
+    "type": "task_posted",
+    "data": {
+      "task_id": "t2",
+      "type": "remediate",
+      "title": "Repair attempt 1",
+      "brief": "Propose a remediation plan that restores auth-api.\nAllowed actions (regions: ams, fra, iad, sin):\n{\"action\": \"apply_rate_limit\", \"value\": <logins per IP per minute, 1-10000>}\n{\"action\": \"block_ips\", \"ips\": [\"<IPv4>\", ...]}\n{\"action\": \"restart_service\"}\n{\"action\": \"restart_db\", \"region\": \"<region>\"}\nPrevious failed attempts: none",
+      "depends_on": [
+        "t1"
+      ],
+      "index": 1,
+      "total": 3,
+      "est_input_tokens": 579,
+      "domain": "security"
+    }
+  },
+  {
+    "v": 1,
+    "seq": 21,
+    "t": 22100,
+    "job_id": "j_5eb0a913",
+    "type": "bid",
+    "data": {
+      "task_id": "t2",
+      "agent_id": "haiku",
+      "ok": true,
+      "error": null,
+      "predicted_output_tokens": 638,
+      "est_input_tokens": 579,
+      "predicted_cost_usd": 0.003769,
+      "promised_quality": 10,
+      "confidence": 0.78,
+      "eta_ms": 4253,
+      "pitch": "A careful, concise result at a competitive price.",
+      "reputation": 1.0,
+      "score": 9.623,
+      "usage": {
+        "model": "claude-haiku-4-5",
+        "input_tokens": 530,
+        "output_tokens": 34,
+        "cost_usd": 0.0007,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 22,
+    "t": 22800,
+    "job_id": "j_5eb0a913",
+    "type": "bid",
+    "data": {
+      "task_id": "t2",
+      "agent_id": "sonnet",
+      "ok": true,
+      "error": null,
+      "predicted_output_tokens": 604,
+      "est_input_tokens": 579,
+      "predicted_cost_usd": 0.007198,
+      "promised_quality": 7,
+      "confidence": 0.56,
+      "eta_ms": 7550,
+      "pitch": "A careful, concise result at a competitive price.",
+      "reputation": 1.0,
+      "score": 6.28,
+      "usage": {
+        "model": "claude-sonnet-5",
+        "input_tokens": 530,
+        "output_tokens": 184,
+        "cost_usd": 0.0029,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 23,
+    "t": 23500,
+    "job_id": "j_5eb0a913",
+    "type": "bid",
+    "data": {
+      "task_id": "t2",
+      "agent_id": "opus",
+      "ok": true,
+      "error": null,
+      "predicted_output_tokens": 311,
+      "est_input_tokens": 579,
+      "predicted_cost_usd": 0.01067,
+      "promised_quality": 8,
+      "confidence": 0.82,
+      "eta_ms": 6220,
+      "pitch": "A careful, concise result at a competitive price.",
+      "reputation": 1.0,
+      "score": 6.933,
+      "usage": {
+        "model": "claude-opus-5",
+        "input_tokens": 529,
+        "output_tokens": 334,
+        "cost_usd": 0.010995,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 24,
+    "t": 24200,
+    "job_id": "j_5eb0a913",
+    "type": "won",
+    "data": {
+      "task_id": "t2",
+      "agent_id": "haiku",
+      "mode": "auction",
+      "score": 9.623,
+      "runner_up_agent_id": "opus",
+      "runner_up_score": 6.933,
+      "scores": {
+        "haiku": 9.623,
+        "sonnet": 6.28,
+        "opus": 6.933
+      },
+      "price_weight": 1.0
+    }
+  },
+  {
+    "v": 1,
+    "seq": 25,
+    "t": 25100,
+    "job_id": "j_5eb0a913",
+    "type": "stats",
+    "data": {
+      "total_cost_usd": 0.037162,
+      "input_tokens": 4288,
+      "output_tokens": 1691,
+      "calls": 9,
+      "by_purpose": {
+        "split": {
+          "cost_usd": 0.00261,
+          "calls": 1
+        },
+        "bid": {
+          "cost_usd": 0.028718,
+          "calls": 6
+        },
+        "work": {
+          "cost_usd": 0.00303,
+          "calls": 1
+        },
+        "review": {
+          "cost_usd": 0.002804,
+          "calls": 1
+        }
+      },
+      "by_agent": {
+        "haiku": {
+          "cost_usd": 0.001341,
+          "input_tokens": 1001,
+          "output_tokens": 68,
+          "calls": 2,
+          "tasks_won": 1
+        },
+        "sonnet": {
+          "cost_usd": 0.008712,
+          "input_tokens": 1396,
+          "output_tokens": 592,
+          "calls": 3,
+          "tasks_won": 1
+        },
+        "opus": {
+          "cost_usd": 0.021695,
+          "input_tokens": 999,
+          "output_tokens": 668,
+          "calls": 2,
+          "tasks_won": 0
+        }
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 26,
+    "t": 25250,
+    "job_id": "j_5eb0a913",
+    "type": "working",
+    "data": {
+      "task_id": "t2",
+      "agent_id": "haiku"
+    }
+  },
+  {
+    "v": 1,
+    "seq": 27,
+    "t": 27850,
+    "job_id": "j_5eb0a913",
+    "type": "done",
+    "data": {
+      "task_id": "t2",
+      "agent_id": "haiku",
+      "output": "{\"steps\": [{\"action\": \"restart_service\"}]}",
+      "predicted_output_tokens": 638,
+      "predicted_cost_usd": 0.003769,
+      "usage": {
+        "model": "claude-haiku-4-5",
+        "input_tokens": 578,
+        "output_tokens": 10,
+        "cost_usd": 0.000628,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 28,
+    "t": 28750,
+    "job_id": "j_5eb0a913",
+    "type": "remediation_proposed",
+    "data": {
+      "task_id": "t2",
+      "agent_id": "haiku",
+      "attempt": 1,
+      "steps": [
+        {
+          "action": "restart_service",
+          "value": null,
+          "region": null,
+          "ips": null
+        }
+      ],
+      "accepted": true,
+      "reason": "restart_service uses only allowlisted actions."
+    }
+  },
+  {
+    "v": 1,
+    "seq": 29,
+    "t": 29950,
+    "job_id": "j_5eb0a913",
+    "type": "sandbox_result",
+    "data": {
+      "task_id": "t2",
+      "agent_id": "haiku",
+      "attempt": 1,
+      "steps": [
+        {
+          "action": "restart_service",
+          "value": null,
+          "region": null,
+          "ips": null
+        }
+      ],
+      "passed": false,
+      "checks": [
+        {
+          "name": "allowlisted plan",
+          "passed": true,
+          "detail": "restart_service"
+        },
+        {
+          "name": "failed logins",
+          "passed": false,
+          "detail": "48,300/min (limit 2,000/min)"
+        },
+        {
+          "name": "real-user login success",
+          "passed": false,
+          "detail": "89.5% (min 99%)"
+        },
+        {
+          "name": "login p95 latency",
+          "passed": false,
+          "detail": "1080 ms (limit 300 ms)"
+        },
+        {
+          "name": "no legitimate sources blocked",
+          "passed": true,
+          "detail": "blocklist matches attack sources"
+        }
+      ],
+      "telemetry": [
+        {
+          "key": "failed_logins_per_min",
+          "label": "Failed logins",
+          "value": 48300,
+          "unit": "per_min",
+          "ok": false
+        },
+        {
+          "key": "login_success_rate",
+          "label": "Real-user login success",
+          "value": 0.895,
+          "unit": "ratio",
+          "ok": false
+        },
+        {
+          "key": "p95_latency_ms",
+          "label": "Login p95 latency",
+          "value": 1080,
+          "unit": "ms",
+          "ok": false
+        },
+        {
+          "key": "malicious_sources_open",
+          "label": "Malicious sources unblocked",
+          "value": 3,
+          "unit": "count",
+          "ok": false
+        }
+      ]
+    }
+  },
+  {
+    "v": 1,
+    "seq": 30,
+    "t": 32150,
+    "job_id": "j_5eb0a913",
+    "type": "graded",
+    "data": {
+      "task_id": "t2",
+      "agent_id": "haiku",
+      "grade": 4,
+      "promised_quality": 10,
+      "rationale": "Sandbox rejected the plan. 2/5 checks passed. Failed: failed logins, real-user login success, login p95 latency.",
+      "usage": {
+        "model": "deterministic-checks",
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cost_usd": 0.0,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 31,
+    "t": 32850,
+    "job_id": "j_5eb0a913",
+    "type": "rep_update",
+    "data": {
+      "task_id": "t2",
+      "agent_id": "haiku",
+      "task_type": "remediate",
+      "rep_key": "security.remediate",
+      "old": 1.0,
+      "new": 0.82,
+      "ratio": 0.4
+    }
+  },
+  {
+    "v": 1,
+    "seq": 32,
+    "t": 33250,
+    "job_id": "j_5eb0a913",
+    "type": "stats",
+    "data": {
+      "total_cost_usd": 0.03779,
+      "input_tokens": 4866,
+      "output_tokens": 1701,
+      "calls": 10,
+      "by_purpose": {
+        "split": {
+          "cost_usd": 0.00261,
+          "calls": 1
+        },
+        "bid": {
+          "cost_usd": 0.028718,
+          "calls": 6
+        },
+        "work": {
+          "cost_usd": 0.003658,
+          "calls": 2
+        },
+        "review": {
+          "cost_usd": 0.002804,
+          "calls": 1
+        }
+      },
+      "by_agent": {
+        "haiku": {
+          "cost_usd": 0.001969,
+          "input_tokens": 1579,
+          "output_tokens": 78,
+          "calls": 3,
+          "tasks_won": 1
+        },
+        "sonnet": {
+          "cost_usd": 0.008712,
+          "input_tokens": 1396,
+          "output_tokens": 592,
+          "calls": 3,
+          "tasks_won": 1
+        },
+        "opus": {
+          "cost_usd": 0.021695,
+          "input_tokens": 999,
+          "output_tokens": 668,
+          "calls": 2,
+          "tasks_won": 0
+        }
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 33,
+    "t": 33400,
+    "job_id": "j_5eb0a913",
+    "type": "task_posted",
+    "data": {
+      "task_id": "t3",
+      "type": "remediate",
+      "title": "Repair attempt 2",
+      "brief": "Propose a remediation plan that restores auth-api.\nAllowed actions (regions: ams, fra, iad, sin):\n{\"action\": \"apply_rate_limit\", \"value\": <logins per IP per minute, 1-10000>}\n{\"action\": \"block_ips\", \"ips\": [\"<IPv4>\", ...]}\n{\"action\": \"restart_service\"}\n{\"action\": \"restart_db\", \"region\": \"<region>\"}\nPrevious failed attempts: restart_service failed the sandbox",
+      "depends_on": [
+        "t1"
+      ],
+      "index": 2,
+      "total": 4,
+      "est_input_tokens": 586,
+      "domain": "security"
+    }
+  },
+  {
+    "v": 1,
+    "seq": 34,
+    "t": 34300,
+    "job_id": "j_5eb0a913",
+    "type": "bid",
+    "data": {
+      "task_id": "t3",
+      "agent_id": "haiku",
+      "ok": true,
+      "error": null,
+      "predicted_output_tokens": 673,
+      "est_input_tokens": 586,
+      "predicted_cost_usd": 0.003951,
+      "promised_quality": 7,
+      "confidence": 0.6,
+      "eta_ms": 4487,
+      "pitch": "A careful, concise result at a competitive price.",
+      "reputation": 0.82,
+      "score": 5.345,
+      "usage": {
+        "model": "claude-haiku-4-5",
+        "input_tokens": 538,
+        "output_tokens": 34,
+        "cost_usd": 0.000708,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 35,
+    "t": 35000,
+    "job_id": "j_5eb0a913",
+    "type": "bid",
+    "data": {
+      "task_id": "t3",
+      "agent_id": "sonnet",
+      "ok": true,
+      "error": null,
+      "predicted_output_tokens": 455,
+      "est_input_tokens": 586,
+      "predicted_cost_usd": 0.005722,
+      "promised_quality": 9,
+      "confidence": 0.91,
+      "eta_ms": 5688,
+      "pitch": "A careful, concise result at a competitive price.",
+      "reputation": 1.0,
+      "score": 8.428,
+      "usage": {
+        "model": "claude-sonnet-5",
+        "input_tokens": 538,
+        "output_tokens": 184,
+        "cost_usd": 0.002916,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 36,
+    "t": 35700,
+    "job_id": "j_5eb0a913",
+    "type": "bid",
+    "data": {
+      "task_id": "t3",
+      "agent_id": "opus",
+      "ok": true,
+      "error": null,
+      "predicted_output_tokens": 545,
+      "est_input_tokens": 586,
+      "predicted_cost_usd": 0.016555,
+      "promised_quality": 6,
+      "confidence": 0.67,
+      "eta_ms": 10900,
+      "pitch": "A careful, concise result at a competitive price.",
+      "reputation": 1.0,
+      "score": 4.345,
+      "usage": {
+        "model": "claude-opus-5",
+        "input_tokens": 537,
+        "output_tokens": 334,
+        "cost_usd": 0.011035,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 37,
+    "t": 36400,
+    "job_id": "j_5eb0a913",
+    "type": "won",
+    "data": {
+      "task_id": "t3",
+      "agent_id": "sonnet",
+      "mode": "auction",
+      "score": 8.428,
+      "runner_up_agent_id": "haiku",
+      "runner_up_score": 5.345,
+      "scores": {
+        "haiku": 5.345,
+        "sonnet": 8.428,
+        "opus": 4.345
+      },
+      "price_weight": 1.0
+    }
+  },
+  {
+    "v": 1,
+    "seq": 38,
+    "t": 37300,
+    "job_id": "j_5eb0a913",
+    "type": "stats",
+    "data": {
+      "total_cost_usd": 0.052449,
+      "input_tokens": 6479,
+      "output_tokens": 2253,
+      "calls": 13,
+      "by_purpose": {
+        "split": {
+          "cost_usd": 0.00261,
+          "calls": 1
+        },
+        "bid": {
+          "cost_usd": 0.043377,
+          "calls": 9
+        },
+        "work": {
+          "cost_usd": 0.003658,
+          "calls": 2
+        },
+        "review": {
+          "cost_usd": 0.002804,
+          "calls": 1
+        }
+      },
+      "by_agent": {
+        "haiku": {
+          "cost_usd": 0.002677,
+          "input_tokens": 2117,
+          "output_tokens": 112,
+          "calls": 4,
+          "tasks_won": 1
+        },
+        "sonnet": {
+          "cost_usd": 0.011628,
+          "input_tokens": 1934,
+          "output_tokens": 776,
+          "calls": 4,
+          "tasks_won": 2
+        },
+        "opus": {
+          "cost_usd": 0.03273,
+          "input_tokens": 1536,
+          "output_tokens": 1002,
+          "calls": 3,
+          "tasks_won": 0
+        }
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 39,
+    "t": 37450,
+    "job_id": "j_5eb0a913",
+    "type": "working",
+    "data": {
+      "task_id": "t3",
+      "agent_id": "sonnet"
+    }
+  },
+  {
+    "v": 1,
+    "seq": 40,
+    "t": 40050,
+    "job_id": "j_5eb0a913",
+    "type": "done",
+    "data": {
+      "task_id": "t3",
+      "agent_id": "sonnet",
+      "output": "{\"steps\": [{\"action\": \"apply_rate_limit\", \"value\": 20}, {\"action\": \"block_ips\", \"ips\": [\"203.0.113.24\", \"198.51.100.77\", \"192.0.2.199\"]}]}",
+      "predicted_output_tokens": 455,
+      "predicted_cost_usd": 0.005722,
+      "usage": {
+        "model": "claude-sonnet-5",
+        "input_tokens": 585,
+        "output_tokens": 184,
+        "cost_usd": 0.00301,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 41,
+    "t": 40950,
+    "job_id": "j_5eb0a913",
+    "type": "remediation_proposed",
+    "data": {
+      "task_id": "t3",
+      "agent_id": "sonnet",
+      "attempt": 2,
+      "steps": [
+        {
+          "action": "apply_rate_limit",
+          "value": 20,
+          "region": null,
+          "ips": null
+        },
+        {
+          "action": "block_ips",
+          "value": null,
+          "region": null,
+          "ips": [
+            "203.0.113.24",
+            "198.51.100.77",
+            "192.0.2.199"
+          ]
+        }
+      ],
+      "accepted": true,
+      "reason": "apply_rate_limit(20) + block_ips(203.0.113.24, +2) uses only allowlisted actions."
+    }
+  },
+  {
+    "v": 1,
+    "seq": 42,
+    "t": 42150,
+    "job_id": "j_5eb0a913",
+    "type": "sandbox_result",
+    "data": {
+      "task_id": "t3",
+      "agent_id": "sonnet",
+      "attempt": 2,
+      "steps": [
+        {
+          "action": "apply_rate_limit",
+          "value": 20,
+          "region": null,
+          "ips": null
+        },
+        {
+          "action": "block_ips",
+          "value": null,
+          "region": null,
+          "ips": [
+            "203.0.113.24",
+            "198.51.100.77",
+            "192.0.2.199"
+          ]
+        }
+      ],
+      "passed": true,
+      "checks": [
+        {
+          "name": "allowlisted plan",
+          "passed": true,
+          "detail": "apply_rate_limit(20) + block_ips(203.0.113.24, +2)"
+        },
+        {
+          "name": "failed logins",
+          "passed": true,
+          "detail": "1,260/min (limit 2,000/min)"
+        },
+        {
+          "name": "real-user login success",
+          "passed": true,
+          "detail": "99.3% (min 99%)"
+        },
+        {
+          "name": "login p95 latency",
+          "passed": true,
+          "detail": "198 ms (limit 300 ms)"
+        },
+        {
+          "name": "no legitimate sources blocked",
+          "passed": true,
+          "detail": "blocklist matches attack sources"
+        }
+      ],
+      "telemetry": [
+        {
+          "key": "failed_logins_per_min",
+          "label": "Failed logins",
+          "value": 1260,
+          "unit": "per_min",
+          "ok": true
+        },
+        {
+          "key": "login_success_rate",
+          "label": "Real-user login success",
+          "value": 0.993,
+          "unit": "ratio",
+          "ok": true
+        },
+        {
+          "key": "p95_latency_ms",
+          "label": "Login p95 latency",
+          "value": 198,
+          "unit": "ms",
+          "ok": true
+        },
+        {
+          "key": "malicious_sources_open",
+          "label": "Malicious sources unblocked",
+          "value": 0,
+          "unit": "count",
+          "ok": true
+        }
+      ]
+    }
+  },
+  {
+    "v": 1,
+    "seq": 43,
+    "t": 44350,
+    "job_id": "j_5eb0a913",
+    "type": "graded",
+    "data": {
+      "task_id": "t3",
+      "agent_id": "sonnet",
+      "grade": 10,
+      "promised_quality": 9,
+      "rationale": "Sandbox passed. 5/5 checks passed.",
+      "usage": {
+        "model": "deterministic-checks",
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cost_usd": 0.0,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 44,
+    "t": 45050,
+    "job_id": "j_5eb0a913",
+    "type": "rep_update",
+    "data": {
+      "task_id": "t3",
+      "agent_id": "sonnet",
+      "task_type": "remediate",
+      "rep_key": "security.remediate",
+      "old": 1.0,
+      "new": 1.0333,
+      "ratio": 1.1111
+    }
+  },
+  {
+    "v": 1,
+    "seq": 45,
+    "t": 45450,
+    "job_id": "j_5eb0a913",
+    "type": "stats",
+    "data": {
+      "total_cost_usd": 0.055459,
+      "input_tokens": 7064,
+      "output_tokens": 2437,
+      "calls": 14,
+      "by_purpose": {
+        "split": {
+          "cost_usd": 0.00261,
+          "calls": 1
+        },
+        "bid": {
+          "cost_usd": 0.043377,
+          "calls": 9
+        },
+        "work": {
+          "cost_usd": 0.006668,
+          "calls": 3
+        },
+        "review": {
+          "cost_usd": 0.002804,
+          "calls": 1
+        }
+      },
+      "by_agent": {
+        "haiku": {
+          "cost_usd": 0.002677,
+          "input_tokens": 2117,
+          "output_tokens": 112,
+          "calls": 4,
+          "tasks_won": 1
+        },
+        "sonnet": {
+          "cost_usd": 0.014638,
+          "input_tokens": 2519,
+          "output_tokens": 960,
+          "calls": 5,
+          "tasks_won": 2
+        },
+        "opus": {
+          "cost_usd": 0.03273,
+          "input_tokens": 1536,
+          "output_tokens": 1002,
+          "calls": 3,
+          "tasks_won": 0
+        }
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 46,
+    "t": 45600,
+    "job_id": "j_5eb0a913",
+    "type": "remediation_plan_created",
+    "data": {
+      "task_id": "t3",
+      "agent_id": "sonnet",
+      "attempt": 2,
+      "steps": [
+        {
+          "index": 0,
+          "action": {
+            "action": "apply_rate_limit",
+            "value": 20,
+            "region": null,
+            "ips": null
+          },
+          "description": "apply_rate_limit(20)",
+          "owner_domain": "security"
+        },
+        {
+          "index": 1,
+          "action": {
+            "action": "block_ips",
+            "value": null,
+            "region": null,
+            "ips": [
+              "203.0.113.24",
+              "198.51.100.77",
+              "192.0.2.199"
+            ]
+          },
+          "description": "block_ips(203.0.113.24, +2)",
+          "owner_domain": "security"
+        }
+      ],
+      "summary": "apply_rate_limit(20) + block_ips(203.0.113.24, +2) passed all 5 sandbox checks.",
+      "confidence": 0.91
+    }
+  },
+  {
+    "v": 1,
+    "seq": 47,
+    "t": 47100,
+    "job_id": "j_5eb0a913",
+    "type": "human_assignments_created",
+    "data": {
+      "task_id": "t3",
+      "assignments": [
+        {
+          "assignment_id": "a1",
+          "step_index": 0,
+          "action": {
+            "action": "apply_rate_limit",
+            "value": 20,
+            "region": null,
+            "ips": null
+          },
+          "description": "Execute apply_rate_limit(20)",
+          "responder_id": "sam",
+          "name": "Sam",
+          "role": "Security Engineer",
+          "reason": "Security Engineer owns security changes.",
+          "approval_required": true,
+          "status": "pending"
+        },
+        {
+          "assignment_id": "a2",
+          "step_index": 1,
+          "action": {
+            "action": "block_ips",
+            "value": null,
+            "region": null,
+            "ips": [
+              "203.0.113.24",
+              "198.51.100.77",
+              "192.0.2.199"
+            ]
+          },
+          "description": "Execute block_ips(203.0.113.24, +2)",
+          "responder_id": "sam",
+          "name": "Sam",
+          "role": "Security Engineer",
+          "reason": "Security Engineer owns security changes.",
+          "approval_required": true,
+          "status": "pending"
+        },
+        {
+          "assignment_id": "a3",
+          "step_index": null,
+          "action": null,
+          "description": "Send the customer update",
+          "responder_id": "jordan",
+          "name": "Jordan",
+          "role": "Customer Support Lead",
+          "reason": "Customers are affected; support owns communication.",
+          "approval_required": false,
+          "status": "notify"
+        }
+      ],
+      "required_approvers": [
+        "Sam"
+      ]
+    }
+  },
+  {
+    "v": 1,
+    "seq": 48,
+    "t": 48600,
+    "job_id": "j_5eb0a913",
+    "type": "incident_status",
+    "data": {
+      "status": "awaiting_approval",
+      "scenario_id": "auth_attack",
+      "service": "auth-api",
+      "region": "iad",
+      "severity": "SEV-2",
+      "summary": "apply_rate_limit(20) + block_ips(203.0.113.24, +2) passed the sandbox. Waiting for Sam.",
+      "telemetry": [
+        {
+          "key": "failed_logins_per_min",
+          "label": "Failed logins",
+          "value": 48300,
+          "unit": "per_min",
+          "ok": false
+        },
+        {
+          "key": "login_success_rate",
+          "label": "Real-user login success",
+          "value": 0.895,
+          "unit": "ratio",
+          "ok": false
+        },
+        {
+          "key": "p95_latency_ms",
+          "label": "Login p95 latency",
+          "value": 1080,
+          "unit": "ms",
+          "ok": false
+        },
+        {
+          "key": "malicious_sources_open",
+          "label": "Malicious sources unblocked",
+          "value": 3,
+          "unit": "count",
+          "ok": false
+        }
+      ],
+      "logs": [
+        "WARN  auth-api failed logins 48,300/min (baseline 300/min)",
+        "WARN  credential stuffing from 203.0.113.24: 16,320/min, 98% invalid passwords",
+        "WARN  credential stuffing from 198.51.100.77: 13,440/min, 98% invalid passwords",
+        "WARN  credential stuffing from 192.0.2.199: 8,640/min, 98% invalid passwords",
+        "INFO  remaining failures spread across ~1,900 rotating IPs (~200 attempts/min each)",
+        "WARN  real-user login success 89.5%, p95 1080ms"
+      ],
+      "config_changes": []
+    }
+  },
+  {
+    "v": 1,
+    "seq": 49,
+    "t": 50200,
+    "job_id": "j_5eb0a913",
+    "type": "approval_required",
+    "data": {
+      "task_id": "t3",
+      "agent_id": "sonnet",
+      "attempt": 2,
+      "steps": [
+        {
+          "action": "apply_rate_limit",
+          "value": 20,
+          "region": null,
+          "ips": null
+        },
+        {
+          "action": "block_ips",
+          "value": null,
+          "region": null,
+          "ips": [
+            "203.0.113.24",
+            "198.51.100.77",
+            "192.0.2.199"
+          ]
+        }
+      ],
+      "summary": "Deploy apply_rate_limit(20) + block_ips(203.0.113.24, +2) to production. All sandbox checks passed.",
+      "approvers": [
+        "Sam"
+      ]
+    }
+  },
+  {
+    "v": 1,
+    "seq": 50,
+    "t": 56200,
+    "job_id": "j_5eb0a913",
+    "type": "approval_granted",
+    "data": {
+      "task_id": "t3",
+      "approved": [
+        "a1",
+        "a2"
+      ],
+      "approved_by": [
+        "Sam"
+      ]
+    }
+  },
+  {
+    "v": 1,
+    "seq": 51,
+    "t": 57400,
+    "job_id": "j_5eb0a913",
+    "type": "incident_status",
+    "data": {
+      "status": "recovering",
+      "scenario_id": "auth_attack",
+      "service": "auth-api",
+      "region": "iad",
+      "severity": "SEV-2",
+      "summary": "Deploying apply_rate_limit(20) + block_ips(203.0.113.24, +2) and verifying production.",
+      "telemetry": [
+        {
+          "key": "failed_logins_per_min",
+          "label": "Failed logins",
+          "value": 1260,
+          "unit": "per_min",
+          "ok": true
+        },
+        {
+          "key": "login_success_rate",
+          "label": "Real-user login success",
+          "value": 0.993,
+          "unit": "ratio",
+          "ok": true
+        },
+        {
+          "key": "p95_latency_ms",
+          "label": "Login p95 latency",
+          "value": 198,
+          "unit": "ms",
+          "ok": true
+        },
+        {
+          "key": "malicious_sources_open",
+          "label": "Malicious sources unblocked",
+          "value": 0,
+          "unit": "count",
+          "ok": true
+        }
+      ],
+      "logs": [
+        "INFO  auth-api logins ok: success=99.3% p95=198ms",
+        "INFO  failed logins 1,260/min"
+      ],
+      "config_changes": [
+        {
+          "change_id": "chg-1",
+          "key": "auth.login.rate_limit_per_ip",
+          "old": "None",
+          "new": "20",
+          "author": "mayday",
+          "minutes_ago": 0
+        },
+        {
+          "change_id": "chg-2",
+          "key": "waf.blocklist",
+          "old": "0",
+          "new": "3",
+          "author": "mayday",
+          "minutes_ago": 0
+        }
+      ]
+    }
+  },
+  {
+    "v": 1,
+    "seq": 52,
+    "t": 59000,
+    "job_id": "j_5eb0a913",
+    "type": "task_posted",
+    "data": {
+      "task_id": "t4",
+      "type": "verify",
+      "title": "Verify production recovery",
+      "brief": "Verify auth-api after apply_rate_limit(20) + block_ips(203.0.113.24, +2). Production telemetry now: [{\"key\": \"failed_logins_per_min\", \"label\": \"Failed logins\", \"ok\": true, \"unit\": \"per_min\", \"value\": 1260}, {\"key\": \"login_success_rate\", \"label\": \"Real-user login success\", \"ok\": true, \"unit\": \"ratio\", \"value\": 0.993}, {\"key\": \"p95_latency_ms\", \"label\": \"Login p95 latency\", \"ok\": true, \"unit\": \"ms\", \"value\": 198}, {\"key\": \"malicious_sources_open\", \"label\": \"Malicious sources unblocked\", \"ok\": true, \"unit\": \"count\", \"value\": 0}]",
+      "depends_on": [
+        "t3"
+      ],
+      "index": 3,
+      "total": 4,
+      "est_input_tokens": 532,
+      "domain": "security"
+    }
+  },
+  {
+    "v": 1,
+    "seq": 53,
+    "t": 59900,
+    "job_id": "j_5eb0a913",
+    "type": "bid",
+    "data": {
+      "task_id": "t4",
+      "agent_id": "haiku",
+      "ok": true,
+      "error": null,
+      "predicted_output_tokens": 314,
+      "est_input_tokens": 532,
+      "predicted_cost_usd": 0.002102,
+      "promised_quality": 10,
+      "confidence": 0.59,
+      "eta_ms": 2093,
+      "pitch": "A careful, concise result at a competitive price.",
+      "reputation": 1.0,
+      "score": 9.79,
+      "usage": {
+        "model": "claude-haiku-4-5",
+        "input_tokens": 582,
+        "output_tokens": 34,
+        "cost_usd": 0.000752,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 54,
+    "t": 60600,
+    "job_id": "j_5eb0a913",
+    "type": "bid",
+    "data": {
+      "task_id": "t4",
+      "agent_id": "sonnet",
+      "ok": true,
+      "error": null,
+      "predicted_output_tokens": 412,
+      "est_input_tokens": 532,
+      "predicted_cost_usd": 0.005184,
+      "promised_quality": 8,
+      "confidence": 0.85,
+      "eta_ms": 5150,
+      "pitch": "A careful, concise result at a competitive price.",
+      "reputation": 1.0,
+      "score": 7.482,
+      "usage": {
+        "model": "claude-sonnet-5",
+        "input_tokens": 582,
+        "output_tokens": 184,
+        "cost_usd": 0.003004,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 55,
+    "t": 61300,
+    "job_id": "j_5eb0a913",
+    "type": "bid",
+    "data": {
+      "task_id": "t4",
+      "agent_id": "opus",
+      "ok": true,
+      "error": null,
+      "predicted_output_tokens": 168,
+      "est_input_tokens": 532,
+      "predicted_cost_usd": 0.00686,
+      "promised_quality": 8,
+      "confidence": 0.94,
+      "eta_ms": 3360,
+      "pitch": "A careful, concise result at a competitive price.",
+      "reputation": 1.0,
+      "score": 7.314,
+      "usage": {
+        "model": "claude-opus-5",
+        "input_tokens": 581,
+        "output_tokens": 334,
+        "cost_usd": 0.011255,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 56,
+    "t": 62000,
+    "job_id": "j_5eb0a913",
+    "type": "won",
+    "data": {
+      "task_id": "t4",
+      "agent_id": "haiku",
+      "mode": "auction",
+      "score": 9.79,
+      "runner_up_agent_id": "sonnet",
+      "runner_up_score": 7.482,
+      "scores": {
+        "haiku": 9.79,
+        "sonnet": 7.482,
+        "opus": 7.314
+      },
+      "price_weight": 1.0
+    }
+  },
+  {
+    "v": 1,
+    "seq": 57,
+    "t": 62900,
+    "job_id": "j_5eb0a913",
+    "type": "stats",
+    "data": {
+      "total_cost_usd": 0.07047,
+      "input_tokens": 8809,
+      "output_tokens": 2989,
+      "calls": 17,
+      "by_purpose": {
+        "split": {
+          "cost_usd": 0.00261,
+          "calls": 1
+        },
+        "bid": {
+          "cost_usd": 0.058388,
+          "calls": 12
+        },
+        "work": {
+          "cost_usd": 0.006668,
+          "calls": 3
+        },
+        "review": {
+          "cost_usd": 0.002804,
+          "calls": 1
+        }
+      },
+      "by_agent": {
+        "haiku": {
+          "cost_usd": 0.003429,
+          "input_tokens": 2699,
+          "output_tokens": 146,
+          "calls": 5,
+          "tasks_won": 2
+        },
+        "sonnet": {
+          "cost_usd": 0.017642,
+          "input_tokens": 3101,
+          "output_tokens": 1144,
+          "calls": 6,
+          "tasks_won": 2
+        },
+        "opus": {
+          "cost_usd": 0.043985,
+          "input_tokens": 2117,
+          "output_tokens": 1336,
+          "calls": 4,
+          "tasks_won": 0
+        }
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 58,
+    "t": 63050,
+    "job_id": "j_5eb0a913",
+    "type": "working",
+    "data": {
+      "task_id": "t4",
+      "agent_id": "haiku"
+    }
+  },
+  {
+    "v": 1,
+    "seq": 59,
+    "t": 65650,
+    "job_id": "j_5eb0a913",
+    "type": "done",
+    "data": {
+      "task_id": "t4",
+      "agent_id": "haiku",
+      "output": "Verdict: recovered. Every production health target is back inside its limit after the approved plan was deployed.",
+      "predicted_output_tokens": 314,
+      "predicted_cost_usd": 0.002102,
+      "usage": {
+        "model": "claude-haiku-4-5",
+        "input_tokens": 532,
+        "output_tokens": 28,
+        "cost_usd": 0.000672,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 60,
+    "t": 66550,
+    "job_id": "j_5eb0a913",
+    "type": "graded",
+    "data": {
+      "task_id": "t4",
+      "agent_id": "haiku",
+      "grade": 10,
+      "promised_quality": 10,
+      "rationale": "Production health checks: 4/4 checks passed.",
+      "usage": {
+        "model": "deterministic-checks",
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cost_usd": 0.0,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 61,
+    "t": 67250,
+    "job_id": "j_5eb0a913",
+    "type": "rep_update",
+    "data": {
+      "task_id": "t4",
+      "agent_id": "haiku",
+      "task_type": "verify",
+      "rep_key": "security.verify",
+      "old": 1.0,
+      "new": 1.0,
+      "ratio": 1.0
+    }
+  },
+  {
+    "v": 1,
+    "seq": 62,
+    "t": 67650,
+    "job_id": "j_5eb0a913",
+    "type": "stats",
+    "data": {
+      "total_cost_usd": 0.071142,
+      "input_tokens": 9341,
+      "output_tokens": 3017,
+      "calls": 18,
+      "by_purpose": {
+        "split": {
+          "cost_usd": 0.00261,
+          "calls": 1
+        },
+        "bid": {
+          "cost_usd": 0.058388,
+          "calls": 12
+        },
+        "work": {
+          "cost_usd": 0.00734,
+          "calls": 4
+        },
+        "review": {
+          "cost_usd": 0.002804,
+          "calls": 1
+        }
+      },
+      "by_agent": {
+        "haiku": {
+          "cost_usd": 0.004101,
+          "input_tokens": 3231,
+          "output_tokens": 174,
+          "calls": 6,
+          "tasks_won": 2
+        },
+        "sonnet": {
+          "cost_usd": 0.017642,
+          "input_tokens": 3101,
+          "output_tokens": 1144,
+          "calls": 6,
+          "tasks_won": 2
+        },
+        "opus": {
+          "cost_usd": 0.043985,
+          "input_tokens": 2117,
+          "output_tokens": 1336,
+          "calls": 4,
+          "tasks_won": 0
+        }
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 63,
+    "t": 67800,
+    "job_id": "j_5eb0a913",
+    "type": "incident_status",
+    "data": {
+      "status": "restored",
+      "scenario_id": "auth_attack",
+      "service": "auth-api",
+      "region": "iad",
+      "severity": null,
+      "summary": "auth-api restored and verified.",
+      "telemetry": [
+        {
+          "key": "failed_logins_per_min",
+          "label": "Failed logins",
+          "value": 1260,
+          "unit": "per_min",
+          "ok": true
+        },
+        {
+          "key": "login_success_rate",
+          "label": "Real-user login success",
+          "value": 0.993,
+          "unit": "ratio",
+          "ok": true
+        },
+        {
+          "key": "p95_latency_ms",
+          "label": "Login p95 latency",
+          "value": 198,
+          "unit": "ms",
+          "ok": true
+        },
+        {
+          "key": "malicious_sources_open",
+          "label": "Malicious sources unblocked",
+          "value": 0,
+          "unit": "count",
+          "ok": true
+        }
+      ],
+      "logs": [
+        "INFO  auth-api logins ok: success=99.3% p95=198ms",
+        "INFO  failed logins 1,260/min"
+      ],
+      "config_changes": [
+        {
+          "change_id": "chg-1",
+          "key": "auth.login.rate_limit_per_ip",
+          "old": "None",
+          "new": "20",
+          "author": "mayday",
+          "minutes_ago": 0
+        },
+        {
+          "change_id": "chg-2",
+          "key": "waf.blocklist",
+          "old": "0",
+          "new": "3",
+          "author": "mayday",
+          "minutes_ago": 0
+        }
+      ]
+    }
+  },
+  {
+    "v": 1,
+    "seq": 64,
+    "t": 69400,
+    "job_id": "j_5eb0a913",
+    "type": "service_restored",
+    "data": {
+      "scenario_id": "auth_attack",
+      "domain": "security",
+      "mttr_ms": 69400,
+      "total_cost_usd": 0.071142,
+      "repair_attempts": 2,
+      "failed_attempts": 1,
+      "steps": [
+        {
+          "action": "apply_rate_limit",
+          "value": 20,
+          "region": null,
+          "ips": null
+        },
+        {
+          "action": "block_ips",
+          "value": null,
+          "region": null,
+          "ips": [
+            "203.0.113.24",
+            "198.51.100.77",
+            "192.0.2.199"
+          ]
+        }
+      ],
+      "confidence": 0.91,
+      "approved_by": [
+        "Sam"
+      ],
+      "verification": [
+        {
+          "name": "failed logins",
+          "passed": true,
+          "detail": "1,260/min (limit 2,000/min)"
+        },
+        {
+          "name": "real-user login success",
+          "passed": true,
+          "detail": "99.3% (min 99%)"
+        },
+        {
+          "name": "login p95 latency",
+          "passed": true,
+          "detail": "198 ms (limit 300 ms)"
+        },
+        {
+          "name": "no legitimate sources blocked",
+          "passed": true,
+          "detail": "blocklist matches attack sources"
+        }
+      ],
+      "grades": [
+        {
+          "task_id": "t1",
+          "type": "diagnose",
+          "agent_id": "sonnet",
+          "grade": 5,
+          "promised_quality": 9,
+          "cost_usd": 0.019957
+        },
+        {
+          "task_id": "t2",
+          "type": "remediate",
+          "agent_id": "haiku",
+          "grade": 4,
+          "promised_quality": 10,
+          "cost_usd": 0.015223
+        },
+        {
+          "task_id": "t3",
+          "type": "remediate",
+          "agent_id": "sonnet",
+          "grade": 10,
+          "promised_quality": 9,
+          "cost_usd": 0.017669
+        },
+        {
+          "task_id": "t4",
+          "type": "verify",
+          "agent_id": "haiku",
+          "grade": 10,
+          "promised_quality": 10,
+          "cost_usd": 0.015683
+        }
+      ],
+      "rep_changes": [
+        {
+          "agent_id": "sonnet",
+          "task_type": "diagnose",
+          "rep_key": "security.diagnose",
+          "old": 1.0,
+          "new": 0.8667
+        },
+        {
+          "agent_id": "haiku",
+          "task_type": "remediate",
+          "rep_key": "security.remediate",
+          "old": 1.0,
+          "new": 0.82
+        },
+        {
+          "agent_id": "sonnet",
+          "task_type": "remediate",
+          "rep_key": "security.remediate",
+          "old": 1.0,
+          "new": 1.0333
+        },
+        {
+          "agent_id": "haiku",
+          "task_type": "verify",
+          "rep_key": "security.verify",
+          "old": 1.0,
+          "new": 1.0
+        }
+      ],
+      "telemetry": [
+        {
+          "key": "failed_logins_per_min",
+          "label": "Failed logins",
+          "value": 1260,
+          "unit": "per_min",
+          "ok": true
+        },
+        {
+          "key": "login_success_rate",
+          "label": "Real-user login success",
+          "value": 0.993,
+          "unit": "ratio",
+          "ok": true
+        },
+        {
+          "key": "p95_latency_ms",
+          "label": "Login p95 latency",
+          "value": 198,
+          "unit": "ms",
+          "ok": true
+        },
+        {
+          "key": "malicious_sources_open",
+          "label": "Malicious sources unblocked",
+          "value": 0,
+          "unit": "count",
+          "ok": true
+        }
+      ]
+    }
+  },
+  {
+    "v": 1,
+    "seq": 65,
+    "t": 70900,
+    "job_id": "j_5eb0a913",
+    "type": "routing_stats",
+    "data": {
+      "domain": "security",
+      "registered_specialists": 15,
+      "eligible_specialists": 3,
+      "auctions": 4,
+      "models_contacted": 12,
+      "models_skipped": 48,
+      "actual_input_tokens": 9341,
+      "actual_output_tokens": 3017,
+      "actual_cost_usd": 0.071142,
+      "actual_calls": 18,
+      "commander_package_tokens_est": 340,
+      "full_context_tokens_est": 488,
+      "avoided_input_tokens_est": 25587,
+      "avoided_cost_usd_est": 0.068106,
+      "method": "Estimate: for each auction, every skipped specialist x the bid prompt it would have received (characters / 4), plus the raw incident context the Commander did not read, priced at each model's input rate. Actual figures come from the ledger."
+    }
+  },
+  {
+    "v": 1,
+    "seq": 66,
+    "t": 71700,
+    "job_id": "j_5eb0a913",
+    "type": "final",
+    "data": {
+      "status": "ok",
+      "deliverable_task_id": "t1",
+      "deliverable": "Root cause: a credential-stuffing attack. Failed logins jumped from about 300/min to 48,000/min; three sources (203.0.113.24, 198.51.100.77, 192.0.2.199) carry 80% of them and the rest come from a rotating botnet. Real users see slow, failing logins. Nothing indicates a service or database fault.",
+      "tasks": [
+        {
+          "task_id": "t1",
+          "type": "diagnose",
+          "agent_id": "sonnet",
+          "grade": 5,
+          "promised_quality": 9,
+          "cost_usd": 0.019957
+        },
+        {
+          "task_id": "t2",
+          "type": "remediate",
+          "agent_id": "haiku",
+          "grade": 4,
+          "promised_quality": 10,
+          "cost_usd": 0.015223
+        },
+        {
+          "task_id": "t3",
+          "type": "remediate",
+          "agent_id": "sonnet",
+          "grade": 10,
+          "promised_quality": 9,
+          "cost_usd": 0.017669
+        },
+        {
+          "task_id": "t4",
+          "type": "verify",
+          "agent_id": "haiku",
+          "grade": 10,
+          "promised_quality": 10,
+          "cost_usd": 0.015683
+        }
+      ],
+      "total_cost_usd": 0.071142,
+      "mean_grade": 7.25,
+      "duration_ms": 71700
+    }
+  }
+]

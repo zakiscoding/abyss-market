@@ -1,6 +1,7 @@
 """Generate fixtures/fake_run.json — a hand-authored run that obeys SPEC.md exactly.
 
-Stdlib only. All derived numbers (costs, scores, reputation, stats snapshots,
+The roster, scenario and specialist registries come from the backend so they cannot
+drift. All derived numbers (costs, scores, reputation, stats snapshots,
 final totals) are computed with the same formulas as SPEC.md so the fixture is
 internally consistent. Re-run after any contract change:
 
@@ -9,7 +10,13 @@ internally consistent. Re-run after any contract change:
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
+
+from abyss import config as backend_config  # noqa: E402
+from abyss import scenarios  # noqa: E402
 
 PRICES = {  # USD per 1M tokens: (input, output)
     "claude-haiku-4-5": (1.00, 5.00),
@@ -57,7 +64,7 @@ def score(q: int, rep: float, pred_cost: float) -> float:
 
 events: list[dict] = []
 ledger: list[dict] = []  # {purpose, agent_id, task_id, usage}
-rep = {a["agent_id"]: {t: REP_INIT for t in TASK_TYPES} for a in AGENTS}
+rep = {a["agent_id"]: {k: REP_INIT for k in backend_config.REP_KEYS} for a in AGENTS}
 wins = {a["agent_id"]: 0 for a in AGENTS}
 
 
@@ -185,6 +192,10 @@ emit(0, "hello", {
         "rep_init": REP_INIT,
         "rep_alpha": REP_ALPHA,
         "task_types": TASK_TYPES,
+        "rep_keys": backend_config.REP_KEYS,
+        "domains": backend_config.DOMAINS,
+        "specialists": backend_config.specialists(),
+        "scenarios": scenarios.catalog(),
         "real_models": True,
         "fake_llm": False,
         "orchestrator_model": ORCH_MODEL,
@@ -211,7 +222,7 @@ for i, task in enumerate(TASKS):
     emit(t, "task_posted", {
         "task_id": tid, "type": ttype, "title": task["title"], "brief": task["brief"],
         "depends_on": task["depends_on"], "index": i, "total": len(TASKS),
-        "est_input_tokens": task["est_input_tokens"],
+        "est_input_tokens": task["est_input_tokens"], "domain": None,
     })
     bid_start = t
     scores = {}
@@ -273,7 +284,7 @@ for i, task in enumerate(TASKS):
     new = round(old + REP_ALPHA * (ratio - old), 4)
     rep[winner][ttype] = new
     emit(t + 10, "rep_update", {
-        "task_id": tid, "agent_id": winner, "task_type": ttype, "old": old, "new": new, "ratio": ratio,
+        "task_id": tid, "agent_id": winner, "task_type": ttype, "rep_key": ttype, "old": old, "new": new, "ratio": ratio,
     })
     emit(t + 20, "stats", stats_snapshot())
     t += 100
