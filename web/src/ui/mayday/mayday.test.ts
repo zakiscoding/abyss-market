@@ -202,6 +202,7 @@ describe("FixtureSource gates", () => {
     expect(source.send({ type: "approve_repair" })).toBe(false);
 
     expect(source.send({ type: "start_incident", scenario_id: "ams_db_outage" })).toBe(true);
+    expect(source.send({ type: "start_incident", scenario_id: "payments_pool" })).toBe(false);
     await until(() => source.pausedAt === "approve_repair");
     expect(seen.at(-1)?.type).toBe("approval_required");
     expect(source.pausedAt).toBe("approve_repair");
@@ -211,9 +212,20 @@ describe("FixtureSource gates", () => {
     expect(seen.at(-1)?.type).toBe("final");
     expect(seen).toHaveLength(events.length);
 
+    // A fixed-file replay can run again too, with a distinct history identity.
+    const firstJob = seen.find((event) => event.type === "incident_received")!.job_id;
+    expect(source.send({ type: "start_incident", scenario_id: "ams_db_outage" })).toBe(true);
+    expect(source.send({ type: "start_incident", scenario_id: "ams_db_outage" })).toBe(false);
+    await until(() => source.pausedAt === "approve_repair");
+    expect(source.send({ type: "start_incident", scenario_id: "payments_pool" })).toBe(false);
+    source.send({ type: "approve_repair" });
+    await until(() => seen.length === events.length * 2);
+    const secondJob = seen.filter((event) => event.type === "incident_received")[1].job_id;
+    expect(secondJob).not.toBe(firstJob);
+
     source.send({ type: "reset_incident" });
     await until(() => source.pausedAt === "start_incident");
-    expect(seen.slice(events.length).map((e) => e.type)).toEqual(["hello", "incident_status"]);
+    expect(seen.slice(events.length * 2).map((e) => e.type)).toEqual(["hello", "incident_status"]);
     source.stop();
   });
 });

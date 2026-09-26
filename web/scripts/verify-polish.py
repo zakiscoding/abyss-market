@@ -80,11 +80,11 @@ with sync_playwright() as playwright:
             index = SCENARIOS.index(scenario)
             card = page.locator(".inbox-card").nth(index)
             card.get_by_role("button", name="Trigger", exact=True).click()
-            page.wait_for_function("window.__mayday.store.getState().incident?.approval !== null")
+            page.wait_for_function("window.__mayday.store.getState().incident?.status === 'awaiting_approval' && window.__mayday.store.getState().incident?.approval !== null")
             page.get_by_role("tab", name="Inbox", exact=True).click()
             for button in page.locator(".inbox-card button").all():
                 expect(button).to_be_disabled()
-            page.get_by_role("tab", name="Crew", exact=True).click()
+            page.locator("#tab-crew").click()
             page.get_by_role("button", name="Request revision", exact=True).click()
             expect(page.get_by_role("button", name="Approve repair", exact=True)).to_be_disabled()
             geometry(page)
@@ -99,7 +99,7 @@ with sync_playwright() as playwright:
             geometry(page)
             crew = page.evaluate("window.__mayday.store.getState().history[0].crew")
             for tab in ["Crew", "Evidence", "Ledger", "Inbox"]:
-                page.get_by_role("tab", name=tab, exact=True).click()
+                page.locator(f"#tab-{tab.lower()}").click()
                 expect(page.locator(f'#panel-{tab.lower()}')).to_be_visible()
                 if tab == "Crew":
                     for person in crew:
@@ -110,7 +110,7 @@ with sync_playwright() as playwright:
                 expect(page.locator(".history-list")).to_contain_text(f'{person["name"]}: {person["state"]}')
             first = page.evaluate("window.__mayday.store.getState().history[0]")
             card.get_by_role("button", name="Run again", exact=True).click()
-            page.wait_for_function("window.__mayday.store.getState().incident?.approval !== null")
+            page.wait_for_function("window.__mayday.store.getState().incident?.status === 'awaiting_approval' && window.__mayday.store.getState().incident?.approval !== null")
             page.get_by_role("button", name="Approve repair", exact=True).click()
             page.wait_for_function("window.__mayday.store.getState().history.length === 2")
             assert page.evaluate("window.__mayday.store.getState().history[1]") == first

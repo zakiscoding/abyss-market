@@ -26,8 +26,8 @@ const REGIONS: { id: Region; label: string }[] = [
   { id: "iad", label: "US-East" },
 ];
 
-export function CaptainPanel({ state }: { state: MarketState }) {
-  const captain = captainReadout(state);
+export function CaptainPanel({ state, costLabel }: { state: MarketState; costLabel?: string }) {
+  const captain = captainReadout(state, costLabel);
   const worker = dockWorker(state);
   return (
     <section className="panel captain-panel">

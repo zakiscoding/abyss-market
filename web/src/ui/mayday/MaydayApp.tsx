@@ -220,7 +220,7 @@ export default function MaydayApp() {
           <HistoryPanel history={state.history} />
         </>,
         crew: <>
-          <CaptainPanel state={state} />
+          <CaptainPanel state={state} costLabel={costLabel} />
           <DecisionPanel
             state={state}
             persona={persona}
