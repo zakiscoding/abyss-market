@@ -1,7 +1,9 @@
-// Abyss event contract v1 — mirrored from SPEC.md §7.
+// Abyss event contract v1 (+ v1.1 MAYDAY additions) — mirrored from SPEC.md §7.
 
 export type AgentId = "haiku" | "sonnet" | "opus";
-export type TaskType = "research" | "writing" | "checking";
+export type JobTaskType = "research" | "writing" | "checking";
+export type IncidentTaskType = "diagnose" | "remediate" | "verify";
+export type TaskType = JobTaskType | IncidentTaskType;
 export type Purpose = "split" | "bid" | "work" | "review";
 
 export interface Usage {
@@ -65,6 +67,7 @@ export interface BidData {
   predicted_output_tokens: number | null;
   est_input_tokens: number | null;
   predicted_cost_usd: number | null;
+  eta_ms: number | null;
   promised_quality: number | null;
   pitch: string | null;
   reputation: number | null;
@@ -158,6 +161,151 @@ export interface ErrorData {
   fatal: boolean;
 }
 
+// ---------------------------------------------------------------- MAYDAY (v1.1)
+
+export type IncidentState =
+  | "healthy"
+  | "outage"
+  | "investigating"
+  | "repairing"
+  | "awaiting_approval"
+  | "recovering"
+  | "restored"
+  | "failed";
+export type Severity = "SEV-1" | "SEV-2" | "SEV-3";
+
+export interface Telemetry {
+  db_pool_size: number;
+  db_pool_in_use: number;
+  db_waiting: number;
+  p95_latency_ms: number;
+  error_rate: number;
+  payment_success_rate: number;
+  requests_per_min: number;
+  timeouts_per_min: number;
+}
+
+export interface LogLine {
+  level: "INFO" | "WARN" | "ERROR";
+  source: string;
+  message: string;
+}
+
+export interface ConfigChange {
+  key: string;
+  old: string;
+  new: string;
+  author: string;
+  minutes_ago: number;
+}
+
+export interface IncidentStatusData {
+  status: IncidentState;
+  service: string;
+  severity: Severity | null;
+  headline: string;
+  telemetry: Telemetry;
+  logs: LogLine[];
+  config_changes: ConfigChange[];
+}
+
+export interface Responder {
+  responder_id: string;
+  name: string;
+  role: string;
+  skills: string[];
+  available: boolean;
+  workload: number;
+  score: number;
+  selected: boolean;
+  reason: string;
+}
+
+export interface Briefings {
+  engineering: string;
+  support: string;
+  commander: string;
+  leadership: string;
+}
+
+export interface RespondersSelectedData {
+  severity: Severity;
+  required_skills: string[];
+  responders: Responder[];
+  briefings: Briefings;
+}
+
+export interface RemediationAction {
+  action: "set_db_pool_size" | "restart_service" | "rollback_config";
+  value: number | null;
+}
+
+export interface RemediationProposedData {
+  task_id: string;
+  agent_id: AgentId;
+  attempt: number;
+  raw: string;
+  valid: boolean;
+  action: RemediationAction | null;
+  rejection: string | null;
+}
+
+export interface Check {
+  name: string;
+  passed: boolean;
+  detail: string;
+}
+
+export interface SandboxResultData {
+  task_id: string;
+  agent_id: AgentId;
+  attempt: number;
+  action: RemediationAction | null;
+  passed: boolean;
+  checks: Check[];
+  telemetry: Telemetry;
+}
+
+export interface ApprovalRequiredData {
+  task_id: string;
+  agent_id: AgentId;
+  attempt: number;
+  action: RemediationAction;
+  summary: string;
+  approvers: string[];
+}
+
+export interface GradeSummary {
+  task_id: string;
+  type: TaskType;
+  agent_id: AgentId;
+  grade: number;
+  promised_quality: number | null;
+}
+
+export interface RepChange {
+  task_id: string;
+  agent_id: AgentId;
+  task_type: TaskType;
+  old: number;
+  new: number;
+}
+
+export interface ServiceRestoredData {
+  mttr_ms: number;
+  total_cost_usd: number;
+  repair_attempts: number;
+  failed_attempts: number;
+  confidence: number;
+  mean_grade: number;
+  approved_by: string;
+  action: RemediationAction;
+  grades: GradeSummary[];
+  rep_changes: RepChange[];
+  verification: Check[];
+  telemetry: Telemetry;
+}
+
 type Envelope<T extends string, D> = {
   v: 1;
   seq: number;
@@ -179,8 +327,17 @@ export type AbyssEvent =
   | Envelope<"rep_update", RepUpdateData>
   | Envelope<"stats", StatsData>
   | Envelope<"final", FinalData>
-  | Envelope<"error", ErrorData>;
+  | Envelope<"error", ErrorData>
+  | Envelope<"incident_status", IncidentStatusData>
+  | Envelope<"responders_selected", RespondersSelectedData>
+  | Envelope<"remediation_proposed", RemediationProposedData>
+  | Envelope<"sandbox_result", SandboxResultData>
+  | Envelope<"approval_required", ApprovalRequiredData>
+  | Envelope<"service_restored", ServiceRestoredData>;
 
 export type ClientMsg =
   | { type: "start_job"; job: string; price_weight?: number }
-  | { type: "reset" };
+  | { type: "reset" }
+  | { type: "start_incident" }
+  | { type: "approve_repair" }
+  | { type: "reset_incident" };

@@ -2,13 +2,66 @@ import type {
   AbyssEvent,
   AgentId,
   AgentSpec,
+  ApprovalRequiredData,
   BidData,
+  ConfigChange,
   FinalData,
   HelloData,
+  IncidentState,
+  LogLine,
+  RemediationProposedData,
+  RespondersSelectedData,
+  SandboxResultData,
+  ServiceRestoredData,
+  Severity,
   StatsData,
   TaskSpec,
   TaskType,
+  Telemetry,
 } from "../contract";
+
+export interface RepairAttempt {
+  taskId: string;
+  attempt: number;
+  agentId: AgentId;
+  proposal: RemediationProposedData;
+  sandbox: SandboxResultData | null;
+}
+
+export interface IncidentView {
+  /** null until the backend or fixture reports the service state. */
+  status: IncidentState | null;
+  service: string;
+  severity: Severity | null;
+  headline: string;
+  telemetry: Telemetry | null;
+  /** Telemetry at the moment of the outage, kept for before/after comparisons. */
+  outageTelemetry: Telemetry | null;
+  logs: LogLine[];
+  configChanges: ConfigChange[];
+  /** Status timeline with the event time (ms since the incident started). */
+  history: { status: IncidentState; t: number }[];
+  team: RespondersSelectedData | null;
+  repairs: RepairAttempt[];
+  approval: ApprovalRequiredData | null;
+  restored: ServiceRestoredData | null;
+}
+
+export const initialIncident: IncidentView = {
+  status: null,
+  service: "payments-api",
+  severity: null,
+  headline: "",
+  telemetry: null,
+  outageTelemetry: null,
+  logs: [],
+  configChanges: [],
+  history: [],
+  team: null,
+  repairs: [],
+  approval: null,
+  restored: null,
+};
 
 export type AgentStatus = "idle" | "bidding" | "working";
 export type TaskStatus =
@@ -49,6 +102,7 @@ export interface MarketState {
   connected: boolean;
   config: HelloData["config"] | null;
   jobActive: boolean;
+  incident: IncidentView;
 }
 
 export const initialState: MarketState = {
@@ -62,6 +116,7 @@ export const initialState: MarketState = {
   connected: false,
   config: null,
   jobActive: false,
+  incident: initialIncident,
 };
 
 export function setConnected(state: MarketState, connected: boolean): MarketState {
@@ -102,15 +157,20 @@ export function reduce(state: MarketState, ev: AbyssEvent): MarketState {
         jobActive: true,
       };
     }
-    case "task_posted":
+    case "task_posted": {
+      // Incident tasks have no job_split, so the first task_posted creates them.
+      const known = ev.data.task_id in state.tasks;
+      const tasks = known ? state.tasks : { ...state.tasks, [ev.data.task_id]: createTask(ev.data) };
       return {
         ...withLog,
         agents: mapAgentStatus(state.agents, () => "bidding"),
-        tasks: updateTask(state.tasks, ev.data.task_id, {
+        taskOrder: known ? state.taskOrder : [...state.taskOrder, ev.data.task_id],
+        tasks: updateTask(tasks, ev.data.task_id, {
           ...ev.data,
           status: "open",
         }),
       };
+    }
     case "bid": {
       const task = state.tasks[ev.data.task_id];
       if (!task) return withLog;
@@ -195,6 +255,93 @@ export function reduce(state: MarketState, ev: AbyssEvent): MarketState {
           ? updateTask(state.tasks, ev.data.task_id, { status: "failed" })
           : state.tasks,
       };
+    case "incident_status": {
+      const data = ev.data;
+      const common = {
+        status: data.status,
+        service: data.service,
+        severity: data.severity,
+        headline: data.headline,
+        telemetry: data.telemetry,
+        logs: data.logs,
+        configChanges: data.config_changes,
+      };
+      if (data.status === "healthy") {
+        return {
+          ...withLog,
+          agents: mapAgentStatus(state.agents, () => "idle"),
+          currentJob: null,
+          tasks: {},
+          taskOrder: [],
+          stats: null,
+          final: null,
+          jobActive: false,
+          incident: { ...initialIncident, ...common },
+        };
+      }
+      if (data.status === "outage") {
+        return {
+          ...withLog,
+          currentJob: {
+            jobId: ev.job_id ?? "",
+            jobText: data.headline,
+            priceWeight: state.config?.price_weight ?? 1,
+          },
+          tasks: {},
+          taskOrder: [],
+          stats: null,
+          final: null,
+          jobActive: true,
+          incident: {
+            ...initialIncident,
+            ...common,
+            outageTelemetry: data.telemetry,
+            history: [{ status: data.status, t: ev.t }],
+          },
+        };
+      }
+      return {
+        ...withLog,
+        incident: {
+          ...state.incident,
+          ...common,
+          history: [...state.incident.history, { status: data.status, t: ev.t }],
+        },
+      };
+    }
+    case "responders_selected":
+      return { ...withLog, incident: { ...state.incident, team: ev.data } };
+    case "remediation_proposed":
+      return {
+        ...withLog,
+        incident: {
+          ...state.incident,
+          repairs: [
+            ...state.incident.repairs,
+            {
+              taskId: ev.data.task_id,
+              attempt: ev.data.attempt,
+              agentId: ev.data.agent_id,
+              proposal: ev.data,
+              sandbox: null,
+            },
+          ],
+        },
+      };
+    case "sandbox_result":
+      return {
+        ...withLog,
+        incident: {
+          ...state.incident,
+          repairs: state.incident.repairs.map((repair) =>
+            repair.taskId === ev.data.task_id ? { ...repair, sandbox: ev.data } : repair,
+          ),
+        },
+      };
+    case "approval_required":
+      return { ...withLog, incident: { ...state.incident, approval: ev.data } };
+    case "service_restored":
+      return { ...withLog, incident: { ...state.incident, restored: ev.data } };
     default:
       console.warn("Unknown Abyss event type", (ev as { type: string }).type);
       return withLog;

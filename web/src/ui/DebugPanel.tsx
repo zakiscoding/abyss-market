@@ -5,6 +5,9 @@ const taskTypes: { key: TaskType; label: string }[] = [
   { key: "research", label: "R" },
   { key: "writing", label: "W" },
   { key: "checking", label: "C" },
+  { key: "diagnose", label: "D" },
+  { key: "remediate", label: "F" },
+  { key: "verify", label: "V" },
 ];
 
 export function DebugPanel({ state }: { state: MarketState }) {

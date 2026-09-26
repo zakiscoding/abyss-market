@@ -1,5 +1,5 @@
 // Plain-SVG charts for the experiment results. Hover tooltips use <title>.
-import type { AgentId, TaskType } from "../../contract";
+import type { AgentId, JobTaskType } from "../../contract";
 import { AGENT_IDS, INK, TASK_TYPES, armColor, type ArmResult } from "./types";
 
 const W = 560;
@@ -152,7 +152,7 @@ export function RepHeatmap({ arm }: { arm: ArmResult }) {
     <figure className="heatmap">
       <figcaption>{arm.arm} final reputation</figcaption>
       <svg viewBox={`0 0 ${left + cell * 3 + 4} ${top + cell * 3 + 4}`} role="img" aria-label={`Final reputation for ${arm.arm}`}>
-        {TASK_TYPES.map((t: TaskType, c) => (
+        {TASK_TYPES.map((t: JobTaskType, c) => (
           <text key={t} x={left + c * cell + cell / 2} y={11} textAnchor="middle" fill={INK.muted} fontSize={8}>
             {{ research: "RSRCH", writing: "WRITE", checking: "CHECK" }[t]}
           </text>

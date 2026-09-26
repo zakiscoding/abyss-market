@@ -1,10 +1,10 @@
 // Pure derivation of what the market scene shows for a given MarketState.
 // Scene.ts only draws this; nothing here touches Pixi, so it is unit-testable.
-import type { AgentId, TaskType } from "../contract";
+import type { AgentId, JobTaskType, TaskType } from "../contract";
 import type { AgentStatus, MarketState, TaskStatus, TaskView } from "../state/reducer";
 
 export const AGENT_ORDER: AgentId[] = ["haiku", "sonnet", "opus"];
-export const TASK_TYPES: TaskType[] = ["research", "writing", "checking"];
+export const TASK_TYPES: JobTaskType[] = ["research", "writing", "checking"];
 export const MAX_CARDS = 5;
 
 /** Public stall names. The market never shows which model runs a stall;

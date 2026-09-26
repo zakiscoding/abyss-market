@@ -1,5 +1,5 @@
 // Shape of experiments/results/<stamp>.json written by backend/abyss/experiment.py.
-import type { AgentId, TaskType } from "../../contract";
+import type { AgentId, JobTaskType, TaskType } from "../../contract";
 
 export interface ArmResult {
   arm: string;
@@ -35,7 +35,7 @@ export interface ExperimentResults {
 }
 
 export const AGENT_IDS: AgentId[] = ["haiku", "sonnet", "opus"];
-export const TASK_TYPES: TaskType[] = ["research", "writing", "checking"];
+export const TASK_TYPES: JobTaskType[] = ["research", "writing", "checking"];
 
 // Identity colors: market arms share one hue; fixed arms wear their agent's color
 // (same entity → same color as the market scene).
