@@ -13,10 +13,20 @@ import json
 from dataclasses import dataclass, field
 from typing import Awaitable, Callable
 
-from . import commander, config, prompts
+from . import commander, config, prompts, safety
 from .agents import bid_prompt, build_work_prompt, est_input_tokens
 from .events import EventStream, new_job_id
-from .incident import ACTION_SIGNATURES, REGIONS, ActionRejected, Scenario, describe_action, describe_plan, parse_plan
+from .incident import (
+    ACTION_SIGNATURES,
+    REGIONS,
+    ActionRejected,
+    ProductionApplyError,
+    Scenario,
+    describe_action,
+    describe_plan,
+    parse_plan,
+    plan_fingerprint,
+)
 from .ledger import Ledger, cost_usd
 from .llm import LLM, LLMError
 from .market import (
@@ -31,17 +41,77 @@ from .reputation import ReputationStore
 from .responders import assign, customer_impact, owner_domain, required_skills, select_responders
 
 Grader = Callable[[str, str], Awaitable[tuple[int, str, dict]]]
-ROUTING_METHOD = (
-    "Estimate: for each auction, every skipped specialist x the bid prompt it would have "
-    "received (characters / 4), plus the raw incident context the Commander did not read, "
-    "priced at each model's input rate. Actual figures come from the ledger."
-)
+
+
+def routing_method() -> str:
+    """Explain route savings without calling specialist routes foundation models."""
+    if config.fake_llm():
+        dollars = "Dollar amounts are simulated estimates, not provider charges."
+    else:
+        dollars = "Ledger dollars are actual provider cost."
+    return (
+        "Estimate: specialist routes skipped at each auction, times the bid prompt they "
+        "would have received (characters / 4). Commander compression is counted once and "
+        "is not multiplied by auctions or added to the skipped-route count. Avoided cost "
+        "is an estimate. Ledger token counts are separate from estimated avoided tokens. "
+        f"{dollars}"
+    )
+
+
+def specialist_route_counts(registered: int, eligible: int, auctions: int) -> tuple[int, int]:
+    """Specialist-route contacts and skips. One count per auction, compression excluded."""
+    contacted = eligible * auctions
+    skipped = (registered - eligible) * auctions
+    return contacted, skipped
+
+
+def avoided_input_tokens(skipped_tokens: int, full_tokens: int, package_tokens: int) -> int:
+    """Skipped bid-prompt tokens plus commander compression, the latter counted once."""
+    return skipped_tokens + max(0, full_tokens - package_tokens)
+
+
+def avoided_cost_usd(skipped_cost: float, context_cost: float) -> float:
+    return round(skipped_cost + context_cost, 6)
 
 
 @dataclass
 class IncidentControl:
+    """Binds approval to one sandbox-passed plan. A second grant cannot deploy it again."""
+
     approval: asyncio.Event = field(default_factory=asyncio.Event)
     awaiting_approval: bool = False
+    plan_hash: str | None = None
+    _consumed: bool = False
+
+    def arm(self, plan_hash: str) -> None:
+        self.plan_hash = plan_hash
+        self.awaiting_approval = True
+        self._consumed = False
+        self.approval.clear()
+
+    def grant(self) -> bool:
+        if not self.awaiting_approval or self.plan_hash is None or self._consumed or self.approval.is_set():
+            return False
+        self.approval.set()
+        return True
+
+    def consume(self, plan_hash: str) -> bool:
+        if self._consumed or not self.approval.is_set():
+            return False
+        if self.plan_hash is None or self.plan_hash != plan_hash:
+            self.clear()
+            return False
+        self._consumed = True
+        self.awaiting_approval = False
+        self.plan_hash = None
+        self.approval.clear()
+        return True
+
+    def clear(self) -> None:
+        self.plan_hash = None
+        self.awaiting_approval = False
+        self._consumed = True
+        self.approval.clear()
 
 
 @dataclass
@@ -65,8 +135,8 @@ def _status_data(sim: Scenario, status: str, summary: str, severity: str | None)
         "severity": None if status in {"healthy", "restored"} else severity,
         "summary": summary,
         "telemetry": sim.telemetry(),
-        "logs": sim.logs(),
-        "config_changes": [dict(change) for change in sim.changes],
+        "logs": safety.redact_logs(sim.logs()),
+        "config_changes": safety.for_model([dict(change) for change in sim.changes]),
     }
 
 
@@ -149,7 +219,7 @@ class IncidentRun:
         self.full_tokens = commander.full_context_tokens(sim)
         await self.stream.emit("incident_received", {
             **sim.catalog(),
-            "package": package,
+            "package": safety.for_model(package),
             "package_tokens_est": self.package_tokens,
             "full_context_tokens_est": self.full_tokens,
         })
@@ -190,10 +260,10 @@ class IncidentRun:
             "source": sim.source_system,
             "domain": self.domain,
             "secondary": ", ".join(decision["secondary_domains"]) or "none",
-            "rationale": decision["rationale"],
+            "rationale": safety.redact_text(decision["rationale"]),
             "telemetry": json.dumps(sim.telemetry(), sort_keys=True),
-            "changes": json.dumps(sim.changes, sort_keys=True),
-            "logs": "\n".join(sim.logs()),
+            "changes": json.dumps(safety.for_model(sim.changes), sort_keys=True),
+            "logs": "\n".join(safety.redact_logs(sim.logs())),
         }
         self.job_text = self._job_text(self.domain)
 
@@ -257,7 +327,8 @@ class IncidentRun:
             "required_approvers": approvers,
         })
         await self.status("awaiting_approval", f"{plan_text} passed the sandbox. Waiting for {', '.join(approvers)}.")
-        self.control.awaiting_approval = True
+        digest = plan_fingerprint(steps)
+        self.control.arm(digest)
         await self.stream.emit("approval_required", {
             "task_id": repair_task.task_id,
             "agent_id": repair.agent_id,
@@ -267,14 +338,18 @@ class IncidentRun:
             "approvers": approvers,
         })
         await self.control.approval.wait()
-        self.control.awaiting_approval = False
+        if not self.control.consume(plan_fingerprint(steps)):
+            return await self.fail("Deployment rejected because the plan no longer matches the sandbox-approved plan.")
         await self.stream.emit("approval_granted", {
             "task_id": repair_task.task_id,
             "approved": [item["assignment_id"] for item in assignments if item["approval_required"]],
             "approved_by": approvers,
         })
 
-        sim.apply(steps)
+        try:
+            sim.apply_production(steps)
+        except ProductionApplyError as exc:
+            return await self.fail(str(exc))
         await self.status("recovering", f"Deploying {plan_text} and verifying production.")
         verify_task = self._task(
             "verify",
@@ -290,6 +365,7 @@ class IncidentRun:
         )
         if verified is None or not sim.healthy():
             return await self.fail("Production verification failed after deployment.")
+        self.control.clear()
 
         await self.status("restored", f"{sim.service} restored and verified.")
         await self.stream.emit("service_restored", {
@@ -311,7 +387,9 @@ class IncidentRun:
         return await self.finish("ok", diagnosis_task, diagnosis.output)
 
     def _job_text(self, domain: str) -> str:
-        return prompts.INCIDENT_JOB.format(specialist=config.DOMAIN_LABELS[domain], **self.job_fields)
+        return safety.cap_context(
+            prompts.INCIDENT_JOB.format(specialist=config.DOMAIN_LABELS[domain], **self.job_fields)
+        )
 
     def _task(self, type_: str, title: str, brief: str, depends_on: list[str]) -> TaskSpec:
         self.task_count += 1
@@ -366,8 +444,8 @@ class IncidentRun:
         await self.stream.emit("working", {"task_id": task.task_id, "agent_id": winner.agent_id})
         try:
             output, usage = await _work_with_retry(self.llm, self.ledger, winner, self.job_text, task, dep_outputs)
-        except LLMError as exc:
-            await _task_error(self.stream, self.ledger, self.tasks_won, task.task_id, str(exc))
+        except LLMError:
+            await _task_error(self.stream, self.ledger, self.tasks_won, task.task_id, safety.client_model_error())
             self.final_tasks.append(_final_task(task, winner.agent_id, None, promised, self.ledger))
             return None
         await self.stream.emit("done", {
@@ -381,8 +459,8 @@ class IncidentRun:
 
         try:
             grade, rationale, review_usage = await grader(winner.agent_id, output)
-        except LLMError as exc:
-            await _task_error(self.stream, self.ledger, self.tasks_won, task.task_id, str(exc))
+        except LLMError:
+            await _task_error(self.stream, self.ledger, self.tasks_won, task.task_id, safety.client_model_error())
             self.final_tasks.append(_final_task(task, winner.agent_id, None, promised, self.ledger))
             return None
         self.grades.append(grade)
@@ -464,25 +542,29 @@ class IncidentRun:
         stats = self.ledger.stats(self.tasks_won)
         context_saved = max(0, self.full_tokens - self.package_tokens)
         context_cost = cost_usd(_billing_model(config.ORCHESTRATOR_MODEL), context_saved, 0)
+        contacted, skipped = specialist_route_counts(self.registered, self.eligible, self.auctions)
         await self.stream.emit("routing_stats", {
             "domain": self.domain,
             "registered_specialists": self.registered,
             "eligible_specialists": self.eligible,
             "auctions": self.auctions,
-            "models_contacted": self.eligible * self.auctions,
-            "models_skipped": (self.registered - self.eligible) * self.auctions,
+            "models_contacted": contacted,
+            "models_skipped": skipped,
             "actual_input_tokens": stats["input_tokens"],
             "actual_output_tokens": stats["output_tokens"],
             "actual_cost_usd": stats["total_cost_usd"],
             "actual_calls": stats["calls"],
             "commander_package_tokens_est": self.package_tokens,
             "full_context_tokens_est": self.full_tokens,
-            "avoided_input_tokens_est": self.skipped_tokens + context_saved,
-            "avoided_cost_usd_est": round(self.skipped_cost + context_cost, 6),
-            "method": ROUTING_METHOD,
+            "avoided_input_tokens_est": avoided_input_tokens(
+                self.skipped_tokens, self.full_tokens, self.package_tokens
+            ),
+            "avoided_cost_usd_est": avoided_cost_usd(self.skipped_cost, context_cost),
+            "method": routing_method(),
         })
 
     async def fail(self, reason: str) -> dict:
+        self.control.clear()
         owners = [
             r["name"] for r in self.responders
             if r["selected"] and ({"incident_command"} | set(required_skills(self.domain, [], None, False)))

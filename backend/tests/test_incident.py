@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 
 from abyss.contract import IncidentStatusData, SandboxResultData
-from abyss.incident import ActionRejected, action, parse_action, parse_plan
+from abyss.incident import ActionRejected, ProductionApplyError, action, parse_action, parse_plan
 from abyss.mayday import healthy_status
 from abyss.scenarios import SCENARIO_IDS, SCENARIOS, create
 
@@ -178,6 +178,48 @@ def test_parse_plan_accepts_typed_allowlisted_steps(raw, expected) -> None:
 def test_parse_plan_rejects_everything_else(raw) -> None:
     with pytest.raises(ActionRejected):
         parse_plan(raw, ALL_ACTIONS)
+
+
+def test_second_step_failure_restores_original_state(monkeypatch) -> None:
+    sim = _broken("payments_pool")
+    before = (sim.pool_size, sim.restarts, [dict(change) for change in sim.changes], sim.healthy())
+    original = sim._apply_step
+    calls = {"n": 0}
+
+    def explode(step):
+        calls["n"] += 1
+        if calls["n"] == 2:
+            raise RuntimeError("disk full sk-ant-SECRETVALUE /var/lib/postgres")
+        original(step)
+
+    monkeypatch.setattr(sim, "_apply_step", explode)
+    with pytest.raises(ProductionApplyError, match="could not be applied") as caught:
+        sim.apply_production([action("set_db_pool_size", value=40), action("restart_service")])
+    assert "SECRETVALUE" not in str(caught.value) and "disk" not in str(caught.value)
+    assert (sim.pool_size, sim.restarts, [dict(change) for change in sim.changes], sim.healthy()) == before
+
+
+def test_verification_failure_restores_original_state() -> None:
+    sim = _broken("ams_db_outage")
+    before = (sim.primary, sim.eu_traffic, list(sim.changes), sim.healthy())
+    with pytest.raises(ProductionApplyError, match="verification"):
+        sim.apply_production([action("failover_db", region="fra")])
+    assert (sim.primary, sim.eu_traffic, list(sim.changes), sim.healthy()) == before
+    assert sim.healthy() is False
+
+
+def test_invalid_later_step_does_not_change_state() -> None:
+    sim = _broken("payments_pool")
+    before = sim.pool_size
+    with pytest.raises(ProductionApplyError, match="rejected"):
+        sim.apply_production([action("set_db_pool_size", value=50), {"action": "drop_database"}])
+    assert sim.pool_size == before and not sim.healthy()
+
+
+def test_passing_plan_stays_applied() -> None:
+    sim = _broken("ams_db_outage")
+    sim.apply_production(SCENARIOS["ams_db_outage"].fix_plan)
+    assert sim.healthy() and sim.primary == "fra" and sim.eu_traffic == "fra"
 
 
 def test_scenario_allowlists_are_enforced() -> None:

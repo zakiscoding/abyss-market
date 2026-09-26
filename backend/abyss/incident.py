@@ -8,9 +8,13 @@ health checks are derived from that model, so every run is reproducible.
 from __future__ import annotations
 
 import copy
+import hashlib
 import ipaddress
 import json
+import logging
 import re
+
+logger = logging.getLogger(__name__)
 
 REGIONS = ("ams", "fra", "iad", "sin")
 MAX_PLAN_STEPS = 4
@@ -43,6 +47,10 @@ PARAM_KEYS = ("value", "region", "ips")
 
 class ActionRejected(ValueError):
     pass
+
+
+class ProductionApplyError(Exception):
+    """A production apply failed. The message is safe to show to a client."""
 
 
 def action(name: str, *, value: int | None = None, region: str | None = None,
@@ -146,6 +154,22 @@ def describe_plan(steps: list[dict]) -> str:
     return " + ".join(describe_action(step) for step in steps)
 
 
+def plan_fingerprint(steps: list[dict]) -> str:
+    """Stable hash of a normalized plan. Key order does not change the digest."""
+    normalized = []
+    for step in steps:
+        if not isinstance(step, dict):
+            raise ActionRejected("each step must be a JSON object")
+        normalized.append({
+            "action": step.get("action"),
+            "ips": step.get("ips"),
+            "region": step.get("region"),
+            "value": step.get("value"),
+        })
+    payload = json.dumps(normalized, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(payload.encode()).hexdigest()
+
+
 def metric(key: str, label: str, value: float, unit: str, ok: bool) -> dict:
     return {"key": key, "label": label, "value": value, "unit": unit, "ok": ok}
 
@@ -199,6 +223,40 @@ class Scenario:
     def apply(self, steps: list[dict]) -> None:
         for step in steps:
             self._apply_step(parse_action(step, self.allowed_actions))
+
+    def _snapshot(self) -> dict:
+        return copy.deepcopy(self.__dict__)
+
+    def _restore(self, snapshot: dict) -> None:
+        self.__dict__.clear()
+        self.__dict__.update(copy.deepcopy(snapshot))
+
+    def apply_production(self, steps: list[dict]) -> None:
+        """Apply every step or leave production unchanged.
+
+        The whole plan is validated before the first mutation. If a later step
+        raises, or deterministic health checks fail, the previous snapshot is
+        restored. The raised message never includes the underlying exception.
+        """
+        try:
+            validated = [parse_action(step, self.allowed_actions) for step in steps]
+        except ActionRejected:
+            raise ProductionApplyError("remediation plan was rejected") from None
+        snapshot = self._snapshot()
+        try:
+            for step in validated:
+                self._apply_step(step)
+            if not self.healthy():
+                raise ProductionApplyError("production verification failed")
+        except ProductionApplyError:
+            self._restore(snapshot)
+            raise
+        except Exception as exc:
+            self._restore(snapshot)
+            from .safety import redact_text
+
+            logger.error("remediation apply failed: %s: %s", type(exc).__name__, redact_text(str(exc), limit=200))
+            raise ProductionApplyError("remediation could not be applied") from None
 
     def sandbox(self, steps: list[dict]) -> tuple[bool, list[dict], list[dict]]:
         """Try a plan on a copy of the service; production is untouched."""

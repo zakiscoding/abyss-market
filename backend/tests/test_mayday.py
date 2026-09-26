@@ -1,15 +1,16 @@
 from __future__ import annotations
 
 import asyncio
+import json
 
 import pytest
 
-from abyss import config
+from abyss import config, mayday
 from abyss.contract import validate_stream
 from abyss.events import EventStream
-from abyss.incident import action
+from abyss.incident import ProductionApplyError, Scenario, action, plan_fingerprint
 from abyss.llm import LLM
-from abyss.mayday import IncidentControl, run_incident
+from abyss.mayday import IncidentControl, avoided_cost_usd, avoided_input_tokens, routing_method, run_incident, specialist_route_counts
 from abyss.reputation import ReputationStore
 from abyss.responders import assign, customer_impact, required_skills, select_responders
 from abyss.scenarios import SCENARIO_IDS, SCENARIOS, create
@@ -63,7 +64,8 @@ async def _run(scenario_id: str = "payments_pool", approve: bool = True, sim=Non
         await asyncio.sleep(0.001)
     paused = {"awaiting": control.awaiting_approval, "sim_healthy": sim.healthy(), "types": [e["type"] for e in events]}
     if approve:
-        control.approval.set()
+        if control.awaiting_approval:
+            assert control.grant()
         await task
     else:
         task.cancel()
@@ -139,7 +141,10 @@ def test_restored_metrics_and_routing_are_calculated(fake_env) -> None:
     assert routing["auctions"] == 4
     assert routing["models_contacted"] == 12 and routing["models_skipped"] == 48
     assert routing["avoided_input_tokens_est"] > 0 and routing["avoided_cost_usd_est"] > 0
-    assert "Estimate" in routing["method"]
+    assert "Estimate" in routing["method"] and "specialist routes" in routing["method"]
+    assert "simulated" in routing["method"]
+    assert "foundation model" not in routing["method"].lower()
+    assert "specialist routes" in _one(events, "specialists_dispatched")["reason"]
     bids = [b for b in _of(events, "bid") if b["data"]["task_id"] == "t3"]
     winner = _of(events, "won")[2]["data"]["agent_id"]
     assert restored["confidence"] == next(b["data"]["confidence"] for b in bids if b["data"]["agent_id"] == winner)
@@ -195,3 +200,88 @@ def test_assignments_follow_ownership_rules() -> None:
     assert "Paged for this step" in items[1]["reason"]
     items, approvers = assign(SCENARIOS["auth_attack"].fix_plan, "SEV-2", people, False)
     assert approvers == ["Sam"] and all(item["name"] == "Sam" for item in items)
+
+
+def test_plan_mutation_after_sandbox_is_rejected(fake_env, monkeypatch) -> None:
+    real = plan_fingerprint
+    state = {"n": 0}
+
+    def flip(steps):
+        state["n"] += 1
+        digest = real(steps)
+        return "0" * 64 if state["n"] >= 2 else digest
+
+    monkeypatch.setattr(mayday, "plan_fingerprint", flip)
+    events, _, _, sim = asyncio.run(_run("ams_db_outage"))
+    assert state["n"] >= 2
+    assert not any(event["type"] == "service_restored" for event in events)
+    assert events[-1]["data"]["status"] == "error"
+    assert not sim.healthy()
+    assert "sandbox-approved" in _one(events, "incident_escalated")["reason"]
+
+
+def test_apply_failure_does_not_mark_restored(fake_env, monkeypatch) -> None:
+    def explode(self, steps):
+        raise ProductionApplyError("remediation could not be applied")
+
+    monkeypatch.setattr(Scenario, "apply_production", explode)
+    events, _, _, sim = asyncio.run(_run("ams_db_outage"))
+    assert not any(event["type"] == "service_restored" for event in events)
+    assert events[-1]["data"]["status"] == "error"
+    assert not sim.healthy()
+    blob = json.dumps(events)
+    assert "Traceback" not in blob and "sk-" not in blob
+
+
+def test_duplicate_approval_consumes_once() -> None:
+    control = IncidentControl()
+    digest = plan_fingerprint([action("restart_service")])
+    control.arm(digest)
+    assert control.grant()
+    assert control.grant() is False
+    assert control.consume(digest)
+    assert control.consume(digest) is False
+    assert control.grant() is False
+
+
+def test_reset_while_awaiting_clears_pending_plan() -> None:
+    control = IncidentControl()
+    digest = plan_fingerprint([action("failover_db", region="fra"), action("route_traffic", region="fra")])
+    control.arm(digest)
+    assert control.awaiting_approval and control.plan_hash == digest
+    control.clear()
+    assert control.plan_hash is None and control.awaiting_approval is False
+    assert control.grant() is False
+    assert control.consume(digest) is False
+
+
+def test_mutated_plan_hash_is_rejected() -> None:
+    control = IncidentControl()
+    steps = [action("failover_db", region="fra")]
+    control.arm(plan_fingerprint(steps))
+    assert control.grant()
+    steps.append(action("route_traffic", region="fra"))
+    assert control.consume(plan_fingerprint(steps)) is False
+    assert control.plan_hash is None
+
+
+def test_route_counts_do_not_double_count_compression() -> None:
+    assert len(config.specialists()) == 15 and len(config.AGENTS) == 3
+    contacted, skipped = specialist_route_counts(15, 3, 4)
+    assert contacted == 12 and skipped == 48
+    assert skipped == (15 - 3) * 4
+    saved = avoided_input_tokens(skipped_tokens=1000, full_tokens=500, package_tokens=80)
+    assert saved == 1000 + (500 - 80)
+    assert saved != 1000 + (500 - 80) * 4
+    assert avoided_cost_usd(1.5, 0.25) == 1.75
+
+
+def test_routing_language_depends_on_provider_mode(monkeypatch) -> None:
+    monkeypatch.setenv("ABYSS_FAKE_LLM", "1")
+    fake = routing_method()
+    assert "specialist routes" in fake and "simulated" in fake and "Estimate" in fake
+    monkeypatch.delenv("ABYSS_FAKE_LLM", raising=False)
+    monkeypatch.setenv("ABYSS_REAL_MODELS", "1")
+    live = routing_method()
+    assert "actual provider cost" in live
+    assert "simulated" not in live
