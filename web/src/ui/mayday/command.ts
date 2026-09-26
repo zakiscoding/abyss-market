@@ -2,7 +2,7 @@ import type { AgentId, Domain } from "../../contract";
 import { describePlan } from "../../contract";
 import { currentTask } from "../../scene/model";
 import type { MarketState } from "../../state/reducer";
-import { cheapestQualified, modelRegistry, type RankedModel, type RegistryModel } from "./registry";
+import { chooseAutomaticModel, modelRegistry, type RankedModel, type RegistryModel } from "./registry";
 
 export type Persona = "commander" | "sre" | "database" | "security" | "payments" | "support" | "viewer";
 
@@ -17,11 +17,9 @@ export const PERSONAS: { id: Persona; label: string }[] = [
 ];
 
 export const DOCKS: { domain: Domain; title: string; stall: AgentId | null }[] = [
-  { domain: "database", title: "Database Dock", stall: "haiku" },
-  { domain: "networking", title: "Network Dock", stall: "sonnet" },
-  { domain: "security", title: "Security Dock", stall: "opus" },
-  { domain: "payments", title: "Payments Dock", stall: null },
-  { domain: "generalist", title: "Generalist Dock", stall: null },
+  { domain: "database", title: "Database Repair Stall", stall: "haiku" },
+  { domain: "networking", title: "Network Routing Stall", stall: "sonnet" },
+  { domain: "security", title: "Security Watch Stall", stall: "opus" },
 ];
 
 const WORKER: Record<AgentId, string> = {
@@ -68,16 +66,18 @@ export function captainReadout(state: MarketState): CaptainLine {
   if (!commander) {
     return {
       domain: null,
-      dock: "Specialty dock",
+      dock: "Specialty stall",
       text: state.incident?.received ? "Captain AI is reading the evidence package." : "Captain AI is standing by.",
     };
   }
   const dock = dockTitle(commander.domain);
+  if (state.incident?.status === "restored") return { domain: commander.domain, dock, text: `${state.incident.current.service} is restored. Recovery checks passed.` };
+  if (state.incident?.status === "failed") return { domain: commander.domain, dock, text: "The incident has been escalated to the human crew." };
   const evidence = commander.rationale.replace(/\s+/g, " ").trim();
   return {
     domain: commander.domain,
     dock,
-    text: `${evidence} Activating ${dock}.`,
+    text: `${evidence} Routing to ${dock}.`,
   };
 }
 
@@ -98,13 +98,13 @@ export function selectionFor(state: MarketState): { selected: RankedModel | null
       quality: bid.promised_quality ?? 0,
       reputation: bid.reputation ?? 0,
     }));
-  const { selected, ranking } = cheapestQualified({
+  const { selected, eligible, eliminated } = chooseAutomaticModel({
     domain: commander.domain,
     severity: commander.severity,
     models,
     quotes,
   });
-  return { selected, ranking, models };
+  return { selected, ranking: [...eligible, ...eliminated], models };
 }
 
 export interface AttemptRow {
@@ -143,7 +143,7 @@ export type CrewState = "alerted" | "watching" | "reviewing" | "approved" | "rev
 
 export function crewState(status: string, needsApproval: boolean, revision: boolean): CrewState {
   if (revision && needsApproval) return "revision requested";
-  if (status === "restored" || status === "recovering") return "approved";
+  if (status === "restored" || status === "recovering") return needsApproval ? "approved" : "watching";
   if (status === "awaiting_approval" && needsApproval) return "reviewing";
   if (status === "awaiting_approval") return "watching";
   return "alerted";
@@ -165,7 +165,7 @@ export function incidentChat(state: MarketState, note?: { kind: "revision" | "re
   };
   if (incident.received) push("Captain AI", "AI COMMANDER", incident.received.alert);
   const captain = captainReadout(state);
-  if (incident.commander) push("Captain AI", "AI COMMANDER", captain.text);
+  if (incident.commander) push("Captain AI", "AI COMMANDER", `${incident.commander.rationale} Routing to ${captain.dock}.`);
   const dock = dockTitle(incident.commander?.domain ?? null);
   if (incident.dispatched) push("Captain AI", "AI COMMANDER", `${dock} is evaluating qualified workers.`);
   for (const person of incident.responders?.responders.filter((item) => item.selected) ?? []) {
@@ -185,11 +185,11 @@ export function incidentChat(state: MarketState, note?: { kind: "revision" | "re
   for (const assignment of incident.assignments?.assignments ?? []) {
     if (assignment.approval_required) push(assignment.name, "HUMAN", `Reviewing ${assignment.description}.`);
   }
-  if (note?.kind === "revision") push(note.persona, "HUMAN", "Revision requested. The prior approval is cleared.");
-  if (note?.kind === "reject") push(note.persona, "HUMAN", "Repair rejected. The cluster stays unchanged.");
+  if (note?.kind === "revision") push(note.persona, "HUMAN", "Plan held for review in this session. Deployment remains paused.");
+  if (note?.kind === "reject") push(note.persona, "HUMAN", "Plan declined in this session. Deployment remains paused.");
   if (incident.status === "restored") push("Captain AI", "AI COMMANDER", "Recovery checks passed. The service is restored.");
   if (lines.length <= 12) return lines;
-  const route = lines.find((line) => line.text.includes("Activating"));
+  const route = lines.find((line) => line.text.includes("Routing to"));
   const tail = lines.slice(-10);
   return route && !tail.includes(route) ? [lines[0], route, ...tail].slice(0, 12) : [lines[0], ...lines.slice(-11)];
 }

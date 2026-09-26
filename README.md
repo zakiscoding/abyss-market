@@ -73,8 +73,9 @@ Copy `.env.example` to `.env` if you want local overrides. Never put keys in sou
 ```bash
 cd web
 npm run dev
-# http://localhost:5173/                  inbox: trigger a scenario, then Approve Required Steps
-# http://localhost:5173/?auto=1&speed=2   plays the payments-pool recording straight through
+# http://localhost:5173/?source=replay     inbox: trigger a scenario, then Approve Required Steps
+# http://localhost:5173/?source=replay&auto=1&speed=2
+#                                           plays the payments-pool recording straight through
 ```
 
 **Fake live** (real backend and market, deterministic fake LLM, zero API cost):
@@ -84,7 +85,8 @@ cd backend
 ABYSS_FAKE_LLM=1 .venv/Scripts/python -m uvicorn abyss.server:app --port 8000
 # PowerShell: $env:ABYSS_FAKE_LLM="1"; .venv\Scripts\python -m uvicorn abyss.server:app --port 8000
 cd ../web && npm run dev
-# http://localhost:5173/?source=ws
+# http://localhost:5173/                   live incident mode (default)
+# http://localhost:5173/?source=ws         explicit live incident mode
 ```
 
 **Real models.** Set `ANTHROPIC_API_KEY` in the environment (never commit it).

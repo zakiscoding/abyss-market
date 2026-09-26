@@ -17,6 +17,7 @@ export class WsSource implements EventSource {
   ) {}
 
   start(onEvent: (event: AbyssEvent) => void): void {
+    this.stop();
     this.stopped = false;
     this.connect(onEvent);
   }
@@ -39,10 +40,12 @@ export class WsSource implements EventSource {
     const ws = new WebSocket(this.url);
     this.ws = ws;
     ws.onopen = () => {
+      if (this.stopped || this.ws !== ws) return;
       this.attempts = 0;
       this.onConnection(true);
     };
     ws.onmessage = (message) => {
+      if (this.stopped || this.ws !== ws) return;
       try {
         onEvent(JSON.parse(message.data as string) as AbyssEvent);
       } catch (error) {
@@ -50,7 +53,8 @@ export class WsSource implements EventSource {
       }
     };
     ws.onclose = () => {
-      if (this.ws === ws) this.ws = null;
+      if (this.stopped || this.ws !== ws) return;
+      this.ws = null;
       this.onConnection(false);
       if (this.stopped) return;
       const delay = Math.min(MAX_DELAY_MS, 1000 * 2 ** this.attempts);

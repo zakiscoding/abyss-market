@@ -111,3 +111,8 @@ def resolve_model(nominal: str) -> str:
     if real_models():
         return nominal
     return "claude-haiku-4-5"
+
+
+def public_url() -> str:
+    """Public base URL for incident links, with a documented local fallback."""
+    return os.getenv("ABYSS_PUBLIC_URL", "").strip() or "http://localhost:5173"

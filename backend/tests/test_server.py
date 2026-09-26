@@ -5,9 +5,20 @@ import importlib
 import json
 import time
 
+import pytest
 from fastapi.testclient import TestClient
 
 from abyss.contract import validate_stream
+
+
+@pytest.fixture(autouse=True)
+def _no_provider(monkeypatch):
+    from abyss import llm
+
+    def forbidden(*args, **kwargs):
+        pytest.fail("Provider construction is forbidden in server tests")
+
+    monkeypatch.setattr(llm.anthropic, "AsyncAnthropic", forbidden)
 
 
 def _server(monkeypatch, tmp_path, delay: str = "0"):
@@ -178,17 +189,51 @@ def test_ready_reports_fake_mode_without_secrets(monkeypatch, tmp_path) -> None:
     assert "SECRETVALUE" not in ready.text
 
 
-def test_ready_rejects_real_mode_without_provider_key(monkeypatch, tmp_path) -> None:
+@pytest.mark.parametrize("real_models", ["0", "1"], ids=["haiku", "nominal"])
+@pytest.mark.parametrize("key", [None, "", " \t\n", "offline-placeholder-key"])
+def test_ready_nonfake_requires_configured_key(monkeypatch, tmp_path, caplog, real_models, key) -> None:
+    from abyss.llm import LLM
+
     server = _server(monkeypatch, tmp_path)
     monkeypatch.setenv("ABYSS_FAKE_LLM", "0")
-    monkeypatch.setenv("ABYSS_REAL_MODELS", "1")
-    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.setenv("ABYSS_REAL_MODELS", real_models)
+    monkeypatch.setattr(server, "llm", LLM())
+    if key is None:
+        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    else:
+        monkeypatch.setenv("ANTHROPIC_API_KEY", key)
+    # Changing the environment cannot make an initialized non-fake LLM fake.
+    monkeypatch.setenv("ABYSS_FAKE_LLM", "1")
+    expected = bool(key and key.strip())
     with TestClient(server.app) as client:
         ready = client.get("/ready")
-    assert ready.status_code == 503
-    assert ready.json()["ok"] is False
-    assert ready.json()["checks"]["provider"] is False
-    assert "sk-" not in ready.text
+        health = client.get("/health")
+    assert ready.status_code == (200 if expected else 503)
+    assert ready.json() == {
+        "ok": expected,
+        "checks": {
+            "initialized": True, "scenarios": True, "reputation": True,
+            "config": True, "provider": expected,
+        },
+    }
+    assert health.status_code == 200
+    assert health.json() == {"ok": True}
+    assert "offline-placeholder-key" not in ready.text + health.text + caplog.text
+    assert server.llm._client is None
+
+
+@pytest.mark.parametrize("real_models", ["0", "1"], ids=["haiku", "nominal"])
+def test_ready_initialized_fake_without_key(monkeypatch, tmp_path, real_models) -> None:
+    server = _server(monkeypatch, tmp_path)
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.setenv("ABYSS_REAL_MODELS", real_models)
+    with TestClient(server.app) as client:
+        for fake_flag in ("1", "0"):
+            monkeypatch.setenv("ABYSS_FAKE_LLM", fake_flag)
+            ready = client.get("/ready")
+            assert ready.status_code == 200
+            assert ready.json()["ok"] is True
+            assert ready.json()["checks"]["provider"] is True
 
 
 def test_ready_rejects_unreadable_reputation(monkeypatch, tmp_path) -> None:

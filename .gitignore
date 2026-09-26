@@ -7,4 +7,5 @@ web/dist/
 web/public/fixtures/
 runs/
 .env
+DISCORD_BOT_TOKEN.txt
 web/public/results/

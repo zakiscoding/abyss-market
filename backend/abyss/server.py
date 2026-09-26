@@ -67,8 +67,8 @@ def _config_ready() -> bool:
 
 
 def _provider_ready() -> bool:
-    # Fake mode never calls a provider. Real-model mode needs a key, and the value stays server-side.
-    if config.fake_llm() or not config.real_models():
+    # Only initialized fake mode avoids provider calls; Haiku test mode also needs a key.
+    if llm is not None and llm._fake:
         return True
     return bool(os.getenv("ANTHROPIC_API_KEY", "").strip())
 

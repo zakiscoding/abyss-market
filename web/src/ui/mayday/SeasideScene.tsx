@@ -1,7 +1,11 @@
 import { useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 
 import type { AgentId } from "../../contract";
-import { DOCKS, captainReadout, dockWorker } from "./command";
+import { DOCKS, captainReadout, selectionFor } from "./command";
+import { alertBadge, stallAlerts } from "./alerts";
+import { useRepairCinema } from "./RepairCinema";
+import { repairShot } from "./repairPhase";
+import { DockWorker } from "./DockWorker";
 import { Pipeline } from "./panels";
 import { seasidePicture, type SeasidePicture } from "./seaside";
 import type { MarketState } from "../../state/reducer";
@@ -84,12 +88,34 @@ export function SeasideScene({
   onApprove: () => void;
 }) {
   const stageRef = useRef<HTMLDivElement | null>(null);
+  const cinema = useRepairCinema(state);
+  const workerPhase = repairShot(state) ?? (state.incident?.status === "awaiting_approval" ? "validated" : null);
+  const [viewport, setViewport] = useState({ width: 0, height: 0 });
   const [frame, setFrame] = useState<Frame | null>(null);
   const [artOk, setArtOk] = useState(true);
+  const [openStall, setOpenStall] = useState<AgentId | null>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const dock = DOCKS.find((item) => item.stall === openStall);
+  const market = selectionFor(state);
+  const openAlerts = dock ? stallAlerts(state, dock.domain) : [];
   const picture = seasidePicture(state);
   const captain = captainReadout(state);
-  const worker = dockWorker(state);
-  const domain = state.incident?.commander?.domain ?? null;
+  const activeStall = DOCKS.find((item) => item.domain === state.incident?.commander?.domain)?.stall;
+  const focusSpot = activeStall ? SPOT[activeStall] : null;
+  const zoomed = Boolean(cinema.shot && focusSpot && frame);
+  const camera = frame && zoomed && focusSpot ? (() => {
+    const width = frame.width * 1.65;
+    const height = frame.height * 1.65;
+    return {
+      width, height,
+      left: Math.min(0, Math.max(viewport.width - width, viewport.width / 2 - width * focusSpot.x / 100)),
+      top: Math.min(0, Math.max(viewport.height - height, viewport.height * .48 - height * .39)),
+    };
+  })() : frame;
+
+  useLayoutEffect(() => {
+    if (openStall) dialogRef.current?.showModal();
+  }, [openStall]);
 
   useLayoutEffect(() => {
     const el = stageRef.current;
@@ -97,7 +123,7 @@ export function SeasideScene({
     const fit = () => {
       const w = el.clientWidth;
       const h = el.clientHeight;
-      if (w && h) setFrame(coverFrame(w, h));
+      if (w && h) { setFrame(coverFrame(w, h)); setViewport({ width: w, height: h }); }
     };
     fit();
     const observer = new ResizeObserver(fit);
@@ -106,14 +132,14 @@ export function SeasideScene({
   }, []);
 
   return (
-    <div className={`harbor-stage scene-mood-${picture.mood}`} ref={stageRef}>
+    <div className={`harbor-stage scene-mood-${picture.mood} ${zoomed ? "stall-focused" : ""}`} ref={stageRef}>
       <p className="sr-only">
-        Abyss command harbor. The boat is Captain AI. The stalls are the Database, Network, and Security docks.
-        Payments and Generalist sit on the pier. The water beside the dock is the sandbox.
+        Abyss command harbor. The boat is Captain AI. The stalls are the Database Repair, Network Routing, and Security Watch stalls.
+        The water beside the dock is the sandbox.
       </p>
       <div
         className={`scene-frame ${frame ? "" : "pending"}`}
-        style={frame ? { left: frame.left, top: frame.top, width: frame.width, height: frame.height } : undefined}
+        style={camera ? { left: camera.left, top: camera.top, width: camera.width, height: camera.height } : undefined}
       >
         {artOk ? (
           <img src={ART_SRC} alt="" draggable={false} onError={() => setArtOk(false)} />
@@ -122,13 +148,12 @@ export function SeasideScene({
         )}
         {frame && (
           <>
+            {workerPhase && focusSpot && <div className={`stall-resident phase-${workerPhase}`} style={{ left: `${focusSpot.x - 3.4}%`, top: "29.5%" }}>
+              <DockWorker state={state} phase={workerPhase} />
+            </div>}
             <div className={`boat-marker ${picture.boat}`} style={{ left: "32%", top: "76%" }}>
-              {picture.boat !== "calm" && (
-                <>
-                  <b>{picture.service}</b>
-                  <small>{picture.region}{picture.severity ? ` · ${picture.severity}` : ""}</small>
-                </>
-              )}
+              <b>Captain AI</b>
+              <small>{picture.boat === "calm" ? "Standing by" : `${picture.service} · ${picture.region}`}</small>
             </div>
 
             {picture.classification && (
@@ -139,30 +164,37 @@ export function SeasideScene({
               </div>
             )}
 
-            {DOCKS.filter((dock) => dock.stall === null).map((dock, index) => (
-              <div
-                key={dock.domain}
-                className={`pier-dock ${domain === dock.domain ? "lit winner" : ""}`}
-                style={{ left: `${index === 0 ? 40 : 62}%`, top: "40%" }}
-              >
-                <b>{dock.title}</b>
-                {domain === dock.domain && worker.worker && <small>Worker: {worker.worker}</small>}
-              </div>
-            ))}
-
-            {picture.stalls.map((stall) => (
-              <div
+            {picture.stalls.map((stall) => {
+              const stallDock = DOCKS.find((item) => item.stall === stall.agentId)!;
+              const alerts = stallAlerts(state, stallDock.domain);
+              const count = alerts.length;
+              return (
+              <button
                 key={stall.agentId}
-                className={`stall ${stall.lit ? "lit" : ""} ${stall.winner ? "winner" : ""}`}
+                type="button"
+                aria-label={`Explore ${stall.sign}`}
+                aria-haspopup="dialog"
+                aria-describedby={`stall-preview-${stall.agentId}`}
+                onClick={() => setOpenStall(stall.agentId)}
+                className={`stall ${count ? "has-alerts" : "all-clear"} ${stall.lit ? "lit" : ""} ${stall.winner ? "winner" : ""}`}
                 style={{ left: `${SPOT[stall.agentId].x}%`, top: `${SPOT[stall.agentId].y}%`, "--glow": stall.color } as CSSProperties}
               >
-                <div className="stall-glow" />
-                <div className="stall-sign" title={stall.sign}>
+                <span className="stall-glow" />
+                {count > 0 && <span className="stall-alert-badge" aria-label={`${count} unresolved ${count === 1 ? "alert" : "alerts"}`}>{alertBadge(count)}</span>}
+                <span className="stall-sign">
                   {stall.sign}
-                </div>
-                {stall.bubble && <div className={`stall-bubble ${stall.winner ? "won" : ""}`}>{stall.bubble}</div>}
-              </div>
-            ))}
+                </span>
+                <span className="stall-hint"><span className="stall-status-dot" />{count ? `${alertBadge(count)} ${count === 1 ? "alert" : "alerts"}` : "All clear"}</span>
+                <span className="stall-preview" id={`stall-preview-${stall.agentId}`} role="tooltip">
+                  <span className="stall-preview-heading">{count ? "ATTENTION NEEDED" : "READY TO RESPOND"}</span>
+                  <strong>{stall.sign}</strong>
+                  <span className="stall-preview-detail">{count ? `${alerts[0].severity ?? "Alert"} / ${alerts[0].service}` : "No active alerts for this specialty."}</span>
+                  {count > 0 && <span className="stall-preview-message">{alerts[0].message}</span>}
+                  <span className="stall-preview-link">Click to inspect specialists &amp; alerts <span aria-hidden="true">&#8599;</span></span>
+                </span>
+                {stall.bubble && !(workerPhase && activeStall === stall.agentId) && <span className={`stall-bubble ${stall.winner ? "won" : ""}`}>{stall.bubble}</span>}
+              </button>
+            ); })}
 
             <div className="dock-strip">
               {picture.boat === "calm" ? (
@@ -204,6 +236,33 @@ export function SeasideScene({
           </>
         )}
       </div>
+      {zoomed && <button type="button" className="harbor-zoom-out" onClick={cinema.skip}>Show whole harbor</button>}
+      <dialog ref={dialogRef} className="stall-dialog" aria-labelledby="stall-dialog-title"
+        onClose={() => setOpenStall(null)} onClick={(event) => {
+          if (event.target === event.currentTarget) {
+            const bounds = event.currentTarget.getBoundingClientRect();
+            if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) event.currentTarget.close();
+          }
+        }}>
+        <header className="panel-head">
+          <div><small>SPECIALIST DOCK</small><h2 id="stall-dialog-title">{dock?.title}</h2></div>
+          <button type="button" autoFocus onClick={() => dialogRef.current?.close()} aria-label="Close specialist details">Close</button>
+        </header>
+        <p>{state.incident?.commander?.domain === dock?.domain
+          ? "This dock is handling the current incident. Specialists compete to diagnose and repair it."
+          : "Standing by. The Commander dispatches this dock when an incident needs its specialty."}</p>
+        <section className={`stall-alert-summary ${openAlerts.length ? "has-alerts" : ""}`}>
+          <h3>{openAlerts.length ? `${alertBadge(openAlerts.length)} unresolved ${openAlerts.length === 1 ? "alert" : "alerts"}` : "No active alerts"}</h3>
+          {openAlerts.length ? <ul>{openAlerts.map((alert) => <li key={alert.id}><strong>{alert.service}</strong><span>{alert.severity ?? "Alert"} - {alert.message}</span></li>)}</ul> : <p>This specialty is standing by.</p>}
+        </section>
+        <h3>Available specialists</h3>
+        <ul className="stall-specialists">
+          {market.models.filter((model) => dock && model.domains.includes(dock.domain)).map((model) => (
+            <li key={model.id}><strong>{model.displayName}</strong><span className={`avail avail-${model.availability}`}>{model.availability}</span><small>{model.provider}</small></li>
+          ))}
+        </ul>
+        <p className="muted">Follow bids and validation in the Evidence tab. Production changes require human approval.</p>
+      </dialog>
     </div>
   );
 }

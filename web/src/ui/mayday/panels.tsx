@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   describePlan,
@@ -11,7 +11,7 @@ import {
 import { AGENT_ORDER, currentTask } from "../../scene/model";
 import type { HistoryEntry, MarketState } from "../../state/reducer";
 import { seededDomain } from "./command";
-import { formatDuration, outcome, pipeline, terminal } from "./derive";
+import { formatDuration, outcome, pipeline, terminal, type TerminalLine } from "./derive";
 
 const pct = (value: number, digits = 1) => `${(value * 100).toFixed(digits)}%`;
 const usd = (value: number) => `$${value.toFixed(4)}`;
@@ -223,25 +223,119 @@ export function SpecialistsPanel({ state }: { state: MarketState }) {
 }
 
 export function Terminal({ state }: { state: MarketState }) {
+  return <LiveEvidence state={state} />;
+}
+
+type EvidenceTab = "logs" | "metrics" | "services" | "changes";
+
+function evidenceSeverity(line: TerminalLine): "ERROR" | "WARN" | "OK" | "INFO" | "EVIDENCE" {
+  if (line.tone === "error" || line.tone === "fail") return "ERROR";
+  if (line.tone === "warn") return "WARN";
+  if (line.tone === "pass") return "OK";
+  if (line.tone === "agent") return "EVIDENCE";
+  return "INFO";
+}
+
+function evidenceService(state: MarketState): string {
+  return state.incident?.current.service ?? "cluster";
+}
+
+function LiveEvidence({ state }: { state: MarketState }) {
+  const [tab, setTab] = useState<EvidenceTab>("logs");
+  const [query, setQuery] = useState("");
+  const [severity, setSeverity] = useState("ALL");
+  const [paused, setPaused] = useState(false);
+  const [autoScroll, setAutoScroll] = useState(true);
   const lines = terminal(state);
   const ref = useRef<HTMLOListElement | null>(null);
+  const nearBottom = useRef(true);
   useEffect(() => {
-    ref.current?.scrollTo({ top: ref.current.scrollHeight });
-  }, [lines.length]);
+    if (!paused && autoScroll && nearBottom.current) ref.current?.scrollTo({ top: ref.current.scrollHeight });
+  }, [lines.length, paused, autoScroll]);
+  const incident = state.incident;
+  const current = incident?.current;
+  const recovery = incident?.restored?.telemetry ?? null;
+  const evidenceLines = incident?.received?.package.log_excerpt ?? [];
+  const filtered = useMemo(() => lines.map((line, index) => ({
+    line,
+    index,
+    level: evidenceSeverity(line),
+    evidence: evidenceLines.some((excerpt) => line.text.includes(excerpt) || excerpt.includes(line.text)),
+  })).filter(({ line, level }) =>
+    (severity === "ALL" || level === severity)
+    && (!query || line.text.toLowerCase().includes(query.toLowerCase())),
+  ), [lines, evidenceLines, query, severity]);
+  const metrics = current?.telemetry ?? [];
+  const changes = current?.config_changes ?? [];
+  const dependency = incident?.received?.source_system;
+  const deployments = state.log
+    .filter((event) => event.job_id === incident?.jobId && event.type === "remediation_plan_created")
+    .map((event) => event.type === "remediation_plan_created" ? {
+      id: `PLAN-${event.data.task_id}`,
+      text: event.data.summary,
+      time: formatDuration(event.t),
+    } : null)
+    .filter((item): item is { id: string; text: string; time: string } => item !== null);
   return (
-    <section className="panel terminal">
+    <section className="panel live-evidence">
       <header className="panel-head">
         <h2>Live Evidence</h2>
-        <span className="muted">{lines.length} lines</span>
+        <span className="evidence-mode">Seeded cluster evidence · Simulation mode</span>
       </header>
-      <ol ref={ref}>
-        {lines.map((line, i) => (
-          <li key={i} className={`tone-${line.tone}`}>
-            <span>{formatDuration(line.t)}</span>
-            <code>{line.text}</code>
-          </li>
+      <div className="evidence-tabs" role="tablist" aria-label="Live evidence views">
+        {(["logs", "metrics", "services", "changes"] as EvidenceTab[]).map((item) => (
+          <button key={item} type="button" role="tab" aria-selected={tab === item}
+            className={tab === item ? "active" : ""} onClick={() => setTab(item)}>
+            {item[0].toUpperCase() + item.slice(1)}
+          </button>
         ))}
-      </ol>
+      </div>
+      {tab === "logs" && (
+        <>
+          <div className="evidence-controls">
+            <input aria-label="Search evidence logs" placeholder="Search logs" value={query} onChange={(event) => setQuery(event.target.value)} />
+            <select aria-label="Filter log severity" value={severity} onChange={(event) => setSeverity(event.target.value)}>
+              {["ALL", "ERROR", "WARN", "OK", "INFO", "EVIDENCE"].map((item) => <option key={item}>{item}</option>)}
+            </select>
+            <button type="button" onClick={() => setPaused((value) => !value)}>{paused ? "Resume" : "Pause"}</button>
+            <label><input type="checkbox" checked={autoScroll} onChange={(event) => setAutoScroll(event.target.checked)} /> Auto-scroll</label>
+          </div>
+          <p className="evidence-summary">
+            {evidenceLines.length} evidence lines used by Captain AI.
+            {incident?.commander && ` Classified as ${incident.commander.domain} (${incident.commander.severity}) because ${incident.commander.rationale}`}
+          </p>
+          <ol ref={ref} className="evidence-log" onScroll={(event) => {
+            const element = event.currentTarget;
+            nearBottom.current = element.scrollHeight - element.scrollTop - element.clientHeight < 32;
+          }}>
+            {filtered.map(({ line, index, level, evidence }) => (
+              <li key={`${index}-${line.t}`} className={`evidence-${level.toLowerCase()} ${evidence ? "evidence-important" : ""}`}>
+                <time>{formatDuration(line.t)}</time><b>{level}</b><span>{evidenceService(state)}</span><span>{current?.region.toUpperCase() ?? "—"}</span><code>{line.text}</code>
+              </li>
+            ))}
+          </ol>
+        </>
+      )}
+      {tab === "metrics" && (
+        <div className="evidence-grid">
+          {metrics.map((metric) => {
+            const after = recovery?.find((item) => item.key === metric.key);
+            return <div key={metric.key} className={metric.ok ? "metric-good" : "metric-bad"}><b>{metric.label}</b><span>Before {formatMetric(metric)}</span><span>After {after ? formatMetric(after) : "—"}</span></div>;
+          })}
+        </div>
+      )}
+      {tab === "services" && (
+        <ul className="evidence-services">
+          <li><i className={incident?.status === "restored" ? "health-green" : incident ? "health-red" : "health-yellow"} /> <b>{current?.service ?? "No active service"}</b><span>{current?.region.toUpperCase() ?? "—"} · {incident?.status ?? "standby"}</span><small>Dependency: {dependency ?? "No incident package received"}</small></li>
+        </ul>
+      )}
+      {tab === "changes" && (
+        <ul className="evidence-changes">
+          {deployments.map((deployment) => <li key={deployment.id}><b>{deployment.id}</b><span>Deployment plan: {deployment.text}</span><small>{deployment.time} · Captain AI repair plan</small></li>)}
+          {changes.map((change) => <li key={change.change_id} className={incident?.received?.package.recent_changes.some((item) => item.change_id === change.change_id) ? "correlated" : ""}><b>{change.change_id}</b><span>{change.key}: {change.old} → {change.new}</span><small>{change.minutes_ago} min ago · {change.author}</small></li>)}
+          {!changes.length && <li className="muted">No configuration changes in this incident package.</li>}
+        </ul>
+      )}
     </section>
   );
 }

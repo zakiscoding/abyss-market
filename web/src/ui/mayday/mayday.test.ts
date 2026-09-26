@@ -55,8 +55,8 @@ describe("MAYDAY selectors", () => {
     expect(pipeline(received).find((s) => s.key === "classify")?.state).toBe("active");
     const approval = upTo(events, (e) => e.type === "approval_required");
     expect(Object.fromEntries(pipeline(approval).map((s) => [s.key, s.state]))).toEqual({
-      classify: "done", diagnose: "done", remediate: "done", sandbox: "done",
-      assign: "done", approve: "active", deploy: "pending",
+      classify: "done", select: "done", sandbox: "done",
+      review: "active", restore: "pending",
     });
     expect(harborModel(approval).mood).toBe("alarm");
   });
@@ -106,9 +106,9 @@ describe("seaside harbor", () => {
     expect(picture.classification).toBe("database · SEV-1");
     expect(picture.boat).toBe("active");
     expect(picture.stalls.map((stall) => stall.sign)).toEqual([
-      "Database Dock",
-      "Network Dock",
-      "Security Dock",
+      "Database Repair Stall",
+      "Network Routing Stall",
+      "Security Watch Stall",
     ]);
     expect(picture.stalls.map((stall) => stall.agentId)).toEqual(["haiku", "sonnet", "opus"]);
   });
@@ -136,13 +136,13 @@ describe("seaside harbor", () => {
 
   it("uses each domain's specialist title", () => {
     const security = seasidePicture(play(auth as AbyssEvent[]));
-    expect(security.stalls[2].sign).toBe("Security Dock");
+    expect(security.stalls[2].sign).toBe("Security Watch Stall");
     expect(security.stalls[2].winner).toBe(true);
     const network = seasidePicture(play(net as AbyssEvent[]));
-    expect(network.stalls[1].sign).toBe("Network Dock");
+    expect(network.stalls[1].sign).toBe("Network Routing Stall");
     expect(network.stalls[1].winner).toBe(true);
     const payments = seasidePicture(play(pool as AbyssEvent[]));
-    expect(payments.stalls[0].sign).toBe("Database Dock");
+    expect(payments.stalls[0].sign).toBe("Database Repair Stall");
     expect(payments.stalls[0].winner).toBe(true);
     expect(specialtySign("payments", "opus")).toBe("Payments Specialist · Opus");
   });

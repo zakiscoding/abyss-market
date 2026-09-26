@@ -3,6 +3,7 @@ import type { EventSource } from "./types";
 
 type Gate = "start_incident" | "approve_repair";
 type FixtureUrl = string | ((scenario: ScenarioId) => string);
+let replayRun = 0;
 
 /** Replays a recorded run. Unless `auto` is set, an incident recording pauses
  *  before incident_received until start_incident and after approval_required
@@ -33,9 +34,14 @@ export class FixtureSource implements EventSource {
     this.active = true;
     this.onEvent = onEvent;
     this.controller = new AbortController();
-    void this.replay(onEvent, this.controller.signal).catch((error: unknown) => {
-      if (this.active) {
+    const signal = this.controller.signal;
+    void this.replay(onEvent, signal).catch((error: unknown) => {
+      if (this.active && !signal.aborted) {
+        this.running = false;
         console.error("Fixture replay failed", error);
+        onEvent({ v: 1, seq: 0, t: 0, job_id: null, type: "error", data: {
+          fatal: true, task_id: null, message: "Could not load this replay. Check the recording URL and try Reset.",
+        } });
       }
     });
   }
@@ -87,10 +93,13 @@ export class FixtureSource implements EventSource {
 
   private gate(gate: Gate, signal: AbortSignal): Promise<void> {
     return new Promise((resolve, reject) => {
-      this.waiting = { gate, resolve };
-      signal.addEventListener("abort", () => reject(new DOMException("Replay stopped", "AbortError")), {
-        once: true,
-      });
+      if (signal.aborted) { reject(new DOMException("Replay stopped", "AbortError")); return; }
+      const abort = () => reject(new DOMException("Replay stopped", "AbortError"));
+      this.waiting = { gate, resolve: () => {
+        signal.removeEventListener("abort", abort);
+        resolve();
+      } };
+      signal.addEventListener("abort", abort, { once: true });
     });
   }
 
@@ -98,6 +107,7 @@ export class FixtureSource implements EventSource {
     onEvent: (event: AbyssEvent) => void,
     signal: AbortSignal,
   ): Promise<void> {
+    const runId = ++replayRun;
     const url = typeof this.url === "string" ? this.url : this.url(this.scenario);
     const response = await fetch(url, { signal });
     if (!response.ok) {
@@ -117,7 +127,8 @@ export class FixtureSource implements EventSource {
       }
       previousTime = event.t;
       if (!this.active) return;
-      onEvent(event);
+      // A replay is a new run even when its recording reuses the original job ID.
+      onEvent({ ...event, job_id: event.job_id ? `${event.job_id}-replay-${runId}` : null });
       if (event.type === "approval_required" && !this.auto) {
         await this.gate("approve_repair", signal);
         // The recording's approval wait already happened for real.
@@ -131,14 +142,15 @@ export class FixtureSource implements EventSource {
 
 function wait(milliseconds: number, signal: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
-    const timer = window.setTimeout(resolve, milliseconds);
-    signal.addEventListener(
-      "abort",
-      () => {
-        window.clearTimeout(timer);
-        reject(new DOMException("Replay stopped", "AbortError"));
-      },
-      { once: true },
-    );
+    if (signal.aborted) { reject(new DOMException("Replay stopped", "AbortError")); return; }
+    const abort = () => {
+      window.clearTimeout(timer);
+      reject(new DOMException("Replay stopped", "AbortError"));
+    };
+    const timer = window.setTimeout(() => {
+      signal.removeEventListener("abort", abort);
+      resolve();
+    }, milliseconds);
+    signal.addEventListener("abort", abort, { once: true });
   });
 }

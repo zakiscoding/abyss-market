@@ -5,7 +5,7 @@ import type { MarketState } from "../../state/reducer";
 
 export type StageState = "pending" | "active" | "done" | "failed";
 export interface Stage {
-  key: "classify" | "diagnose" | "remediate" | "sandbox" | "assign" | "approve" | "deploy";
+  key: "classify" | "select" | "sandbox" | "review" | "restore";
   label: string;
   state: StageState;
   detail: string;
@@ -20,7 +20,6 @@ export function pipeline(state: MarketState): Stage[] {
   const incident = state.incident;
   const status = incident?.status ?? "healthy";
   const tasks = state.taskOrder.map((id) => state.tasks[id]);
-  const diagnose = tasks.find((task) => task.type === "diagnose");
   const repairs = incident?.repairs ?? [];
   const passed = repairs.find((repair) => repair.sandbox?.passed);
   const last = repairs.at(-1);
@@ -28,48 +27,35 @@ export function pipeline(state: MarketState): Stage[] {
   const after = (states: string[]) => states.includes(status);
   const commander = incident?.commander ?? null;
   const assignments = incident?.assignments ?? null;
-  const approvers = assignments?.required_approvers.length ?? 0;
 
   const stages: Stage[] = [
     {
       key: "classify",
-      label: "Classify",
+      label: "Classified",
       state: commander ? "done" : incident?.received ? "active" : "pending",
       detail: commander ? `${commander.domain} · ${commander.severity}` : "",
     },
     {
-      key: "diagnose",
-      label: "Diagnose",
-      state: !diagnose ? "pending" : diagnose.status === "graded" ? "done" : diagnose.status === "failed" ? "failed" : "active",
-      detail: diagnose?.winner ? diagnose.winner.toUpperCase() : "",
-    },
-    {
-      key: "remediate",
-      label: "Remediate",
-      state: passed ? "done" : tasks.some((task) => task.type === "remediate") ? "active" : "pending",
-      detail: repairs.length ? `${repairs.length} proposal${repairs.length > 1 ? "s" : ""}` : "",
+      key: "select",
+      label: "Selecting worker",
+      state: repairs.length || tasks.some((task) => task.status === "assigned" || task.status === "working") ? "done" : commander ? "active" : "pending",
+      detail: last?.proposal.agent_id?.toUpperCase() ?? "",
     },
     {
       key: "sandbox",
       label: "Sandbox",
       state: passed ? "done" : !last ? "pending" : !last.sandbox ? "active" : "failed",
-      detail: failed ? `${failed} rejected` : passed ? "passed" : "",
+      detail: passed ? (failed ? `passed after ${failed} rejected` : "passed") : failed ? `${failed} rejected` : "",
     },
     {
-      key: "assign",
-      label: "Assign",
-      state: assignments ? "done" : incident?.escalated ? "failed" : passed ? "active" : "pending",
-      detail: assignments ? `${approvers} approver${approvers > 1 ? "s" : ""}` : incident?.escalated ? "escalated" : "",
-    },
-    {
-      key: "approve",
-      label: "Approve",
+      key: "review",
+      label: "Human review",
       state: after(["recovering", "restored"]) ? "done" : status === "awaiting_approval" ? "active" : "pending",
       detail: incident?.granted ? incident.granted.approved_by.join(", ") : status === "awaiting_approval" ? "humans needed" : "",
     },
     {
-      key: "deploy",
-      label: "Deploy",
+      key: "restore",
+      label: "Restored",
       state: status === "restored" ? "done" : status === "recovering" ? "active" : status === "failed" ? "failed" : "pending",
       detail: passed?.proposal.steps.length ? describePlan(passed.proposal.steps) : "",
     },
@@ -187,6 +173,12 @@ export function terminal(state: MarketState): TerminalLine[] {
         break;
       case "approval_granted":
         lines.push({ t, tone: "pass", text: `APPROVED by ${event.data.approved_by.join(", ")}` });
+        break;
+      case "service_restored":
+        for (const check of event.data.verification) {
+          lines.push({ t, tone: check.passed ? "pass" : "fail", text: `RECOVERY ${check.passed ? "OK" : "FAIL"} ${check.name}: ${check.detail}` });
+        }
+        lines.push({ t, tone: "pass", text: `RECOVERY COMPLETE · ${event.data.domain} · approved by ${event.data.approved_by.join(", ")}` });
         break;
       case "incident_escalated":
         lines.push({ t, tone: "error", text: `ESCALATED to ${event.data.escalated_to.join(", ")}: ${event.data.reason}` });

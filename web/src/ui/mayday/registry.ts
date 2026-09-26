@@ -219,3 +219,18 @@ export function cheapestQualified(input: {
   }
   return { selected, ranking };
 }
+
+/** Deterministic automatic choice: eliminate every non-qualified model, then
+ * choose the lowest-cost survivor. Ties are stable in catalog order. */
+export function chooseAutomaticModel(input: Parameters<typeof cheapestQualified>[0]): {
+  selected: RankedModel | null;
+  eligible: RankedModel[];
+  eliminated: RankedModel[];
+} {
+  const { selected, ranking } = cheapestQualified(input);
+  return {
+    selected,
+    eligible: ranking.filter((row) => row.qualified),
+    eliminated: ranking.filter((row) => !row.qualified),
+  };
+}

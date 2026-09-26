@@ -14,7 +14,7 @@ import {
   repairAttempts,
   selectionFor,
 } from "./command";
-import { cheapestQualified, modelRegistry } from "./registry";
+import { cheapestQualified, chooseAutomaticModel, modelRegistry } from "./registry";
 
 const events = ams as AbyssEvent[];
 
@@ -47,6 +47,7 @@ describe("model registry", () => {
         { id: "anthropic:opus", usd: 0.02, quality: 9, reputation: 1 },
       ],
     });
+
     expect(selected?.model.id).toBe("anthropic:haiku");
     expect(ranking.find((row) => row.model.provider === "openai")?.qualified).toBe(false);
     const strict = cheapestQualified({
@@ -60,21 +61,40 @@ describe("model registry", () => {
     });
     expect(strict.selected?.model.id).toBe("anthropic:sonnet");
   });
+  it("automatically eliminates rejected models and returns only eligible survivors", () => {
+    const result = chooseAutomaticModel({
+      domain: "database",
+      severity: "SEV-1",
+      models: modelRegistry("replay"),
+      quotes: [
+        { id: "anthropic:haiku", usd: 0.002, quality: 8, reputation: 1 },
+        { id: "anthropic:sonnet", usd: 0.008, quality: 9, reputation: 1 },
+        { id: "anthropic:opus", usd: 0.02, quality: 9, reputation: 1 },
+      ],
+    });
+    expect(result.selected?.model.id).toBe("anthropic:haiku");
+    expect(result.eligible.map((row) => row.model.id)).toEqual([
+      "anthropic:haiku", "anthropic:sonnet", "anthropic:opus",
+    ]);
+    expect(result.eliminated.every((row) => !row.qualified)).toBe(true);
+    expect(result.eliminated.some((row) => row.reason === "No working adapter")).toBe(true);
+  });
+
 });
 
 describe("captain and crew workflow", () => {
-  it("routes Amsterdam to the Database Dock from the recorded rationale", () => {
+  it("routes Amsterdam to the Database Repair Stall from the recorded rationale", () => {
     const state = upTo((event) => event.type === "commander_classified");
     const captain = captainReadout(state);
-    expect(captain.dock).toBe("Database Dock");
-    expect(captain.text).toContain("Activating Database Dock");
+    expect(captain.dock).toBe("Database Repair Stall");
+    expect(captain.text).toContain("Routing to Database Repair Stall");
     expect(captain.text.toLowerCase()).not.toContain("eval(");
   });
 
   it("builds chat from events and prices escalation from usage", () => {
     const state = play(events);
     const chat = incidentChat(state);
-    expect(chat.some((line) => line.badge === "AI COMMANDER" && line.text.includes("Database Dock"))).toBe(true);
+    expect(chat.some((line) => line.badge === "AI COMMANDER" && line.text.includes("Database Repair Stall"))).toBe(true);
     expect(chat.some((line) => line.badge === "HUMAN")).toBe(true);
     const attempts = repairAttempts(state);
     expect(attempts.map((row) => row.passed)).toEqual([false, true]);

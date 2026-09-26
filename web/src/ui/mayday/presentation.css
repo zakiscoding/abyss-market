@@ -1,0 +1,151 @@
+/* Shared presentation for the harbor, workspace and cinematic view. */
+.mayday {
+  --ui-font: ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  --display-font: "Silkscreen", ui-monospace, monospace;
+  --surface: #0d1d29;
+  --surface-raised: #162b39;
+  --border: #2b4353;
+  --ink: #edf4f7;
+  --secondary-ink: #afc3d0;
+  --mint: #8bddcb;
+  --gold: #f1d19a;
+  font-family: var(--ui-font);
+}
+.mayday button, .mayday select, .mayday .panel h2 { font-family: var(--ui-font); }
+.mayday button { font-weight: 600; border-radius: 8px; }
+.mayday .brand strong, .mayday .stall-sign { font-family: var(--display-font); }
+.mayday .incident-timer b { font: 600 24px/1.1 ui-monospace, monospace; }
+.mayday .command-workspace, .mayday .workspace-tabs, .mayday-header { background: var(--surface); }
+.mayday .workspace-content .panel { background: var(--surface); border-color: var(--border); border-radius: 12px; }
+.mayday .panel-head h2 { color: var(--mint); font-size: 14px; letter-spacing: 0; text-transform: none; }
+.mayday .muted, .workspace-heading small { color: var(--secondary-ink); }
+.mayday .ghost, .mayday .inbox-card button, .mayday .cinema-topline button { background: var(--surface-raised); border-color: var(--border); color: var(--ink); }
+.mayday .mode-badge { border-radius: 99px; padding: 6px 9px; background: var(--surface-raised); color: var(--secondary-ink); border: 1px solid var(--border); }
+.mayday .inbox-card { border-radius: 10px; }
+.mayday .inbox-card.current { border-color: var(--mint); }
+.mayday .stall-sign { font-size: clamp(10px, 1.05cqw, 16px); line-height: 1.5; }
+.mayday .stall-hint { font-family: var(--ui-font); }
+.stall-glow, .stall.winner .stall-glow, .stall:hover .stall-glow {
+  top: 7cqw; height: 2.5cqw; width: 11cqw; border-radius: 50%;
+  background: radial-gradient(ellipse, #ffe6aa50, transparent 70%);
+  box-shadow: none; animation: none;
+}
+.mayday .stall-bubble { font: 600 clamp(9px, .8cqw, 12px)/1.4 var(--ui-font); padding: 5px 8px; }
+.harbor-stage .scene-frame { filter: none; }
+.scene-frame > img { transition: filter 1.2s ease; }
+.cinema-active .scene-frame { filter: none; }
+.cinema-active .scene-frame > img { filter: saturate(.8) brightness(.7); }
+.cinema-restored .scene-frame > img { filter: saturate(1.1) brightness(1); }
+.cinema-failed .scene-frame > img, .cinema-retry .scene-frame > img { filter: saturate(.6) brightness(.6); }
+.cinema-active .stall-sign { opacity: .8; }
+.cinema-active .sandbox { visibility: hidden; }
+.cinema-caption { max-width: 640px; gap: 9px; bottom: 11%; }
+.mayday .cinema-caption h2 { font: 600 clamp(26px, 3vw, 46px)/1.12 var(--ui-font); letter-spacing: -.035em; }
+.cinema-caption p { font-size: 13px; line-height: 1.55; max-width: 480px; }
+.cinema-chapter, .workspace-heading > span { font-size: 10px; letter-spacing: .14em; }
+.cinema-topline > span { font-family: var(--ui-font); letter-spacing: .14em; }
+.cinema-caption code { background: #102330b3; border: 1px solid #ffffff18; border-radius: 6px; padding: 7px 10px; }
+.cinema-vignette { background: radial-gradient(ellipse at 50% 42%, transparent 20%, #030b122b 55%, #030b12b3 100%), linear-gradient(transparent 48%, #030b12ed 90%); }
+.scene-frame .dock-worker {
+  position: absolute; left: 40%; top: 35%; width: 28%; max-width: none;
+  transform: none; z-index: 3; pointer-events: none;
+  filter: drop-shadow(0 3px 2px #03111b66);
+}
+.scene-frame .dock-worker svg { image-rendering: pixelated; }
+.scene-frame .worker-action { left: 4%; bottom: -2%; font: 600 clamp(9px, .8cqw, 12px)/1.3 var(--ui-font); padding: 5px 8px; border-color: #d6bf8659; }
+.scene-frame .worker-catch { left: 40%; top: 8%; width: 55%; }
+.scene-frame .worker-catch strong, .scene-frame .worker-catch span { font: 600 clamp(8px, .75cqw, 11px)/1.3 var(--ui-font); }
+.working .worker-rod, .working .worker-fish, .working .worker-ripples, .working svg > ellipse:first-of-type { display: none; }
+.working .worker-catch { animation: none; }
+.working .worker-tool { transform-origin: 140px 94px; animation: worker-hammer 1.3s ease-in-out infinite; }
+.working .worker-arm { transform-origin: 108px 83px; animation: worker-hammer 1.3s ease-in-out infinite; }
+.celebrating .worker-tool, .celebrating .worker-arm { animation: none; }
+.cinema-validated .worker-tool, .cinema-validated .worker-arm, .cinema-failed .worker-tool, .cinema-failed .worker-arm { animation: none; }
+.cinema-selecting .repair-flight, .cinema-diagnosing .repair-flight, .cinema-preparing .repair-flight, .cinema-failed .repair-flight { visibility: hidden; }
+.cinema-validated .repair-flight path, .cinema-validated .repair-impact { stroke: var(--mint); }
+.repair-flight .repair-flight-spark { stroke-width: .3; stroke-dasharray: 1 2 1 35; }
+.repair-impact { fill: #ffe1a30a; }
+.mayday .stall-dialog { font-family: var(--ui-font); background: var(--surface); border-color: var(--border); }
+.mayday .stall-dialog h2 { font-family: var(--ui-font); text-transform: none; color: var(--mint); }
+@keyframes worker-hammer { 0%, 100% { transform: rotate(-12deg); } 45%, 60% { transform: rotate(12deg); } }
+@media (max-width: 760px) {
+  .scene-frame .dock-worker { left: 38%; top: 33%; width: 32%; }
+  .scene-frame .worker-action { font-size: 8px; padding: 3px 5px; }
+  .scene-frame .worker-catch { width: 65%; }
+  .scene-frame .worker-catch strong, .scene-frame .worker-catch span { font-size: 8px; padding: 3px 4px; }
+  .cinema-caption { bottom: 9%; gap: 5px; }
+  .mayday .cinema-caption h2 { font-size: 25px; }
+  .cinema-caption p { font-size: 11px; line-height: 1.35; }
+  .cinema-caption code { font-size: 9px; padding: 4px 6px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scene-frame > img { transition: none; }
+  .working .worker-tool, .working .worker-arm { animation: none; }
+}
+.mayday button.stall { font-weight: 400; }
+@media (max-width: 760px) {
+  .harbor-stage.cinema-active .scene-frame { transform: none; }
+}
+/* The camera moves through the harbor; the worker belongs to the active stall. */
+.harbor-stage .scene-frame { transform: none; filter: none; transition: left 1.4s ease, top 1.4s ease, width 1.4s ease, height 1.4s ease; }
+.stall-resident { position: absolute; width: 15%; z-index: 3; pointer-events: none; }
+.scene-frame .stall-resident .dock-worker { position: relative; left: auto; top: auto; width: 100%; transform: none; }
+.stall-resident .worker-action { white-space: nowrap; bottom: -5%; }
+.stall-resident .worker-catch { top: 0; left: 42%; }
+.stall-focused .commander-banner, .stall-focused .dock-strip, .stall-focused .dock-crew, .stall-focused .remedy, .stall-focused .boat-marker { visibility: hidden; }
+.harbor-zoom-out { position: absolute; bottom: 125px; right: 18px; z-index: 6; box-shadow: 0 4px 14px #0004; }
+@media (max-width: 760px) { .harbor-zoom-out { bottom: 88px; right: 10px; font-size: 11px; } }
+@media (prefers-reduced-motion: reduce) { .harbor-stage .scene-frame { transition: none; } }
+.stall-focused .stall-bubble { visibility: hidden; }
+.phase-validated .worker-tool, .phase-validated .worker-arm, .phase-failed .worker-tool, .phase-failed .worker-arm { animation: none; }
+/* Preserve the resident's outfit and proportions in both camera views. */
+.scene-frame .stall-resident .worker-catch { top: 1%; left: 45%; width: 60%; }
+.scene-frame .stall-resident .worker-action { left: 0; bottom: -5%; }
+.stall-resident .working .worker-tool, .stall-resident .working .worker-arm { transform-origin: 108px 83px; }
+.stall-resident.phase-validated .worker-tool, .stall-resident.phase-validated .worker-arm,
+.stall-resident.phase-failed .worker-tool, .stall-resident.phase-failed .worker-arm,
+.stall-resident.phase-restored .worker-tool, .stall-resident.phase-restored .worker-arm { animation: none; }
+.stall-resident .worker-catch strong { border-color: #f1d19a80; background: #142c35ed; color: #fff0ca; }
+@media (prefers-reduced-motion: reduce) { .stall-resident .working .worker-tool, .stall-resident .working .worker-arm { animation: none; } }
+/* Sprite motion uses discrete frames to match the painted pixel harbor. */
+.stall-resident .worker-person { animation-timing-function: steps(2, end); }
+.stall-resident .working .worker-arm, .stall-resident .working .worker-tool { animation-timing-function: steps(3, end); }
+.stall-resident .worker-rod { animation-timing-function: steps(5, end); }
+.stall-resident .dock-worker { filter: drop-shadow(2px 3px 0 #23352955); }
+/* Keep live controls and scene labels readable at every viewport. */
+.mayday-header > .brand { grid-column: 1; }
+.mayday-header > .incident-timer { grid-column: 3; }
+.mayday-header > .header-actions { grid-column: 4; }
+.mayday .harbor-notice.success { border-color: var(--mint); }
+.mayday .harbor-notice.success strong { color: var(--mint); }
+.harbor-stage .commander-banner { left: 50%; top: 12%; max-width: 34%; min-width: 0; padding: 8px 12px; }
+.harbor-stage .commander-banner p { display: none; }
+.harbor-stage .commander-banner strong { font-size: clamp(12px, 1.1cqw, 18px); }
+.harbor-stage .dock-strip .pipeline { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.harbor-stage .approval-gate { display: flex; justify-content: center; }
+.harbor-stage .approval-gate .gate-leaf { display: none; }
+.harbor-stage .approval-gate .approve-button { font-size: 13px; min-height: 42px; padding: 10px 16px; }
+.workspace-content .model-row-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px; }
+.workspace-content .model-choice { line-height: 1.5; }
+.workspace-content .model-list small { overflow-wrap: anywhere; }
+.workspace-content .panel-head { flex-wrap: wrap; }
+.workspace-content .decision-actions button { flex: 1 1 120px; }
+.workspace-content .debug-panel { font-family: var(--ui-font); }
+@media (max-width: 1100px) {
+  .mayday-header > .incident-timer { grid-column: 2; }
+  .mayday-header > .header-actions { grid-column: 2; }
+}
+@media (max-width: 760px) {
+  .mayday-header > .header-actions { grid-column: 1 / -1; }
+  .harbor-stage .commander-banner { display: none; }
+  .harbor-stage .dock-strip { left: 20%; width: 62%; }
+  .harbor-stage .dock-strip .pipeline { gap: 2px; padding: 4px; }
+  .harbor-stage .pipeline li { padding: 4px 2px; }
+  .harbor-stage .pipeline b { font-size: 7px; }
+  .harbor-stage .sandbox { min-width: 86px; }
+  .harbor-stage .sandbox b { font-size: 10px; }
+  .harbor-stage .sandbox small { font-size: 9px; }
+  .harbor-stage .dock-crew li { font-size: 9px; }
+  .harbor-stage .boat-marker b { font-size: 10px; }
+  .harbor-stage .boat-marker small { font-size: 9px; }
+}

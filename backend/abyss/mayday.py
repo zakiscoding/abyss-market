@@ -13,7 +13,7 @@ import json
 from dataclasses import dataclass, field
 from typing import Awaitable, Callable
 
-from . import commander, config, prompts, safety
+from . import commander, config, discord, prompts, safety
 from .agents import bid_prompt, build_work_prompt, est_input_tokens
 from .events import EventStream, new_job_id
 from .incident import (
@@ -202,6 +202,7 @@ class IncidentRun:
         self.skipped_cost = 0.0
         self.package_tokens = 0
         self.full_tokens = 0
+        self.review_notification_sent = False
 
     async def status(self, status: str, summary: str) -> None:
         await self.stream.emit("incident_status", _status_data(self.sim, status, summary, self.severity))
@@ -337,6 +338,24 @@ class IncidentRun:
             "summary": f"Deploy {plan_text} to production. All sandbox checks passed.",
             "approvers": approvers,
         })
+        if not self.review_notification_sent:
+            notification = discord.build_review_notification(
+                job_id=job_id,
+                service=sim.service,
+                region=sim.region,
+                domain=self.domain,
+                severity=self.severity,
+                selected_worker=self.agent_names.get(repair.agent_id, repair.agent_id),
+                customer_impact=impact,
+                summary=decision["rationale"],
+                crew=tuple(
+                    (person["name"], person["role"])
+                    for person in self.responders
+                    if person["selected"]
+                ),
+            )
+            await discord.send_review_notification(notification)
+            self.review_notification_sent = True
         await self.control.approval.wait()
         if not self.control.consume(plan_fingerprint(steps)):
             return await self.fail("Deployment rejected because the plan no longer matches the sandbox-approved plan.")

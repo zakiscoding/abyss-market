@@ -1,5 +1,6 @@
 import { describePlan, formatMetric, type Region } from "../../contract";
 import type { MarketState } from "../../state/reducer";
+import { currentTask } from "../../scene/model";
 import {
   PERSONAS,
   canApprove,
@@ -47,18 +48,26 @@ export function CaptainPanel({ state }: { state: MarketState }) {
 
 export function ModelMarket({ state }: { state: MarketState }) {
   const { models, ranking, selected } = selectionFor(state);
-  const rows = ranking.length ? ranking : models.map((model) => ({ model, estimatedUsd: 0, qualified: false, reason: "Waiting for a classified incident" }));
+  const winner = currentTask(state)?.winner;
+  const chosen = models.find((model) => model.agentId === winner);
+  const rows = ranking.length ? ranking : models.map((model) => ({ model, estimatedUsd: 0, qualified: false, reason: "Waiting for Captain AI classification" }));
+  const eligible = rows.filter((row) => row.qualified);
+  const eliminated = rows.length - eligible.length;
   return (
     <section className="panel model-market">
       <header className="panel-head">
         <h2>Model market</h2>
-        <span className="muted">{models.length} registered</span>
+        <span className="muted">{ranking.length ? `${eligible.length} eligible · ${eliminated} eliminated` : `${models.length} registered`}</span>
       </header>
+      {chosen ? <p className="model-choice"><b>Auction winner:</b> {chosen.displayName}</p> : selected && <p className="model-choice"><b>Estimated best fit:</b> {selected.model.displayName}. Waiting for the auction result.</p>}
       <ul className="model-list">
         {rows.map((row) => (
-          <li key={row.model.id} className={selected?.model.id === row.model.id ? "picked" : row.qualified ? "qualified" : ""}>
-            <b>{row.model.displayName}</b>
-            <span className={`avail avail-${row.model.availability}`}>{row.model.availability}</span>
+          <li key={row.model.id} className={chosen?.id === row.model.id ? "picked" : row.qualified ? "qualified" : ""}>
+            <div className="model-row-head">
+              <b>{row.model.displayName}</b>
+              <span className={`avail avail-${row.model.availability}`}>{chosen?.id === row.model.id ? "selected" : !ranking.length ? row.model.availability : row.qualified ? "eligible" : "rejected"}</span>
+            </div>
+            <small>Price {usd(row.estimatedUsd)} · Reliability {(row.model.validationRate * 100).toFixed(0)}%</small>
             <small>{row.model.provider} · {row.model.modelId}</small>
             <small>{row.reason}</small>
           </li>
@@ -159,14 +168,16 @@ export function DecisionPanel({
   onApprove,
   onRevise,
   onReject,
+  onResume,
 }: {
   state: MarketState;
   persona: Persona;
   approving: boolean;
-  blocked: "approved" | "rejected" | null;
+  blocked: "approved" | "rejected" | "review" | null;
   onApprove: () => void;
   onRevise: () => void;
   onReject: () => void;
+  onResume: () => void;
 }) {
   const approval = state.incident?.approval;
   const severity = state.incident?.commander?.severity ?? null;
@@ -192,8 +203,17 @@ export function DecisionPanel({
           <p className="muted">Approvers: {approval.approvers.join(", ")}</p>
         </>
       )}
-      {!awaiting && <p className="muted">Approval opens after the sandbox passes.</p>}
-      {blocked === "rejected" && <p>This plan was rejected. The cluster stays unchanged.</p>}
+      {!awaiting && <p className="muted">{state.incident?.status === "restored"
+        ? "Repair completed and recovery verified."
+        : state.incident?.status === "recovering"
+          ? "Approval recorded. Recovery verification is in progress."
+          : state.incident?.status === "failed"
+            ? "The incident has been escalated to the crew."
+            : state.incident?.repairs.at(-1)?.sandbox?.passed
+              ? "Sandbox passed. Preparing the approval checklist."
+              : "Approval opens after the sandbox passes."}</p>}
+      {blocked === "rejected" && <p>You declined this plan in this session. Deployment remains paused.</p>}
+      {blocked === "review" && <p>Plan held for review in this session. Resume when you are ready to decide.</p>}
       {blocked === "approved" && <p>This plan version was approved once.</p>}
       <div className="decision-actions">
         <button type="button" className="approve-button" disabled={!allowApprove} onClick={onApprove}>
@@ -201,6 +221,7 @@ export function DecisionPanel({
         </button>
         <button type="button" className="ghost" disabled={!allowRevise} onClick={onRevise}>Request revision</button>
         <button type="button" className="ghost" disabled={!allowReject} onClick={onReject}>Reject repair</button>
+        {awaiting && (blocked === "review" || blocked === "rejected") && (canRevise(persona) || canReject(persona)) && <button type="button" className="ghost" onClick={onResume}>Resume review</button>}
       </div>
       {awaiting && !canApprove(persona, severity) && (
         <p className="muted">This demo persona cannot give the final {severity ?? ""} authorization.</p>

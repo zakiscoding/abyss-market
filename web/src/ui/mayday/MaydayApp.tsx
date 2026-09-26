@@ -11,7 +11,6 @@ import { DebugPanel } from "../DebugPanel";
 import {
   CaptainPanel,
   ChatPanel,
-  ClusterPanel,
   CrewPanel,
   DecisionPanel,
   EscalationPanel,
@@ -29,17 +28,17 @@ import {
 } from "./panels";
 import { seasidePicture } from "./seaside";
 import { SeasideScene } from "./SeasideScene";
+import { WorkspaceTabs, type WorkspaceTab } from "./WorkspaceTabs";
 
 const params = new URLSearchParams(window.location.search);
-const SOURCE = params.get("source") === "ws" ? "ws" : "fixture";
+const SOURCE = params.get("source") === "fixture" || params.get("source") === "replay" ? "fixture" : "ws";
 const WS_URL = import.meta.env.VITE_WS_URL
   || (import.meta.env.PROD
     ? `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}/ws`
-    : "ws://localhost:8000/ws");
+    : "ws://127.0.0.1:8000/ws");
 const parsedSpeed = Number(params.get("speed") || "1");
 const SPEED = SOURCE === "fixture" && Number.isFinite(parsedSpeed) && parsedSpeed > 0 ? parsedSpeed : 1;
 const AUTO = params.get("auto") === "1";
-const WIDE = "(min-width: 1180px)";
 
 function fixtureUrl(scenario: ScenarioId): string {
   return `/fixtures/incident_${scenario}.json`;
@@ -75,13 +74,11 @@ function Fold({ title, children, open = false }: { title: string; children: Reac
 export default function MaydayApp() {
   const [state, setState] = useState(store.getState());
   const [pending, setPending] = useState<"approve" | ScenarioId | null>(null);
-  const [showLedger, setShowLedger] = useState(params.get("ledger") === "1");
-  const [inboxOpen, setInboxOpen] = useState(() => window.matchMedia(WIDE).matches);
-  const [detailOpen, setDetailOpen] = useState(() => window.matchMedia("(min-width: 1680px)").matches);
-  const [evidenceOpen, setEvidenceOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<WorkspaceTab>(params.get("ledger") === "1" ? "ledger" : "inbox");
   const [persona, setPersona] = useState<Persona>("commander");
   const [note, setNote] = useState<{ key: string; kind: "revision" | "reject" } | null>(null);
   const [now, setNow] = useState(Date.now());
+  const [notice, setNotice] = useState<{ title: string; message: string; tab: WorkspaceTab } | null>(null);
   const approvedKey = useRef<string | null>(null);
   const sourceRef = useRef<EventSource | null>(null);
   const lastEventWall = useRef(Date.now());
@@ -98,6 +95,22 @@ export default function MaydayApp() {
     sourceRef.current = source;
     source.start((event) => {
       lastEventWall.current = Date.now();
+      if (event.type === "incident_received") {
+        approvedKey.current = null;
+        setNote(null);
+      }
+      if (event.type === "error") {
+        approvedKey.current = null;
+        setNotice({ title: "Something needs attention", message: event.data.message, tab: "evidence" });
+      }
+      if (event.type === "incident_received") setNotice({ title: "New incident received", message: event.data.alert, tab: "evidence" });
+      if (event.type === "approval_required") {
+        setActiveTab("crew");
+        setNotice({ title: "Your approval is needed", message: event.data.summary, tab: "crew" });
+      }
+      if (event.type === "service_restored") setNotice({ title: "Service restored", message: "Recovery checks passed. View the incident outcome in Evidence.", tab: "evidence" });
+      if (event.type === "incident_escalated") setNotice({ title: "Incident needs attention", message: event.data.reason, tab: "crew" });
+      if (event.type === "incident_status" && event.data.status === "healthy") setNotice(null);
       if (event.type === "incident_status" || event.type === "error") setPending(null);
       store.dispatch(event);
     });
@@ -117,17 +130,10 @@ export default function MaydayApp() {
     return () => window.clearInterval(timer);
   }, []);
 
-  useEffect(() => {
-    const phase = state.incident?.status;
-    if ((phase === "awaiting_approval" || phase === "restored" || phase === "failed")
-      && window.matchMedia("(min-width: 1400px)").matches) {
-      setDetailOpen(true);
-    }
-  }, [state.incident?.status]);
-
   const send = (message: ClientMsg) => sourceRef.current?.send?.(message) ?? false;
   const incident = state.incident;
   const status = incident?.status ?? null;
+  const hasIncident = Boolean(incident?.received) || (status !== null && status !== "healthy");
   const active = status !== null && !["healthy", "restored", "failed"].includes(status);
   const mood = harborModel(state).mood;
   const picture = seasidePicture(state);
@@ -139,15 +145,15 @@ export default function MaydayApp() {
   const canTrigger = status !== null && !active && pending === null && (SOURCE === "fixture" || state.connected);
   const badge = modeBadge(state);
   const cost = incident?.restored?.total_cost_usd ?? outcome(state).aiCost;
-  const costLabel = state.config?.real_models && !state.config.fake_llm && SOURCE === "ws" ? "Actual provider cost" : "Simulated AI cost";
+  const costLabel = state.config && !state.config.fake_llm && SOURCE === "ws" ? "Actual provider cost" : "Simulated AI cost";
   const planText = incident?.approval ? describePlan(incident.approval.steps) : "";
-  const planKey = incident?.approval ? `${incident.approval.task_id}-${incident.approval.attempt}-${planHash(planText)}` : null;
+  const planKey = incident?.approval ? `${incident.jobId}-${incident.approval.task_id}-${incident.approval.attempt}-${planHash(planText)}` : null;
   const personaLabel = persona === "commander" ? "Incident Commander" : persona;
-  const blocked = planKey && approvedKey.current === planKey ? "approved" : note?.key === planKey && note.kind === "reject" ? "rejected" : null;
+  const blocked = planKey && approvedKey.current === planKey ? "approved" : note?.key === planKey ? (note.kind === "reject" ? "rejected" : "review") : null;
   const approve = () => {
-    if (!planKey || approvedKey.current === planKey || pending === "approve") return;
+    if (status !== "awaiting_approval" || !planKey || approvedKey.current === planKey || pending === "approve") return;
     if (!canApprove(persona, incident?.commander?.severity ?? null)) return;
-    if (note?.key === planKey && note.kind === "reject") return;
+    if (note?.key === planKey) return;
     if (send({ type: "approve_repair" })) {
       approvedKey.current = planKey;
       setPending("approve");
@@ -161,48 +167,60 @@ export default function MaydayApp() {
           <strong>ABYSS</strong>
           <span>Incident command</span>
         </div>
-        <div className="header-facts" aria-label="Incident summary">
-          <b className={active ? "sev" : picture.boat === "restored" ? "ok" : ""}>{picture.severity ?? "STANDBY"}</b>
+        {hasIncident && <div className="header-facts" aria-label="Incident summary">
+          <b className={active ? "sev" : picture.boat === "restored" ? "ok" : ""}>{status === "restored" ? "RESTORED" : picture.severity ?? "STANDBY"}</b>
           <span>{picture.service}</span>
           <span>{picture.region || "—"}</span>
           <span className="status">{(status ?? "connecting").replaceAll("_", " ")}</span>
           <span className="cost" title={costLabel}>${cost.toFixed(4)}</span>
-        </div>
+        </div>}
         <div className="incident-timer" title="Time since the outage started">
           <small>{status === "restored" ? "MTTR" : "INCIDENT"}</small>
           <b>{formatDuration(elapsedMs)}</b>
         </div>
         <div className="header-actions">
-          <button type="button" className="ghost" aria-expanded={inboxOpen} onClick={() => setInboxOpen((open) => !open)}>
-            Inbox
-          </button>
-          <button type="button" className="ghost" aria-expanded={detailOpen} onClick={() => setDetailOpen((open) => !open)}>
-            Crew
-          </button>
-          <button type="button" className="ghost" aria-expanded={evidenceOpen} onClick={() => setEvidenceOpen((open) => !open)}>
-            Evidence
-          </button>
           <PersonaSelect persona={persona} onChange={setPersona} />
-          <button type="button" className={`ghost ${status === "restored" || status === "failed" ? "nudge" : ""}`} disabled={status === null}
-            onClick={() => { setPending(null); setNote(null); approvedKey.current = null; send({ type: "reset_incident" }); }}>
+          <button type="button" className={`ghost ${status === "restored" || status === "failed" ? "nudge" : ""}`} disabled={SOURCE === "ws" && !state.connected}
+            onClick={() => { setPending(null); setNote(null); approvedKey.current = null; send({ type: "reset_incident" }); setActiveTab("inbox"); }}>
             Reset
-          </button>
-          <button type="button" className="ghost" onClick={() => setShowLedger((open) => !open)}>
-            {showLedger ? "Hide ledger" : "Ledger"}
           </button>
           <span className={`mode-badge ${badge.tone}`}>{badge.label}</span>
         </div>
       </header>
 
+      <main className="command-layout">
       <div className="harbor-wrap">
+        <div className="harbor-notices" aria-live="polite" aria-atomic="true">
+          {notice ? <div className={`harbor-notice ${notice.title === "Service restored" ? "success" : ""}`}>
+            <div><strong>{notice.title}</strong><p>{notice.message}</p></div>
+            <button type="button" onClick={() => {
+              setActiveTab(notice.tab);
+              requestAnimationFrame(() => document.getElementById(`panel-${notice.tab}`)?.focus());
+              setNotice(null);
+            }}>View details</button>
+            <button type="button" aria-label="Dismiss notification" onClick={() => setNotice(null)}>Dismiss</button>
+          </div> : !hasIncident && <div className="harbor-notice quiet">
+            <div><strong>{SOURCE === "ws" && !state.connected ? "Connecting to incident feed" : "No active alerts"}</strong><p>{SOURCE === "ws" && !state.connected ? "Waiting for the server connection." : "The harbor is on standby. Explore a stall or trigger an incident from the inbox."}</p></div>
+            <button type="button" onClick={() => {
+              setActiveTab("inbox");
+              requestAnimationFrame(() => document.getElementById("panel-inbox")?.focus());
+            }}>Open inbox</button>
+          </div>}
+        </div>
         <SeasideScene
           state={state}
           approving={pending === "approve"}
-          canApprove={Boolean(planKey) && blocked === null && canApprove(persona, incident?.commander?.severity ?? null)}
+          canApprove={status === "awaiting_approval" && Boolean(planKey) && blocked === null && canApprove(persona, incident?.commander?.severity ?? null)}
           onApprove={approve}
         />
 
-        <aside className={`drawer left ${inboxOpen ? "open" : ""}`} aria-label="Incident inbox">
+      <div className="harbor-caption"><span>LIVE HARBOR</span><p>{status === "awaiting_approval" ? "Sandbox passed. Your crew can now review the repair." : status === "restored" ? "Service restored. Explore the evidence or start another incident." : status === "failed" ? "Investigation escalated. Review the evidence for details." : active ? "Specialists are working on this incident." : "Select a source in the inbox to begin an investigation."}</p>
+        {status === "awaiting_approval" && <button type="button" onClick={() => { setActiveTab("crew"); requestAnimationFrame(() => document.getElementById("panel-crew")?.focus()); }}>Review repair</button>}
+      </div>
+      </div>
+      <WorkspaceTabs active={activeTab} onChange={setActiveTab} attention={status === "awaiting_approval"}>
+        {{ inbox: <>
+
           <Inbox
             state={state}
             canTrigger={canTrigger}
@@ -210,40 +228,35 @@ export default function MaydayApp() {
             onTrigger={(scenarioId) => { if (send({ type: "start_incident", scenario_id: scenarioId })) setPending(scenarioId); }}
           />
           <HistoryPanel history={state.history} />
-        </aside>
-
-        <aside className={`drawer right ${detailOpen ? "open" : ""}`} aria-label="Crew, chat, and approval">
+        </>,
+        crew: <>
           <CaptainPanel state={state} />
-          <CrewPanel state={state} revision={note?.kind === "revision" && note.key === planKey} />
-          <ChatPanel state={state} note={note && note.key === planKey ? { ...note, persona: personaLabel } : null} />
           <DecisionPanel
             state={state}
             persona={persona}
             approving={pending === "approve"}
             blocked={blocked}
             onApprove={approve}
+            onResume={() => setNote(null)}
             onRevise={() => { if (planKey) setNote({ key: planKey, kind: "revision" }); }}
             onReject={() => { if (planKey) setNote({ key: planKey, kind: "reject" }); }}
           />
+          <CrewPanel state={state} revision={note?.kind === "revision" && note.key === planKey} />
+          <ChatPanel state={state} note={note && note.key === planKey ? { ...note, persona: personaLabel } : null} />
+          <ModelMarket state={state} />
           <Fold title="Assignments">
             <Repairs state={state} />
           </Fold>
-        </aside>
-
-        <aside className={`drawer bottom ${evidenceOpen ? "open" : ""}`} aria-label="Live evidence">
+        </>,
+        evidence: <>
           <Terminal state={state} />
-          <ClusterPanel state={state} />
           <ModelMarket state={state} />
           <EscalationPanel state={state} />
           <OutcomePanel state={state} elapsedMs={elapsedMs} />
-        </aside>
-      </div>
-
-      {showLedger && (
-        <div className="ledger-drawer">
-          <DebugPanel state={state} />
-        </div>
-      )}
+        </>,
+        ledger: <DebugPanel state={state} /> }}
+      </WorkspaceTabs>
+      </main>
     </div>
   );
 }
