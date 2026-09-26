@@ -216,6 +216,7 @@ class Scenario:
             "region": self.region,
             "source_system": self.source_system,
             "alert": self.alert,
+            "allowed_actions": list(self.allowed_actions),
         }
 
     def _record_change(self, key: str, old: str, new: str) -> None:

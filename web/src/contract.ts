@@ -5,6 +5,19 @@ export type JobTaskType = "research" | "writing" | "checking";
 export type IncidentTaskType = "diagnose" | "remediate" | "verify";
 export type TaskType = JobTaskType | IncidentTaskType;
 export type Purpose = "split" | "bid" | "work" | "review";
+export type Domain = "database" | "networking" | "security" | "payments" | "generalist";
+export type ScenarioId = "payments_pool" | "ams_db_outage" | "auth_attack" | "network_partition";
+export type Region = "ams" | "fra" | "iad" | "sin";
+export type Severity = "SEV-1" | "SEV-2" | "SEV-3";
+export type ActionName =
+  | "set_db_pool_size"
+  | "restart_service"
+  | "rollback_config"
+  | "restart_db"
+  | "failover_db"
+  | "route_traffic"
+  | "apply_rate_limit"
+  | "block_ips";
 export type IncidentState =
   | "healthy"
   | "outage"
@@ -30,7 +43,25 @@ export interface AgentSpec {
   color: string;
 }
 
-export type Reputation = Record<AgentId, Record<TaskType, number>>;
+// Keys are job task types ("research") or "{domain}.{incident task type}" ("database.remediate").
+export type Reputation = Record<AgentId, Record<string, number>>;
+
+export interface ScenarioInfo {
+  scenario_id: ScenarioId;
+  name: string;
+  service: string;
+  region: Region;
+  source_system: string;
+  alert: string;
+  allowed_actions: ActionName[];
+}
+
+export interface SpecialistInfo {
+  specialist_id: string;
+  domain: Domain;
+  agent_id: AgentId;
+  label: string;
+}
 
 export interface TaskSpec {
   task_id: string;
@@ -48,6 +79,10 @@ export interface HelloData {
     rep_init: number;
     rep_alpha: number;
     task_types: TaskType[];
+    rep_keys: string[];
+    domains: Domain[];
+    specialists: SpecialistInfo[];
+    scenarios: ScenarioInfo[];
     real_models: boolean;
     fake_llm: boolean;
     orchestrator_model: string;
@@ -66,6 +101,7 @@ export interface TaskPostedData extends TaskSpec {
   index: number;
   total: number;
   est_input_tokens: number;
+  domain: Domain | null;
 }
 
 export interface BidData {
@@ -123,6 +159,7 @@ export interface RepUpdateData {
   task_id: string;
   agent_id: AgentId;
   task_type: TaskType;
+  rep_key: string;
   old: number;
   new: number;
   ratio: number;
@@ -171,16 +208,15 @@ export interface ErrorData {
   fatal: boolean;
 }
 
-export interface Telemetry {
-  db_pool_size: number;
-  db_connections_in_use: number;
-  p95_latency_ms: number;
-  error_rate: number;
-  payment_success_rate: number;
-  requests_per_min: number;
-  timeouts_per_min: number;
-  failed_payments_per_min: number;
+export interface Metric {
+  key: string;
+  label: string;
+  value: number;
+  unit: "ratio" | "ms" | "per_min" | "count" | "s";
+  ok: boolean;
 }
+
+export type Telemetry = Metric[];
 
 export interface ConfigChange {
   change_id: string;
@@ -193,12 +229,61 @@ export interface ConfigChange {
 
 export interface IncidentStatusData {
   status: IncidentState;
+  scenario_id: ScenarioId;
   service: string;
-  severity: "SEV-1" | "SEV-2" | "SEV-3" | null;
+  region: Region;
+  severity: Severity | null;
   summary: string;
   telemetry: Telemetry;
   logs: string[];
   config_changes: ConfigChange[];
+}
+
+export interface IncidentPackage {
+  service: string;
+  region: Region;
+  source_system: string;
+  alert: string;
+  breached: Metric[];
+  log_excerpt: string[];
+  recent_changes: ConfigChange[];
+}
+
+export interface IncidentReceivedData {
+  scenario_id: ScenarioId;
+  name: string;
+  service: string;
+  region: Region;
+  source_system: string;
+  alert: string;
+  allowed_actions: ActionName[];
+  package: IncidentPackage;
+  package_tokens_est: number;
+  full_context_tokens_est: number;
+}
+
+export interface CommanderClassifiedData {
+  scenario_id: ScenarioId;
+  domain: Domain;
+  secondary_domains: Domain[];
+  severity: Severity;
+  required_specialties: string[];
+  rationale: string;
+  source: "model" | "rules";
+  fallback_reason: string | null;
+  usage: Usage | null;
+}
+
+export interface DispatchedSpecialist extends SpecialistInfo {
+  dispatched: boolean;
+}
+
+export interface SpecialistsDispatchedData {
+  domain: Domain;
+  registered: number;
+  eligible: number;
+  specialists: DispatchedSpecialist[];
+  reason: string;
 }
 
 export interface Responder {
@@ -227,15 +312,17 @@ export interface RespondersSelectedData {
 }
 
 export interface RemediationAction {
-  action: "set_db_pool_size" | "restart_service" | "rollback_config";
+  action: ActionName;
   value: number | null;
+  region: Region | null;
+  ips: string[] | null;
 }
 
 export interface RemediationProposedData {
   task_id: string;
   agent_id: AgentId;
   attempt: number;
-  action: RemediationAction | null;
+  steps: RemediationAction[];
   accepted: boolean;
   reason: string;
 }
@@ -250,36 +337,104 @@ export interface SandboxResultData {
   task_id: string;
   agent_id: AgentId;
   attempt: number;
-  action: RemediationAction | null;
+  steps: RemediationAction[];
   passed: boolean;
   checks: Check[];
   telemetry: Telemetry;
+}
+
+export interface PlanStep {
+  index: number;
+  action: RemediationAction;
+  description: string;
+  owner_domain: Domain;
+}
+
+export interface RemediationPlanData {
+  task_id: string;
+  agent_id: AgentId;
+  attempt: number;
+  steps: PlanStep[];
+  summary: string;
+  confidence: number;
+}
+
+export interface Assignment {
+  assignment_id: string;
+  step_index: number | null;
+  action: RemediationAction | null;
+  description: string;
+  responder_id: string;
+  name: string;
+  role: string;
+  reason: string;
+  approval_required: boolean;
+  status: "pending" | "notify";
+}
+
+export interface HumanAssignmentsData {
+  task_id: string;
+  assignments: Assignment[];
+  required_approvers: string[];
 }
 
 export interface ApprovalRequiredData {
   task_id: string;
   agent_id: AgentId;
   attempt: number;
-  action: RemediationAction;
+  steps: RemediationAction[];
   summary: string;
   approvers: string[];
+}
+
+export interface ApprovalGrantedData {
+  task_id: string;
+  approved: string[];
+  approved_by: string[];
+}
+
+export interface IncidentEscalatedData {
+  reason: string;
+  attempts: number;
+  escalated_to: string[];
+}
+
+export interface RoutingStatsData {
+  domain: Domain;
+  registered_specialists: number;
+  eligible_specialists: number;
+  auctions: number;
+  models_contacted: number;
+  models_skipped: number;
+  actual_input_tokens: number;
+  actual_output_tokens: number;
+  actual_cost_usd: number;
+  actual_calls: number;
+  commander_package_tokens_est: number;
+  full_context_tokens_est: number;
+  avoided_input_tokens_est: number;
+  avoided_cost_usd_est: number;
+  method: string;
 }
 
 export interface RepChange {
   agent_id: AgentId;
   task_type: TaskType;
+  rep_key: string;
   old: number;
   new: number;
 }
 
 export interface ServiceRestoredData {
+  scenario_id: ScenarioId;
+  domain: Domain;
   mttr_ms: number;
   total_cost_usd: number;
   repair_attempts: number;
   failed_attempts: number;
-  action: RemediationAction;
+  steps: RemediationAction[];
   confidence: number;
-  approved_by: string;
+  approved_by: string[];
   verification: Check[];
   grades: FinalTask[];
   rep_changes: RepChange[];
@@ -309,19 +464,57 @@ export type AbyssEvent =
   | Envelope<"final", FinalData>
   | Envelope<"error", ErrorData>
   | Envelope<"incident_status", IncidentStatusData>
+  | Envelope<"incident_received", IncidentReceivedData>
+  | Envelope<"commander_classified", CommanderClassifiedData>
+  | Envelope<"specialists_dispatched", SpecialistsDispatchedData>
   | Envelope<"responders_selected", RespondersSelectedData>
   | Envelope<"remediation_proposed", RemediationProposedData>
   | Envelope<"sandbox_result", SandboxResultData>
+  | Envelope<"remediation_plan_created", RemediationPlanData>
+  | Envelope<"human_assignments_created", HumanAssignmentsData>
   | Envelope<"approval_required", ApprovalRequiredData>
-  | Envelope<"service_restored", ServiceRestoredData>;
+  | Envelope<"approval_granted", ApprovalGrantedData>
+  | Envelope<"incident_escalated", IncidentEscalatedData>
+  | Envelope<"service_restored", ServiceRestoredData>
+  | Envelope<"routing_stats", RoutingStatsData>;
 
 export type ClientMsg =
   | { type: "start_job"; job: string; price_weight?: number }
   | { type: "reset" }
-  | { type: "start_incident"; price_weight?: number }
+  | { type: "start_incident"; scenario_id?: ScenarioId; price_weight?: number }
   | { type: "approve_repair" }
   | { type: "reset_incident" };
 
-export function describeAction(action: RemediationAction): string {
-  return action.action === "set_db_pool_size" ? `set_db_pool_size(${action.value})` : action.action;
+// Mirrors describe_action / describe_plan in backend/abyss/incident.py.
+export function describeAction(step: RemediationAction): string {
+  if (step.value !== null) return `${step.action}(${step.value})`;
+  if (step.region !== null) return `${step.action}(${step.region})`;
+  if (step.ips && step.ips.length) {
+    const extra = step.ips.length > 1 ? `, +${step.ips.length - 1}` : "";
+    return `${step.action}(${step.ips[0]}${extra})`;
+  }
+  return step.action;
+}
+
+export function describePlan(steps: RemediationAction[]): string {
+  return steps.map(describeAction).join(" + ");
+}
+
+export function metricValue(telemetry: Telemetry, key: string): number | undefined {
+  return telemetry.find((m) => m.key === key)?.value;
+}
+
+export function formatMetric(m: Metric): string {
+  switch (m.unit) {
+    case "ratio":
+      return `${(m.value * 100).toFixed(m.value < 0.1 ? 1 : 0)}%`;
+    case "ms":
+      return `${Math.round(m.value)} ms`;
+    case "per_min":
+      return `${Math.round(m.value).toLocaleString("en-US")}/min`;
+    case "s":
+      return `${m.value.toFixed(1)} s`;
+    default:
+      return `${m.value}`;
+  }
 }

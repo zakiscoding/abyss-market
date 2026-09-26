@@ -226,7 +226,12 @@
             "service": "payments-api",
             "region": "iad",
             "source_system": "Datadog APM",
-            "alert": "payments-api HTTP 500 rate above 1% for 3 minutes"
+            "alert": "payments-api HTTP 500 rate above 1% for 3 minutes",
+            "allowed_actions": [
+              "set_db_pool_size",
+              "restart_service",
+              "rollback_config"
+            ]
           },
           {
             "scenario_id": "ams_db_outage",
@@ -234,7 +239,13 @@
             "service": "orders-api",
             "region": "ams",
             "source_system": "PagerDuty \u00b7 Postgres HA monitor",
-            "alert": "pg-ams-1 primary health probe failing; EU order writes erroring"
+            "alert": "pg-ams-1 primary health probe failing; EU order writes erroring",
+            "allowed_actions": [
+              "restart_db",
+              "failover_db",
+              "route_traffic",
+              "restart_service"
+            ]
           },
           {
             "scenario_id": "auth_attack",
@@ -242,7 +253,13 @@
             "service": "auth-api",
             "region": "iad",
             "source_system": "Okta System Log + WAF",
-            "alert": "failed logins 160x baseline; suspicious source concentration"
+            "alert": "failed logins 160x baseline; suspicious source concentration",
+            "allowed_actions": [
+              "apply_rate_limit",
+              "block_ips",
+              "restart_service",
+              "restart_db"
+            ]
           },
           {
             "scenario_id": "network_partition",
@@ -250,7 +267,13 @@
             "service": "checkout-api",
             "region": "fra",
             "source_system": "Cloudflare + ThousandEyes",
-            "alert": "checkout unreachable from sin PoP; origin health checks green"
+            "alert": "checkout unreachable from sin PoP; origin health checks green",
+            "allowed_actions": [
+              "route_traffic",
+              "restart_service",
+              "restart_db",
+              "failover_db"
+            ]
           }
         ],
         "real_models": false,
@@ -337,6 +360,11 @@
       "region": "iad",
       "source_system": "Datadog APM",
       "alert": "payments-api HTTP 500 rate above 1% for 3 minutes",
+      "allowed_actions": [
+        "set_db_pool_size",
+        "restart_service",
+        "rollback_config"
+      ],
       "package": {
         "service": "payments-api",
         "region": "iad",

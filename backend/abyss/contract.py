@@ -112,6 +112,7 @@ class ScenarioInfo(ContractModel):
     region: Region
     source_system: str
     alert: str
+    allowed_actions: Annotated[list[ActionName], Field(min_length=1)]
 
 
 class SpecialistInfo(ContractModel):
@@ -510,6 +511,7 @@ class IncidentReceivedData(ContractModel):
     region: Region
     source_system: str
     alert: str
+    allowed_actions: Annotated[list[ActionName], Field(min_length=1)]
     package: IncidentPackage
     package_tokens_est: NonNegativeInt
     full_context_tokens_est: NonNegativeInt
