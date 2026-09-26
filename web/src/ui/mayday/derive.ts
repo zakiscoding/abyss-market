@@ -121,7 +121,7 @@ export function terminal(state: MarketState): TerminalLine[] {
   const incident = state.incident;
   if (!incident) return lines;
   if (incident.status === "healthy" && !incident.received) {
-    return incident.current.logs.map((text) => ({ t: 0, tone: logTone(text), text }));
+    return [];
   }
   for (const event of jobEvents(state)) {
     const t = event.t;

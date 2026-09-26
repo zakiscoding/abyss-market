@@ -131,7 +131,8 @@ export class FixtureSource implements EventSource {
       if (!this.active) return;
       // A replay is a new run even when its recording reuses the original job ID.
       onEvent({ ...event, job_id: event.job_id ? `${event.job_id}-replay-${runId}` : null });
-      if (event.type === "approval_required" && !this.auto) {
+      if ((event.type === "approval_required" || event.type === "notification_status")
+        && events[index + 1]?.type !== "notification_status" && !this.auto) {
         await this.gate("approve_repair", signal);
         // The recording's approval wait already happened for real.
         const next = events[index + 1];

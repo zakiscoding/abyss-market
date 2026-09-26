@@ -123,7 +123,7 @@ def test_workflow_pauses_for_human_approval(fake_env, scenario_id) -> None:
     _, paused, _, _ = asyncio.run(_run(scenario_id, approve=False))
     assert paused["awaiting"] is True
     assert paused["sim_healthy"] is False
-    assert paused["types"][-1] == "approval_required"
+    assert paused["types"][-2:] == ["approval_required", "notification_status"]
     assert "human_assignments_created" in paused["types"]
     assert "approval_granted" not in paused["types"] and "service_restored" not in paused["types"]
 
@@ -285,3 +285,49 @@ def test_routing_language_depends_on_provider_mode(monkeypatch) -> None:
     live = routing_method()
     assert "actual provider cost" in live
     assert "simulated" not in live
+
+
+@pytest.mark.parametrize("sent", [True, False])
+def test_notification_status_is_safe_and_failure_does_not_block(fake_env, monkeypatch, sent):
+    from abyss import discord
+    notification = discord.DiscordNotification("https://secret.invalid/token", "secret-token", None, (), "private")
+    monkeypatch.setattr(discord, "build_review_notification", lambda **kwargs: notification)
+
+    async def send(_notification):
+        return sent
+
+    monkeypatch.setattr(discord, "send_review_notification", send)
+    events, _, _, sim = asyncio.run(_run())
+    validate_stream(events)
+    statuses = _of(events, "notification_status")
+    assert [e["data"]["status"] for e in statuses] == ["queued", "sent" if sent else "failed"]
+    assert statuses[0]["data"]["recipients"] == ["Zak", "Maya", "Alex", "Jordan"]
+    assert "secret" not in json.dumps(statuses)
+    assert sim.healthy()
+    assert _one(events, "service_restored")["verification"]
+
+
+def test_disabled_notification_is_recorded(fake_env, monkeypatch):
+    from abyss import discord
+    monkeypatch.setattr(discord, "build_review_notification", lambda **kwargs: None)
+    events, _, _, _ = asyncio.run(_run())
+    assert _one(events, "notification_status")["status"] == "disabled"
+
+
+@pytest.mark.parametrize("scenario_id", SCENARIO_IDS)
+def test_configured_discord_tags_match_crew_without_network(fake_env, monkeypatch, scenario_id):
+    from abyss import discord
+    monkeypatch.setenv("DISCORD_WEBHOOK_URL", "https://discord.invalid/mock")
+    for name in ("Zak", "Maya", "Riley", "Sam", "Alex", "Jordan"):
+        monkeypatch.setenv(f"DISCORD_USER_{name.upper()}", f"id-{name.lower()}")
+    posted = []
+    monkeypatch.setattr(discord, "_post", posted.append)
+    events, _, _, sim = asyncio.run(_run(scenario_id))
+    validate_stream(events)
+    assert len(posted) == 1
+    expected = {f"id-{name.lower()}" for name in EXPECTED[scenario_id]["paged"]}
+    assert set(posted[0].mentions) == expected
+    assert all(f"<@{user_id}>" in posted[0].message for user_id in expected)
+    assert [event["data"]["status"] for event in _of(events, "notification_status")] == ["queued", "sent"]
+    assert _one(events, "service_restored")["steps"] == _of(events, "sandbox_result")[-1]["data"]["steps"]
+    assert sim.healthy()

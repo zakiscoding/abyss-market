@@ -639,6 +639,12 @@ class ApprovalRequiredData(ContractModel):
     approvers: Annotated[list[str], Field(min_length=1)]
 
 
+class NotificationStatusData(ContractModel):
+    channel: Literal["discord"]
+    status: Literal["queued", "sent", "failed", "disabled"]
+    recipients: Annotated[list[Literal["Zak", "Maya", "Riley", "Sam", "Alex", "Jordan"]], Field(min_length=1)]
+
+
 class ApprovalGrantedData(ContractModel):
     task_id: TaskId
     approved: Annotated[list[str], Field(min_length=1)]
@@ -744,6 +750,7 @@ DATA_MODELS: dict[str, type[ContractModel]] = {
     "remediation_plan_created": RemediationPlanData,
     "human_assignments_created": HumanAssignmentsData,
     "approval_granted": ApprovalGrantedData,
+    "notification_status": NotificationStatusData,
     "incident_escalated": IncidentEscalatedData,
     "routing_stats": RoutingStatsData,
 }
@@ -764,6 +771,7 @@ INCIDENT_LEVEL_EVENTS = {
     "remediation_plan_created",
     "human_assignments_created",
     "approval_granted",
+    "notification_status",
     "incident_escalated",
     "routing_stats",
 }
@@ -960,6 +968,7 @@ def _validate_incident(job_id: str, events: list[dict]) -> None:
     plan: dict | None = None
     assignments: dict | None = None
     approval: dict | None = None
+    notification: dict | None = None
     granted: dict | None = None
     restored_event: dict | None = None
     escalated = False
@@ -1018,6 +1027,17 @@ def _validate_incident(job_id: str, events: list[dict]) -> None:
             if data["approvers"] != assignments["required_approvers"]:
                 raise ValueError("approval_required approvers must match the assignments")
             approval = data
+        elif kind == "notification_status":
+            if approval is None or status != "awaiting_approval":
+                raise ValueError("notification status requires pending human review")
+            previous = notification["status"] if notification else None
+            if previous is None and data["status"] not in {"queued", "disabled"}:
+                raise ValueError("notification must start queued or disabled")
+            if previous is not None and (previous != "queued" or data["status"] not in {"sent", "failed"}):
+                raise ValueError("notification must finish sent or failed after queued")
+            if notification and data["recipients"] != notification["recipients"]:
+                raise ValueError("notification recipients must remain stable")
+            notification = data
         elif kind == "approval_granted":
             if approval is None or granted is not None or status != "awaiting_approval":
                 raise ValueError("approval_granted must follow approval_required")

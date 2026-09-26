@@ -8,7 +8,7 @@ import { WsSource } from "../../sources/ws";
 import type { MarketState } from "../../state/reducer";
 import { incidentElapsed } from "../../state/incident";
 import { store } from "../../state/store";
-import { DebugPanel } from "../DebugPanel";
+import { LedgerPanel } from "./LedgerPanel";
 import {
   CaptainPanel,
   CrewPanel,
@@ -243,7 +243,7 @@ export default function MaydayApp() {
           <ModelMarket state={state} />
           <EscalationPanel state={state} />
         </>,
-        ledger: <DebugPanel state={state} /> }}
+        ledger: <LedgerPanel state={state} replay={SOURCE === "fixture"} /> }}
       </WorkspaceTabs>
       </main>
     </div>

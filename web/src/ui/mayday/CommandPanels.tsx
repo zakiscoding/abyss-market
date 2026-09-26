@@ -70,7 +70,7 @@ export function ModelMarket({ state }: { state: MarketState }) {
               <b>{row.model.displayName}</b>
               <span className={`avail avail-${row.model.availability}`}>{chosen?.id === row.model.id ? "selected" : !ranking.length ? row.model.availability : row.qualified ? "eligible" : "rejected"}</span>
             </div>
-            <small>Price {usd(row.estimatedUsd)} · Reliability {(row.model.validationRate * 100).toFixed(0)}%</small>
+            <small>Estimated price {usd(row.estimatedUsd)} · Catalog validation prior {(row.model.validationRate * 100).toFixed(0)}%</small>
             <small>{row.model.provider} · {row.model.modelId}</small>
             <small>{row.reason}</small>
           </li>
@@ -109,29 +109,36 @@ export function EscalationPanel({ state }: { state: MarketState }) {
 }
 
 export function CrewPanel({ state, revision }: { state: MarketState; revision: boolean }) {
-  const people = incidentCrew(state.incident, revision);
-  return (
-    <section className="panel crew-panel">
-      <header className="panel-head">
-        <h2>Human crew</h2>
-        <span className="badge human">HUMAN</span>
-      </header>
-      {people.length === 0 && <p className="muted">No one is paged yet.</p>}
-      {people.length > 0 && <p className="crew-summary">Crew alerted · {people.map((person) => person.name).join(", ")}</p>}
-      <ul className="crew-list">
-        {people.map((person) => {
-          const phase = person.state;
-          return (
-            <li key={person.id}>
-              <b>{person.name}</b>
-              <span>{person.role}</span>
-              <small className={`crew-${phase.replace(" ", "-")}`}>{phase}</small>
-            </li>
-          );
-        })}
-      </ul>
+  const incident = state.incident;
+  const selected = incidentCrew(incident, revision);
+  const unselected = (incident?.responders?.responders ?? [])
+    .filter((person) => !selected.some((member) => member.id === person.responder_id))
+    .map((person) => ({ id: person.responder_id, name: person.name, role: person.role, state: "Not required" }));
+  const people = [...selected, ...unselected];
+  return <section className="panel crew-panel">
+    <header className="panel-head"><h2>Human crew</h2><span className="badge human">HUMAN</span></header>
+    {!people.length && <p>No one is paged yet.</p>}
+    {!!selected.length && <p className="crew-summary">Crew alerted: {selected.map((person) => person.name).join(", ")}</p>}
+    <ul className="crew-list">{people.map((person) => {
+      const responder = incident?.responders?.responders.find((item) => item.responder_id === person.id);
+      const assignments = incident?.assignments?.assignments.filter((item) => item.responder_id === person.id) ?? [];
+      const alerted = selected.some((item) => item.id === person.id);
+      const approved = incident?.restored?.approved_by.includes(person.name) || incident?.granted?.approved_by.includes(person.name);
+      const needs = incident?.approval?.approvers.includes(person.name);
+      return <li key={person.id}><b>{person.name} <span className="badge human">Human</span></b><span>{person.role}</span>
+        <dl className="crew-details">
+          <dt>Why {alerted ? "selected" : "not selected"}</dt><dd>{assignments.length ? assignments.map((item) => item.reason).join(" ") : responder?.reason ?? "Assigned to incident review"}</dd>
+          <dt>Alert state</dt><dd>{alerted ? "Alerted in Abyss" : "Not alerted"}</dd>
+          <dt>Review responsibility</dt><dd>{assignments.length ? assignments.map((item) => item.description).join("; ") : alerted ? "Technical review and affected-service recovery monitoring" : "Not required for this incident"}</dd>
+          <dt>Approval state</dt><dd>{approved ? "Approved" : needs ? revision ? "Revision requested" : "Awaiting approval" : "Not required"}</dd>
+          <dt>{incident?.restored ? "Final state" : "Current state"}</dt><dd>{person.state}</dd>
+        </dl>
+      </li>;
+    })}</ul>
+    <section className="notification-status"><h3>Discord notification</h3>
+      {incident?.notification ? <><p>Recipients (named crew): {incident.notification.recipients.join(", ")}</p><p>Status: <b>{incident.notification.status[0].toUpperCase() + incident.notification.status.slice(1)}</b></p><p className="muted">{incident.notification.status === "sent" ? "Discord accepted the request. Delivery and opening are not tracked." : incident.notification.status === "failed" ? "Notification failed. Incident review can continue in Abyss." : incident.notification.status === "disabled" ? "No Discord request was sent for this run." : "Notification request is queued."}</p></> : <p>No notification status recorded{incident?.received ? " yet" : "; trigger an incident to begin"}.</p>}
     </section>
-  );
+  </section>;
 }
 
 export function ChatPanel({

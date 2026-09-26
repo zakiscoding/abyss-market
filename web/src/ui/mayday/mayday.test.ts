@@ -204,7 +204,8 @@ describe("FixtureSource gates", () => {
     expect(source.send({ type: "start_incident", scenario_id: "ams_db_outage" })).toBe(true);
     expect(source.send({ type: "start_incident", scenario_id: "payments_pool" })).toBe(false);
     await until(() => source.pausedAt === "approve_repair");
-    expect(seen.at(-1)?.type).toBe("approval_required");
+    expect(seen.at(-1)?.type).toBe("notification_status");
+    expect(seen.some((event) => event.type === "approval_required")).toBe(true);
     expect(source.pausedAt).toBe("approve_repair");
 
     source.send({ type: "approve_repair" });

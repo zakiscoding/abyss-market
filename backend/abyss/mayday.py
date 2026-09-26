@@ -354,7 +354,20 @@ class IncidentRun:
                     if person["selected"]
                 ),
             )
-            await discord.send_review_notification(notification)
+            recipients = list(dict.fromkeys(
+                [person["name"] for person in self.responders if person["selected"]]
+                + [item["name"] for item in assignments]
+            ))
+            await self.stream.emit("notification_status", {
+                "channel": "discord", "status": "queued" if notification else "disabled",
+                "recipients": recipients,
+            })
+            if notification:
+                sent = await discord.send_review_notification(notification)
+                await self.stream.emit("notification_status", {
+                    "channel": "discord", "status": "sent" if sent else "failed",
+                    "recipients": recipients,
+                })
             self.review_notification_sent = True
         await self.control.approval.wait()
         if not self.control.consume(plan_fingerprint(steps)):

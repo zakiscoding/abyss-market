@@ -1,5 +1,7 @@
 ﻿# Five-stall harbor verification
 
+Latest results, changed files, limitations and demonstration steps: [Final frontend polish](FINAL-POLISH.md). All four scenarios passed at both desktop sizes, with 53 frontend and 204 backend tests passing. The notes below describe the earlier artwork verification.
+
 Verified in headless Microsoft Edge at 1440x900 and 1920x1080 using the existing Payments recording, without synthesizing incident events.
 
 At each size: standby, active remediation, first sandbox rejection, successful retry, awaiting approval, restored; Inbox, Crew, Evidence and Ledger; all five specialty dialogs; no horizontal page overflow, overlapping harbor label bounds or runtime exceptions. Screenshots were inspected for physical buildings, sign placement, the worker, Captain and route.

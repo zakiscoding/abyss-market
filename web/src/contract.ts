@@ -387,6 +387,12 @@ export interface ApprovalRequiredData {
   approvers: string[];
 }
 
+export interface NotificationStatusData {
+  channel: "discord";
+  status: "queued" | "sent" | "failed" | "disabled";
+  recipients: ("Zak" | "Maya" | "Riley" | "Sam" | "Alex" | "Jordan")[];
+}
+
 export interface ApprovalGrantedData {
   task_id: string;
   approved: string[];
@@ -474,6 +480,7 @@ export type AbyssEvent =
   | Envelope<"human_assignments_created", HumanAssignmentsData>
   | Envelope<"approval_required", ApprovalRequiredData>
   | Envelope<"approval_granted", ApprovalGrantedData>
+  | Envelope<"notification_status", NotificationStatusData>
   | Envelope<"incident_escalated", IncidentEscalatedData>
   | Envelope<"service_restored", ServiceRestoredData>
   | Envelope<"routing_stats", RoutingStatsData>;

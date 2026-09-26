@@ -14,7 +14,7 @@ NEW_EVENTS = (
     "incident_status", "incident_received", "commander_classified", "specialists_dispatched",
     "responders_selected", "remediation_proposed", "sandbox_result", "remediation_plan_created",
     "human_assignments_created", "approval_required", "approval_granted", "service_restored",
-    "routing_stats",
+    "routing_stats", "notification_status",
 )
 
 
@@ -162,4 +162,19 @@ def test_verify_before_repair_fails(events) -> None:
     posted = events[_index(events, "task_posted", 1)]
     posted["data"]["type"] = "verify"
     with pytest.raises(ValueError):
+        validate_stream(events)
+
+
+@pytest.mark.parametrize("field,value", [("status", "delivered"), ("recipients", ["Unknown"]), ("webhook_url", "secret"), ("authorization", "secret")])
+def test_notification_contract_rejects_unsupported_or_secret_fields(events, field, value):
+    event = deepcopy(next(e for e in events if e["type"] == "notification_status"))
+    event["data"][field] = value
+    with pytest.raises(ValueError):
+        validate_event(event)
+
+
+def test_sent_requires_queued_notification(events):
+    event = next(e for e in events if e["type"] == "notification_status")
+    event["data"]["status"] = "sent"
+    with pytest.raises(ValueError, match="start queued"):
         validate_stream(events)

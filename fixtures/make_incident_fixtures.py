@@ -23,6 +23,8 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "backend"))
 os.environ["ABYSS_FAKE_LLM"] = "1"
 os.environ["ABYSS_FAKE_DELAY"] = "0"
+for setting in ("DISCORD_WEBHOOK_URL", "DISCORD_BOT_TOKEN", "DISCORD_CHANNEL_ID"):
+    os.environ.pop(setting, None)
 os.environ["ABYSS_LEDGER_PATH"] = str(Path(tempfile.mkdtemp()) / "ledger.jsonl")
 
 import abyss.llm as llm_module  # noqa: E402
@@ -54,6 +56,7 @@ PACE_MS = {
     "remediation_plan_created": 1500,
     "human_assignments_created": 1500,
     "approval_required": 6000,
+    "notification_status": 0,
     "approval_granted": 1200,
     "service_restored": 1500,
     "routing_stats": 800,

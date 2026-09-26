@@ -4,6 +4,7 @@ import type {
   AgentId,
   AgentSpec,
   ApprovalGrantedData,
+  NotificationStatusData,
   ApprovalRequiredData,
   BidData,
   CommanderClassifiedData,
@@ -50,6 +51,7 @@ export interface IncidentView {
   assignments: HumanAssignmentsData | null;
   approval: ApprovalRequiredData | null;
   granted: ApprovalGrantedData | null;
+  notification: NotificationStatusData | null;
   escalated: IncidentEscalatedData | null;
   restored: ServiceRestoredData | null;
   routing: RoutingStatsData | null;
@@ -315,6 +317,8 @@ export function reduce(state: MarketState, ev: AbyssEvent): MarketState {
       return withIncident(withLog, ev.t, { plan: ev.data });
     case "human_assignments_created":
       return withIncident(withLog, ev.t, { assignments: ev.data });
+    case "notification_status":
+      return withIncident(withLog, ev.t, { notification: ev.data });
     case "approval_granted":
       return withIncident(withLog, ev.t, { granted: ev.data });
     case "incident_escalated":
@@ -357,6 +361,7 @@ function freshIncident(data: IncidentStatusData, outageT: number | null, t: numb
     assignments: null,
     approval: null,
     granted: null,
+    notification: null,
     escalated: null,
     restored: null,
     routing: null,
