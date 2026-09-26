@@ -1,14 +1,23 @@
 import type { AgentId, TaskType } from "../contract";
 import type { MarketState } from "../state/reducer";
 
-const taskTypes: { key: TaskType; label: string }[] = [
+const jobKeys: { key: TaskType; label: string }[] = [
   { key: "research", label: "R" },
   { key: "writing", label: "W" },
   { key: "checking", label: "C" },
-  { key: "diagnose", label: "D" },
-  { key: "remediate", label: "F" },
-  { key: "verify", label: "V" },
 ];
+
+function reputationRows(state: MarketState): { key: string; label: string }[] {
+  const domain = state.incident?.commander?.domain;
+  if (domain) {
+    return [
+      { key: `${domain}.diagnose`, label: "D" },
+      { key: `${domain}.remediate`, label: "F" },
+      { key: `${domain}.verify`, label: "V" },
+    ];
+  }
+  return jobKeys;
+}
 
 export function DebugPanel({ state }: { state: MarketState }) {
   return (
@@ -32,18 +41,18 @@ export function DebugPanel({ state }: { state: MarketState }) {
                   <strong>{agent.display_name}</strong>
                   <em>{agent.status}</em>
                 </div>
-                {taskTypes.map(({ key, label }) => (
+                {reputationRows(state).map(({ key, label }) => (
                   <div className="rep-row" key={key}>
                     <span>{label}</span>
                     <div className="rep-track">
                       <i
                         style={{
-                          width: `${Math.min(100, Math.max(0, agent.reputation[key] * 50))}%`,
+                          width: `${Math.min(100, Math.max(0, (agent.reputation[key] ?? 1) * 50))}%`,
                           background: agent.color,
                         }}
                       />
                     </div>
-                    <b>{agent.reputation[key].toFixed(3)}</b>
+                    <b>{(agent.reputation[key] ?? 1).toFixed(3)}</b>
                   </div>
                 ))}
               </article>

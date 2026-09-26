@@ -2,19 +2,29 @@ import type {
   AbyssEvent,
   AgentId,
   AgentSpec,
+  ApprovalGrantedData,
   ApprovalRequiredData,
   BidData,
+  CommanderClassifiedData,
+  Domain,
   FinalData,
   HelloData,
+  HumanAssignmentsData,
+  IncidentEscalatedData,
+  IncidentReceivedData,
   IncidentState,
   IncidentStatusData,
+  RemediationPlanData,
   RemediationProposedData,
   RespondersSelectedData,
+  RoutingStatsData,
   SandboxResultData,
+  ScenarioId,
   ServiceRestoredData,
+  Severity,
+  SpecialistsDispatchedData,
   StatsData,
   TaskSpec,
-  TaskType,
 } from "../contract";
 
 export interface RepairAttempt {
@@ -23,15 +33,40 @@ export interface RepairAttempt {
 }
 
 export interface IncidentView {
+  /** Null while the service is healthy and no incident has been received. */
+  jobId: string | null;
   status: IncidentState;
   current: IncidentStatusData;
   /** Event time of the outage and of the latest incident event (ms since job start). */
   outageT: number | null;
   lastT: number;
+  received: IncidentReceivedData | null;
+  commander: CommanderClassifiedData | null;
+  dispatched: SpecialistsDispatchedData | null;
   responders: RespondersSelectedData | null;
   repairs: RepairAttempt[];
+  plan: RemediationPlanData | null;
+  assignments: HumanAssignmentsData | null;
   approval: ApprovalRequiredData | null;
+  granted: ApprovalGrantedData | null;
+  escalated: IncidentEscalatedData | null;
   restored: ServiceRestoredData | null;
+  routing: RoutingStatsData | null;
+}
+
+export interface HistoryEntry {
+  jobId: string;
+  scenarioId: ScenarioId;
+  name: string;
+  service: string;
+  domain: Domain | null;
+  severity: Severity | null;
+  outcome: "restored" | "failed";
+  mttrMs: number | null;
+  costUsd: number;
+  avoidedTokensEst: number | null;
+  avoidedCostUsdEst: number | null;
+  approvedBy: string[];
 }
 
 export type AgentStatus = "idle" | "bidding" | "working";
@@ -45,7 +80,7 @@ export type TaskStatus =
   | "failed";
 
 export interface AgentView extends AgentSpec {
-  reputation: Record<TaskType, number>;
+  reputation: Record<string, number>;
   status: AgentStatus;
 }
 
@@ -74,6 +109,8 @@ export interface MarketState {
   config: HelloData["config"] | null;
   jobActive: boolean;
   incident: IncidentView | null;
+  /** Finished incidents this session, newest first. Survives reconnects. */
+  history: HistoryEntry[];
 }
 
 export const initialState: MarketState = {
@@ -88,6 +125,7 @@ export const initialState: MarketState = {
   config: null,
   jobActive: false,
   incident: null,
+  history: [],
 };
 
 export function setConnected(state: MarketState, connected: boolean): MarketState {
@@ -200,7 +238,7 @@ export function reduce(state: MarketState, ev: AbyssEvent): MarketState {
             ...agent,
             reputation: {
               ...agent.reputation,
-              [ev.data.task_type]: ev.data.new,
+              [ev.data.rep_key]: ev.data.new,
             },
           },
         },
@@ -208,13 +246,16 @@ export function reduce(state: MarketState, ev: AbyssEvent): MarketState {
     }
     case "stats":
       return { ...withLog, stats: ev.data };
-    case "final":
+    case "final": {
+      const entry = historyEntry(state.incident, ev.job_id, ev.data);
       return {
         ...withLog,
         agents: mapAgentStatus(state.agents, () => "idle"),
         final: ev.data,
         jobActive: false,
+        history: entry ? [entry, ...state.history].slice(0, 20) : state.history,
       };
+    }
     case "error":
       return {
         ...withLog,
@@ -239,26 +280,46 @@ export function reduce(state: MarketState, ev: AbyssEvent): MarketState {
           incident: freshIncident(data, null, ev.t),
         };
       }
-      if (data.status === "outage") {
-        return {
-          ...withLog,
-          currentJob: { jobId: ev.job_id ?? "", jobText: data.summary, priceWeight: state.config?.price_weight ?? 1 },
-          tasks: {},
-          taskOrder: [],
-          stats: null,
-          final: null,
-          jobActive: true,
-          incident: freshIncident(data, ev.t, ev.t),
-        };
-      }
-      const incident = state.incident ?? freshIncident(data, ev.t, ev.t);
+      const known = state.incident && state.incident.jobId === ev.job_id;
+      const base = known ? withLog : startIncident(withLog, ev.job_id, data, ev.t, data.summary);
+      const incident = base.incident!;
       return {
-        ...withLog,
-        incident: { ...incident, status: data.status, current: data, lastT: ev.t },
+        ...base,
+        incident: {
+          ...incident,
+          status: data.status,
+          current: data,
+          outageT: data.status === "outage" ? ev.t : incident.outageT,
+          lastT: ev.t,
+        },
       };
     }
+    case "incident_received": {
+      const current = state.incident?.current;
+      const placeholder: IncidentStatusData = current ?? {
+        status: "healthy", scenario_id: ev.data.scenario_id, service: ev.data.service,
+        region: ev.data.region, severity: null, summary: ev.data.alert,
+        telemetry: ev.data.package.breached, logs: [], config_changes: [],
+      };
+      const started = startIncident(withLog, ev.job_id, placeholder, ev.t, ev.data.alert);
+      return withIncident(started, ev.t, { received: ev.data });
+    }
+    case "commander_classified":
+      return withIncident(withLog, ev.t, { commander: ev.data });
+    case "specialists_dispatched":
+      return withIncident(withLog, ev.t, { dispatched: ev.data });
     case "responders_selected":
       return withIncident(withLog, ev.t, { responders: ev.data });
+    case "remediation_plan_created":
+      return withIncident(withLog, ev.t, { plan: ev.data });
+    case "human_assignments_created":
+      return withIncident(withLog, ev.t, { assignments: ev.data });
+    case "approval_granted":
+      return withIncident(withLog, ev.t, { granted: ev.data });
+    case "incident_escalated":
+      return withIncident(withLog, ev.t, { escalated: ev.data });
+    case "routing_stats":
+      return withIncident(withLog, ev.t, { routing: ev.data });
     case "remediation_proposed": {
       const repairs = state.incident?.repairs ?? [];
       return withIncident(withLog, ev.t, { repairs: [...repairs, { proposal: ev.data, sandbox: null }] });
@@ -279,16 +340,63 @@ export function reduce(state: MarketState, ev: AbyssEvent): MarketState {
   }
 }
 
-function freshIncident(data: IncidentStatusData, outageT: number | null, t: number): IncidentView {
+function freshIncident(data: IncidentStatusData, outageT: number | null, t: number, jobId: string | null = null): IncidentView {
   return {
+    jobId,
     status: data.status,
     current: data,
     outageT,
     lastT: t,
+    received: null,
+    commander: null,
+    dispatched: null,
     responders: null,
     repairs: [],
+    plan: null,
+    assignments: null,
     approval: null,
+    granted: null,
+    escalated: null,
     restored: null,
+    routing: null,
+  };
+}
+
+function startIncident(
+  state: MarketState,
+  jobId: string | null,
+  data: IncidentStatusData,
+  t: number,
+  summary: string,
+): MarketState {
+  return {
+    ...state,
+    currentJob: { jobId: jobId ?? "", jobText: summary, priceWeight: state.config?.price_weight ?? 1 },
+    tasks: {},
+    taskOrder: [],
+    stats: null,
+    final: null,
+    jobActive: true,
+    incident: freshIncident(data, null, t, jobId),
+  };
+}
+
+function historyEntry(incident: IncidentView | null, jobId: string | null, final: FinalData): HistoryEntry | null {
+  if (!incident || !incident.jobId || incident.jobId !== jobId) return null;
+  const restored = incident.restored;
+  return {
+    jobId: incident.jobId,
+    scenarioId: incident.current.scenario_id,
+    name: incident.received?.name ?? incident.current.service,
+    service: incident.current.service,
+    domain: incident.commander?.domain ?? null,
+    severity: incident.commander?.severity ?? incident.current.severity,
+    outcome: restored && final.status === "ok" ? "restored" : "failed",
+    mttrMs: restored?.mttr_ms ?? null,
+    costUsd: incident.routing?.actual_cost_usd ?? final.total_cost_usd,
+    avoidedTokensEst: incident.routing?.avoided_input_tokens_est ?? null,
+    avoidedCostUsdEst: incident.routing?.avoided_cost_usd_est ?? null,
+    approvedBy: incident.granted?.approved_by ?? [],
   };
 }
 

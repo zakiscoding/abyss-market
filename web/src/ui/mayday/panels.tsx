@@ -1,40 +1,134 @@
 import { useEffect, useRef, useState } from "react";
 
-import { describeAction, type AgentId, type Briefings, type Telemetry } from "../../contract";
+import {
+  describePlan,
+  formatMetric,
+  type AgentId,
+  type Briefings,
+  type ScenarioId,
+  type ScenarioInfo,
+} from "../../contract";
 import { AGENT_ORDER, currentTask } from "../../scene/model";
-import type { MarketState } from "../../state/reducer";
+import type { HistoryEntry, MarketState } from "../../state/reducer";
 import { formatDuration, outcome, pipeline, terminal } from "./derive";
 
 const pct = (value: number, digits = 1) => `${(value * 100).toFixed(digits)}%`;
 const usd = (value: number) => `$${value.toFixed(4)}`;
 
+export function Inbox({
+  state,
+  canTrigger,
+  pending,
+  onTrigger,
+}: {
+  state: MarketState;
+  canTrigger: boolean;
+  pending: ScenarioId | null;
+  onTrigger: (scenarioId: ScenarioId) => void;
+}) {
+  const scenarios = state.config?.scenarios ?? [];
+  const current = state.incident?.current.scenario_id ?? null;
+  const status = state.incident?.status ?? null;
+  const running = status !== null && !["healthy", "restored", "failed"].includes(status);
+  return (
+    <section className="panel inbox">
+      <header className="panel-head">
+        <h2>Incident inbox</h2>
+        <span className="muted">{scenarios.length} sources</span>
+      </header>
+      <p className="muted">Incidents from different systems enter the same command center. One runs at a time.</p>
+      <ul className="inbox-list">
+        {scenarios.map((scenario) => (
+          <InboxCard
+            key={scenario.scenario_id}
+            scenario={scenario}
+            current={current === scenario.scenario_id}
+            running={running && current === scenario.scenario_id}
+            status={current === scenario.scenario_id ? status : null}
+            disabled={!canTrigger}
+            pending={pending === scenario.scenario_id}
+            onTrigger={() => onTrigger(scenario.scenario_id)}
+          />
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function InboxCard({
+  scenario,
+  current,
+  running,
+  status,
+  disabled,
+  pending,
+  onTrigger,
+}: {
+  scenario: ScenarioInfo;
+  current: boolean;
+  running: boolean;
+  status: string | null;
+  disabled: boolean;
+  pending: boolean;
+  onTrigger: () => void;
+}) {
+  return (
+    <li className={`inbox-card ${current ? "current" : ""} ${running ? "live" : ""}`}>
+      <div>
+        <b>{scenario.name}</b>
+        <span>{scenario.service} · {scenario.region.toUpperCase()} · {scenario.source_system}</span>
+        <small>{scenario.alert}</small>
+      </div>
+      <button type="button" disabled={disabled} onClick={onTrigger}>
+        {pending ? "Triggering..." : running ? (status ?? "live").replace("_", " ") : "Trigger"}
+      </button>
+    </li>
+  );
+}
+
+export function HistoryPanel({ history }: { history: HistoryEntry[] }) {
+  return (
+    <section className="panel history">
+      <header className="panel-head">
+        <h2>This session</h2>
+        <span className="muted">{history.length ? `${history.length} closed` : "none yet"}</span>
+      </header>
+      {history.length === 0 && <p className="muted">Finished incidents stay here until you reload.</p>}
+      <ul className="history-list">
+        {history.map((item) => (
+          <li key={item.jobId} className={item.outcome}>
+            <b>{item.outcome === "restored" ? "RESTORED" : "FAILED"}</b>
+            <span>{item.name}</span>
+            <small>
+              {item.severity ?? "—"} · {item.domain ?? "—"} · {usd(item.costUsd)}
+              {item.mttrMs != null ? ` · ${formatDuration(item.mttrMs)}` : ""}
+            </small>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 export function ServiceCard({ state }: { state: MarketState }) {
   const incident = state.incident;
-  const t: Telemetry | undefined = incident?.current.telemetry;
+  const telemetry = incident?.current.telemetry ?? [];
   const status = incident?.status ?? "healthy";
   const down = !["healthy", "restored"].includes(status);
-  const rows: [string, string, boolean][] = t
-    ? [
-        ["Error rate", pct(t.error_rate), t.error_rate > 0.01],
-        ["p95 latency", `${t.p95_latency_ms} ms`, t.p95_latency_ms > 300],
-        ["Payment success", pct(t.payment_success_rate), t.payment_success_rate < 0.99],
-        ["Failed payments", `${t.failed_payments_per_min}/min`, t.error_rate > 0.01],
-        ["DB timeouts", `${t.timeouts_per_min}/min`, t.timeouts_per_min > 0],
-        ["DB pool", `${t.db_connections_in_use}/${t.db_pool_size}`, t.timeouts_per_min > 0],
-      ]
-    : [];
   return (
     <section className="panel service-card">
       <header className="panel-head">
-        <h2>Payments API</h2>
-        <span className={`status-pill ${down ? "down" : "up"}`}>{down ? "DEGRADED" : "OPERATIONAL"}</span>
+        <h2>{incident?.current.service ?? "No service"}</h2>
+        <span className={`status-pill ${down ? "down" : "up"}`}>
+          {incident ? `${incident.current.region.toUpperCase()} · ${down ? "DEGRADED" : "OPERATIONAL"}` : "IDLE"}
+        </span>
       </header>
-      {!t && <p className="muted">Waiting for telemetry...</p>}
+      {!telemetry.length && <p className="muted">Waiting for telemetry...</p>}
       <dl className="metric-grid">
-        {rows.map(([name, value, bad]) => (
-          <div key={name} className={bad ? "bad" : "good"}>
-            <dt>{name}</dt>
-            <dd>{value}</dd>
+        {telemetry.map((metric) => (
+          <div key={metric.key} className={metric.ok ? "good" : "bad"}>
+            <dt>{metric.label}</dt>
+            <dd>{formatMetric(metric)}</dd>
           </div>
         ))}
       </dl>
@@ -47,6 +141,65 @@ export function ServiceCard({ state }: { state: MarketState }) {
           ))}
         </div>
       )}
+    </section>
+  );
+}
+
+export function CommanderPanel({ state }: { state: MarketState }) {
+  const received = state.incident?.received;
+  const commander = state.incident?.commander;
+  return (
+    <section className="panel commander">
+      <header className="panel-head">
+        <h2>AI Commander</h2>
+        <span className="muted">{commander ? commander.source : received ? "classifying" : "idle"}</span>
+      </header>
+      {!received && <p className="muted">A compressed alert package is classified before any specialist sees the full incident.</p>}
+      {received && (
+        <p className="package">
+          Package ~{received.package_tokens_est} tokens vs ~{received.full_context_tokens_est} for the full context.
+          {received.package.breached.length} breached metrics, {received.package.log_excerpt.length} log lines.
+        </p>
+      )}
+      {commander && (
+        <dl className="metric-grid">
+          <div><dt>Domain</dt><dd>{commander.domain}</dd></div>
+          <div><dt>Severity</dt><dd>{commander.severity}</dd></div>
+          <div><dt>Secondary</dt><dd>{commander.secondary_domains.join(", ") || "none"}</dd></div>
+          <div><dt>Skills</dt><dd>{commander.required_specialties.join(", ")}</dd></div>
+        </dl>
+      )}
+      {commander && <p className="briefing">{commander.rationale}</p>}
+      {commander?.fallback_reason && <p className="muted">Fallback: {commander.fallback_reason}</p>}
+    </section>
+  );
+}
+
+export function SpecialistsPanel({ state }: { state: MarketState }) {
+  const dispatched = state.incident?.dispatched;
+  if (!dispatched) {
+    return (
+      <section className="panel specialists">
+        <header className="panel-head"><h2>Specialist market</h2></header>
+        <p className="muted">Only the classified domain receives the full incident prompt.</p>
+      </section>
+    );
+  }
+  const sent = dispatched.specialists.filter((item) => item.dispatched);
+  const skipped = dispatched.registered - dispatched.eligible;
+  return (
+    <section className="panel specialists">
+      <header className="panel-head">
+        <h2>Dispatched specialists</h2>
+        <span className="muted">{dispatched.eligible}/{dispatched.registered}</span>
+      </header>
+      <p className="muted">{dispatched.reason}</p>
+      <ul className="specialist-list">
+        {sent.map((item) => (
+          <li key={item.specialist_id} className="selected">{item.label}</li>
+        ))}
+        <li className="benched">{skipped} specialists skipped (other domains)</li>
+      </ul>
     </section>
   );
 }
@@ -90,10 +243,15 @@ export function Pipeline({ state }: { state: MarketState }) {
 
 export function BidCards({ state }: { state: MarketState }) {
   const task = state.incident && state.incident.status !== "healthy" ? currentTask(state) : null;
+  const labels = Object.fromEntries(
+    (state.incident?.dispatched?.specialists ?? [])
+      .filter((item) => item.dispatched)
+      .map((item) => [item.agent_id, item.label]),
+  );
   if (!task) {
     return (
       <section className="panel bids empty">
-        <p className="muted">AI responders bid here once an incident is declared.</p>
+        <p className="muted">Specialists bid here after the Commander picks a domain.</p>
       </section>
     );
   }
@@ -111,7 +269,7 @@ export function BidCards({ state }: { state: MarketState }) {
           return (
             <article key={agentId} className={`bid-card ${won ? "won" : ""}`} style={{ borderColor: agent?.color }}>
               <header>
-                <strong style={{ color: agent?.color }}>{agent?.display_name ?? agentId}</strong>
+                <strong style={{ color: agent?.color }}>{labels[agentId] ?? agent?.display_name ?? agentId}</strong>
                 {won && <span className="won-badge">WON</span>}
               </header>
               {!bid && <p className="muted">thinking...</p>}
@@ -184,11 +342,13 @@ export function Repairs({ state, onApprove, approving }: { state: MarketState; o
   const incident = state.incident;
   const repairs = incident?.repairs ?? [];
   const awaiting = incident?.status === "awaiting_approval" && incident.approval;
+  const assignments = incident?.assignments;
+  const granted = new Set(incident?.granted?.approved ?? []);
   return (
     <section className={`panel repairs ${awaiting ? "attention" : ""}`}>
       <header className="panel-head">
-        <h2>Repairs &amp; sandbox</h2>
-        <span className="muted">allowlist: pool size · restart · rollback</span>
+        <h2>Repairs &amp; assignments</h2>
+        <span className="muted">allowlisted plans only</span>
       </header>
       {repairs.length === 0 && <p className="muted">No repair proposed yet.</p>}
       <ol className="repair-list">
@@ -198,18 +358,34 @@ export function Repairs({ state, onApprove, approving }: { state: MarketState; o
           return (
             <li key={repair.proposal.task_id} className={`repair-${verdict}`}>
               <b>#{repair.proposal.attempt} {repair.proposal.agent_id.toUpperCase()}</b>
-              <code>{repair.proposal.action ? describeAction(repair.proposal.action) : "invalid action"}</code>
+              <code>{repair.proposal.steps.length ? describePlan(repair.proposal.steps) : "invalid plan"}</code>
               <span>{verdict.toUpperCase()}{repair.sandbox ? ` ${passedChecks}/${repair.sandbox.checks.length}` : ""}</span>
             </li>
           );
         })}
       </ol>
+      {assignments && (
+        <ul className="assignment-list">
+          {assignments.assignments.map((item) => {
+            const done = item.approval_required ? granted.has(item.assignment_id) || Boolean(incident?.granted) : true;
+            return (
+              <li key={item.assignment_id} className={done ? "done" : item.approval_required ? "needed" : "notify"}>
+                <b>{item.name}</b>
+                <span>{item.description}</span>
+                <small>
+                  {item.approval_required ? (done ? "approved" : "approval required") : "notify"} · {item.reason}
+                </small>
+              </li>
+            );
+          })}
+        </ul>
+      )}
       {awaiting && incident.approval && (
         <div className="approve-box">
           <p>{incident.approval.summary}</p>
-          <p className="muted">Approvers: {incident.approval.approvers.join(", ")}</p>
+          <p className="muted">Required: {incident.approval.approvers.join(", ")}</p>
           <button type="button" className="approve-button" disabled={approving} onClick={onApprove}>
-            {approving ? "Deploying..." : "Approve Repair"}
+            {approving ? "Deploying..." : "Approve Required Steps"}
           </button>
         </div>
       )}
@@ -220,6 +396,7 @@ export function Repairs({ state, onApprove, approving }: { state: MarketState; o
 export function OutcomePanel({ state, elapsedMs }: { state: MarketState; elapsedMs: number }) {
   const result = outcome(state);
   const restored = state.incident?.restored ?? null;
+  const routing = result.routing;
   return (
     <section className={`panel outcome ${restored ? "resolved" : ""}`}>
       <header className="panel-head">
@@ -231,8 +408,19 @@ export function OutcomePanel({ state, elapsedMs }: { state: MarketState; elapsed
         <div><dt>Repair attempts</dt><dd>{result.attempts}{result.failedAttempts ? ` (${result.failedAttempts} rejected)` : ""}</dd></div>
         <div><dt>Repair confidence</dt><dd>{result.confidence === null ? "—" : pct(result.confidence, 0)}</dd></div>
         <div><dt>Mean grade</dt><dd>{result.meanGrade === null ? "—" : `${result.meanGrade.toFixed(1)}/10`}</dd></div>
-        <div><dt>Approved by</dt><dd>{restored?.approved_by ?? "—"}</dd></div>
+        <div><dt>Approved by</dt><dd>{restored?.approved_by.join(", ") ?? "—"}</dd></div>
       </dl>
+      {routing && (
+        <dl className="metric-grid routing">
+          <div><dt>Models contacted</dt><dd>{routing.models_contacted}</dd></div>
+          <div><dt>Models skipped</dt><dd>{routing.models_skipped}</dd></div>
+          <div><dt>Actual tokens in/out</dt><dd>{routing.actual_input_tokens}/{routing.actual_output_tokens}</dd></div>
+          <div><dt>Est. tokens avoided</dt><dd>{routing.avoided_input_tokens_est}</dd></div>
+          <div><dt>Est. cost avoided</dt><dd>{usd(routing.avoided_cost_usd_est)}</dd></div>
+          <div><dt>Actual calls</dt><dd>{routing.actual_calls}</dd></div>
+        </dl>
+      )}
+      {routing && <p className="muted estimate">{routing.method}</p>}
       {result.verification.length > 0 && (
         <ul className="checks">
           {result.verification.map((check) => (
@@ -248,7 +436,7 @@ export function OutcomePanel({ state, elapsedMs }: { state: MarketState; elapsed
             const delta = change.new - change.old;
             return (
               <li key={i} className={delta >= 0 ? "up" : "down"}>
-                <b>{change.agent_id}</b> {change.task_type} {change.old.toFixed(2)} → {change.new.toFixed(2)}
+                <b>{change.agent_id}</b> {change.rep_key} {change.old.toFixed(2)} → {change.new.toFixed(2)}
                 <span>{delta >= 0 ? "▲" : "▼"} {Math.abs(delta).toFixed(2)}</span>
               </li>
             );

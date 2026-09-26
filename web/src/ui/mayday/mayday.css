@@ -87,7 +87,7 @@
   min-height: 0;
 }
 .col { display: flex; flex-direction: column; gap: 12px; min-height: 0; min-width: 0; }
-.col.right { overflow-y: auto; padding-right: 2px; }
+.col.left, .col.right { overflow-y: auto; padding-right: 2px; }
 .panel {
   background: var(--panel);
   border: 1px solid var(--line);
@@ -135,7 +135,7 @@
 }
 .harbor-canvas { position: absolute; inset: 0; display: block; }
 
-.pipeline { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.pipeline { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
 .pipeline li {
   position: relative;
   background: var(--panel);
@@ -200,6 +200,27 @@
 .rep-changes li { display: grid; grid-template-columns: 56px 1fr auto; gap: 6px; }
 .rep-changes li.up span { color: var(--good); }
 .rep-changes li.down span { color: var(--bad); }
+
+.inbox-list, .history-list, .specialist-list, .assignment-list { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; }
+.inbox-card { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; padding: 8px; border-radius: 6px; background: var(--panel-2); border: 1px solid var(--line); }
+.inbox-card b { display: block; font-size: 12px; }
+.inbox-card span, .inbox-card small { display: block; color: var(--muted); font-size: 11px; }
+.inbox-card.current { border-color: var(--accent); }
+.inbox-card.live { box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 30%, transparent); }
+.inbox-card button { padding: 6px 8px; font-size: 10px; }
+.history-list li, .assignment-list li, .specialist-list li { padding: 5px 8px; border-radius: 5px; background: var(--panel-2); }
+.history-list li { display: grid; }
+.history-list .restored b { color: var(--good); }
+.history-list .failed b { color: var(--bad); }
+.history-list small, .assignment-list small { color: var(--muted); }
+.specialist-list .selected { color: var(--accent-2); }
+.specialist-list .benched, .assignment-list .notify { opacity: 0.7; }
+.assignment-list li { display: grid; border-left: 3px solid var(--line); }
+.assignment-list .needed { border-left-color: var(--warn); }
+.assignment-list .done { border-left-color: var(--good); }
+.package { margin: 0 0 8px; color: var(--muted); font-size: 11.5px; }
+.estimate { margin: 8px 0 0; font-size: 10.5px; }
+.routing dd { font-size: 14px; }
 
 .ledger-drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(440px, 90vw); z-index: 10; box-shadow: -10px 0 30px #000a; }
 .ledger-drawer .debug-panel { height: 100%; font-family: "Silkscreen", monospace; }

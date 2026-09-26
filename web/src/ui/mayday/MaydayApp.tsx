@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-import type { ClientMsg } from "../../contract";
+import type { ClientMsg, ScenarioId } from "../../contract";
 import { HarborScene } from "../../scene/harbor/HarborScene";
 import { harborModel } from "../../scene/harbor/model";
 import { FixtureSource } from "../../sources/fixture";
@@ -10,21 +10,41 @@ import type { MarketState } from "../../state/reducer";
 import { store } from "../../state/store";
 import { DebugPanel } from "../DebugPanel";
 import { formatDuration } from "./derive";
-import { BidCards, OutcomePanel, Pipeline, Repairs, RescueTeam, ServiceCard, Terminal } from "./panels";
+import {
+  BidCards,
+  CommanderPanel,
+  HistoryPanel,
+  Inbox,
+  OutcomePanel,
+  Pipeline,
+  Repairs,
+  RescueTeam,
+  ServiceCard,
+  SpecialistsPanel,
+  Terminal,
+} from "./panels";
 
 const params = new URLSearchParams(window.location.search);
 const SOURCE = params.get("source") === "ws" ? "ws" : "fixture";
-const WS_URL = import.meta.env.VITE_WS_URL ?? "ws://localhost:8000/ws";
+const WS_URL = import.meta.env.VITE_WS_URL
+  || (import.meta.env.PROD
+    ? `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}/ws`
+    : "ws://localhost:8000/ws");
 const parsedSpeed = Number(params.get("speed") || "1");
 const SPEED = SOURCE === "fixture" && Number.isFinite(parsedSpeed) && parsedSpeed > 0 ? parsedSpeed : 1;
 const AUTO = params.get("auto") === "1";
+
+function fixtureUrl(scenario: ScenarioId): string {
+  return `/fixtures/incident_${scenario}.json`;
+}
 
 function createSource(): EventSource {
   if (SOURCE === "ws") {
     return new WsSource(WS_URL, (connected) => store.setConnected(connected));
   }
-  const file = params.get("file") || "mayday_run";
-  return new FixtureSource(`/fixtures/${encodeURIComponent(file)}.json`, SPEED, AUTO);
+  const file = params.get("file");
+  if (file) return new FixtureSource(`/fixtures/${encodeURIComponent(file)}.json`, SPEED, AUTO);
+  return new FixtureSource(fixtureUrl, SPEED, AUTO);
 }
 
 function modeBadge(state: MarketState): { label: string; tone: string } {
@@ -36,9 +56,21 @@ function modeBadge(state: MarketState): { label: string; tone: string } {
   return { label: "LIVE", tone: "live" };
 }
 
+function banner(state: MarketState): string {
+  const incident = state.incident;
+  const status = incident?.status ?? null;
+  if (status === null) return "CONNECTING...";
+  if (status === "healthy") return "COMMAND CENTER · ALL SYSTEMS OPERATIONAL";
+  const service = incident?.current.service ?? "service";
+  const region = incident?.current.region?.toUpperCase() ?? "";
+  if (status === "restored") return `RESOLVED · ${service} ${region}`;
+  if (status === "failed") return `FAILED · ${incident?.current.summary}`;
+  return `${incident?.current.severity ?? "SEV"} · ${service} ${region} · ${incident?.current.summary}`;
+}
+
 export default function MaydayApp() {
   const [state, setState] = useState(store.getState());
-  const [pending, setPending] = useState<"break" | "approve" | null>(null);
+  const [pending, setPending] = useState<"approve" | ScenarioId | null>(null);
   const [showLedger, setShowLedger] = useState(params.get("ledger") === "1");
   const [now, setNow] = useState(Date.now());
   const sourceRef = useRef<EventSource | null>(null);
@@ -81,7 +113,6 @@ export default function MaydayApp() {
     };
   }, []);
 
-  // A live backend starts each connection with a healthy service snapshot.
   useEffect(() => {
     if (SOURCE === "ws" && state.connected) sourceRef.current?.send?.({ type: "reset_incident" });
     if (!state.connected) setPending(null);
@@ -102,7 +133,7 @@ export default function MaydayApp() {
     : incident.restored
       ? incident.restored.mttr_ms
       : incident.lastT - incident.outageT + (active ? (now - lastEventWall.current) * SPEED : 0);
-  const canBreak = status === "healthy" && pending === null && (SOURCE === "fixture" || state.connected);
+  const canTrigger = status !== null && !active && pending === null && (SOURCE === "fixture" || state.connected);
   const badge = modeBadge(state);
 
   return (
@@ -110,24 +141,14 @@ export default function MaydayApp() {
       <header className="mayday-header">
         <div className="brand">
           <strong>MAYDAY</strong>
-          <span>Powered by the Abyss Agent Market</span>
+          <span>AI Incident Command Center · Abyss Agent Market</span>
         </div>
-        <div className={`sev-banner ${active ? "on" : ""}`}>
-          {status === null && "CONNECTING..."}
-          {status === "healthy" && "ALL SYSTEMS OPERATIONAL"}
-          {active && `${incident?.current.severity ?? "SEV"} · ${incident?.current.summary}`}
-          {status === "restored" && "RESOLVED · PAYMENTS API RESTORED"}
-          {status === "failed" && `FAILED · ${incident?.current.summary}`}
-        </div>
+        <div className={`sev-banner ${active ? "on" : ""}`}>{banner(state)}</div>
         <div className="incident-timer" title="Time since the outage started">
           <small>{status === "restored" ? "MTTR" : "INCIDENT"}</small>
           <b>{formatDuration(elapsedMs)}</b>
         </div>
         <div className="header-actions">
-          <button type="button" className="break-button" disabled={!canBreak}
-            onClick={() => { if (send({ type: "start_incident" })) setPending("break"); }}>
-            Break Production
-          </button>
           <button type="button" className={`ghost ${status === "restored" || status === "failed" ? "nudge" : ""}`} disabled={status === null}
             onClick={() => { setPending(null); send({ type: "reset_incident" }); }}>
             Reset
@@ -141,7 +162,10 @@ export default function MaydayApp() {
 
       <main className="mayday-grid">
         <div className="col left">
+          <Inbox state={state} canTrigger={canTrigger} pending={typeof pending === "string" && pending !== "approve" ? pending : null}
+            onTrigger={(scenarioId) => { if (send({ type: "start_incident", scenario_id: scenarioId })) setPending(scenarioId); }} />
           <ServiceCard state={state} />
+          <CommanderPanel state={state} />
           <Terminal state={state} />
         </div>
         <div className="col center">
@@ -150,10 +174,12 @@ export default function MaydayApp() {
           <BidCards state={state} />
         </div>
         <div className="col right">
+          <SpecialistsPanel state={state} />
           <Repairs state={state} approving={pending === "approve"}
             onApprove={() => { if (send({ type: "approve_repair" })) setPending("approve"); }} />
           <OutcomePanel state={state} elapsedMs={elapsedMs} />
           <RescueTeam state={state} />
+          <HistoryPanel history={state.history} />
         </div>
       </main>
       {showLedger && (

@@ -1,6 +1,6 @@
 // Pure derivation of the MAYDAY harbor picture from MarketState. HarborScene
 // only animates toward this; nothing here touches Pixi.
-import type { AgentId, IncidentState } from "../../contract";
+import { describePlan, type AgentId, type IncidentState, type Telemetry } from "../../contract";
 import type { MarketState, TaskView } from "../../state/reducer";
 import { AGENT_ORDER, currentTask, formatCents } from "../model";
 
@@ -25,6 +25,7 @@ export interface HarborModel {
   sandboxLabel: string;
   /** 0..1, how hard the platform is burning. */
   damage: number;
+  service: string;
 }
 
 const MOOD: Record<IncidentState, Mood> = {
@@ -86,17 +87,27 @@ export function harborModel(state: MarketState): HarborModel {
   let sandbox: SandboxLight = "idle";
   let sandboxLabel = "SANDBOX";
   if (last) {
-    const action = last.proposal.action?.action.replace(/_/g, " ").toUpperCase() ?? "INVALID ACTION";
+    const plan = last.proposal.steps.length ? describePlan(last.proposal.steps) : "invalid plan";
     sandbox = !last.sandbox ? "testing" : last.sandbox.passed ? "pass" : "fail";
-    sandboxLabel = `${action} ${sandbox === "testing" ? "..." : sandbox === "pass" ? "PASS" : "REJECTED"}`;
+    sandboxLabel = `${plan} ${sandbox === "testing" ? "..." : sandbox === "pass" ? "PASS" : "REJECTED"}`;
   }
 
-  const errorRate = incident?.current.telemetry.error_rate ?? 0;
   return {
     mood: MOOD[status],
     boats,
     sandbox,
     sandboxLabel,
-    damage: Math.min(1, errorRate / 0.5),
+    damage: platformDamage(incident?.current.telemetry ?? []),
+    service: (incident?.current.service ?? "service").replace(/-/g, " ").toUpperCase(),
   };
+}
+
+function platformDamage(telemetry: Telemetry): number {
+  const breached = telemetry.find((item) => !item.ok);
+  if (!breached) return 0;
+  if (breached.unit === "ratio") {
+    if (/success|reach/.test(breached.key)) return Math.min(1, 1 - breached.value);
+    return Math.min(1, breached.value / 0.5);
+  }
+  return 0.65;
 }

@@ -83,6 +83,7 @@ export class HarborScene {
     this.drawStatic(this.model.mood);
     this.syncBoats(this.model.boats);
     this.bargeText.text = this.model.sandboxLabel;
+    this.platformText.text = this.model.service;
   }
 
   destroy(): void {
