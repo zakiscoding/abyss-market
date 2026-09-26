@@ -3,8 +3,9 @@
 // are on the dock. Every string comes from the event state.
 import { describePlan, type AgentId, type Domain } from "../../contract";
 import { harborModel, type Mood, type SandboxLight } from "../../scene/harbor/model";
-import { AGENT_ORDER, currentTask, formatCents } from "../../scene/model";
-import type { MarketState, TaskView } from "../../state/reducer";
+import { currentTask } from "../../scene/model";
+import type { MarketState } from "../../state/reducer";
+import { DOCKS, workerName } from "./command";
 
 const SPECIALTY: Record<Domain, string> = {
   database: "Database Specialist",
@@ -62,47 +63,41 @@ export function specialtySign(domain: Domain | null, agentId: AgentId): string {
   return `${SPECIALTY[domain]} · ${model}`;
 }
 
-function stallBubble(agentId: AgentId, task: TaskView | null): Pick<SeasideStall, "bubble" | "lit" | "winner"> {
-  if (!task) return { bubble: null, lit: false, winner: false };
-  const winner = task.winner === agentId && task.status !== "open" && task.status !== "failed";
-  if (task.status === "open") {
-    const bid = task.bids[agentId];
-    if (!bid) return { bubble: "...", lit: false, winner: false };
-    if (!bid.ok) return { bubble: "PASS", lit: false, winner: false };
-    return {
-      bubble: `Q${bid.promised_quality} ${formatCents(bid.predicted_cost_usd ?? 0)}`,
-      lit: true,
-      winner: false,
-    };
-  }
-  if (!winner) return { bubble: null, lit: false, winner: false };
-  if (task.status === "assigned") return { bubble: "WON", lit: true, winner: true };
-  if (task.status === "working") return { bubble: task.type.toUpperCase(), lit: true, winner: true };
-  const grade = task.grade != null ? `${task.grade}/10` : "DONE";
-  return { bubble: grade, lit: true, winner: true };
-}
-
 export function seasidePicture(state: MarketState): SeasidePicture {
   const incident = state.incident;
   const harbor = harborModel(state);
   const status = incident?.status ?? "healthy";
   const commander = incident?.commander ?? null;
   const task = incident && status !== "healthy" ? currentTask(state) : null;
-  const dispatched = incident?.dispatched?.specialists.filter((item) => item.dispatched) ?? [];
   const domain = commander?.domain ?? null;
-
-  const stalls = AGENT_ORDER.map((agentId): SeasideStall => {
-    const fromEvent = dispatched.find((item) => item.agent_id === agentId)?.label;
+  const last = incident?.repairs.at(-1);
+  const recorded = task?.winner ?? last?.proposal.agent_id ?? null;
+  const stalls = DOCKS.flatMap((dock): SeasideStall[] => {
+    if (!dock.stall) return [];
+    const agentId = dock.stall;
+    const active = domain === dock.domain;
     const agent = state.agents[agentId];
-    return {
+    let bubble: string | null = null;
+    let lit = false;
+    let winner = false;
+    if (active && task?.status === "open") {
+      bubble = "Evaluating";
+      lit = true;
+    } else if (active && recorded) {
+      bubble = `Worker: ${workerName(recorded)}`;
+      lit = true;
+      winner = true;
+    }
+    return [{
       agentId,
-      sign: fromEvent ?? specialtySign(domain, agentId),
+      sign: dock.title,
       color: agent?.color ?? "#f4dc97",
-      ...stallBubble(agentId, task),
-    };
+      bubble,
+      lit,
+      winner,
+    }];
   });
 
-  const last = incident?.repairs.at(-1);
   const approvers = new Set(incident?.approval?.approvers ?? []);
   const responders = (incident?.responders?.responders ?? [])
     .filter((person) => person.selected)

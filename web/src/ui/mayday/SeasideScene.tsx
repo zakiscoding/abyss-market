@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 
 import type { AgentId } from "../../contract";
+import { DOCKS, captainReadout, dockWorker } from "./command";
 import { Pipeline } from "./panels";
 import { seasidePicture, type SeasidePicture } from "./seaside";
 import type { MarketState } from "../../state/reducer";
@@ -74,16 +75,21 @@ function Remedy({ picture }: { picture: SeasidePicture }) {
 export function SeasideScene({
   state,
   approving,
+  canApprove,
   onApprove,
 }: {
   state: MarketState;
   approving: boolean;
+  canApprove: boolean;
   onApprove: () => void;
 }) {
   const stageRef = useRef<HTMLDivElement | null>(null);
   const [frame, setFrame] = useState<Frame | null>(null);
   const [artOk, setArtOk] = useState(true);
   const picture = seasidePicture(state);
+  const captain = captainReadout(state);
+  const worker = dockWorker(state);
+  const domain = state.incident?.commander?.domain ?? null;
 
   useLayoutEffect(() => {
     const el = stageRef.current;
@@ -102,8 +108,8 @@ export function SeasideScene({
   return (
     <div className={`harbor-stage scene-mood-${picture.mood}`} ref={stageRef}>
       <p className="sr-only">
-        Seaside command harbor. The boat carries the incident. The left stall is Haiku, the center stall is Sonnet,
-        and the right stall is Opus. The dock is the Commander pipeline. The water beside the dock is the sandbox.
+        Abyss command harbor. The boat is Captain AI. The stalls are the Database, Network, and Security docks.
+        Payments and Generalist sit on the pier. The water beside the dock is the sandbox.
       </p>
       <div
         className={`scene-frame ${frame ? "" : "pending"}`}
@@ -127,10 +133,22 @@ export function SeasideScene({
 
             {picture.classification && (
               <div className="commander-banner" key={picture.classification}>
-                <small>Commander</small>
+                <small>Captain AI</small>
                 <strong>{picture.classification}</strong>
+                <p>{captain.text}</p>
               </div>
             )}
+
+            {DOCKS.filter((dock) => dock.stall === null).map((dock, index) => (
+              <div
+                key={dock.domain}
+                className={`pier-dock ${domain === dock.domain ? "lit winner" : ""}`}
+                style={{ left: `${index === 0 ? 40 : 62}%`, top: "40%" }}
+              >
+                <b>{dock.title}</b>
+                {domain === dock.domain && worker.worker && <small>Worker: {worker.worker}</small>}
+              </div>
+            ))}
 
             {picture.stalls.map((stall) => (
               <div
@@ -159,9 +177,9 @@ export function SeasideScene({
             <div className={`approval-gate ${picture.gate}`}>
               <span className="gate-leaf" />
               <span className="gate-leaf" />
-              {picture.gate === "closed" && (
+              {picture.gate === "closed" && canApprove && (
                 <button type="button" className="approve-button" disabled={approving} onClick={onApprove}>
-                  {approving ? "Deploying..." : "Approve Required Steps"}
+                  {approving ? "Applying..." : "Approve repair"}
                 </button>
               )}
             </div>

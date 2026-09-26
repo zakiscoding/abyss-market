@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
-import type { ClientMsg, ScenarioId } from "../../contract";
+import { describePlan, type ClientMsg, type ScenarioId } from "../../contract";
 import { harborModel } from "../../scene/harbor/model";
 import { FixtureSource } from "../../sources/fixture";
 import type { EventSource } from "../../sources/types";
@@ -8,17 +8,23 @@ import { WsSource } from "../../sources/ws";
 import type { MarketState } from "../../state/reducer";
 import { store } from "../../state/store";
 import { DebugPanel } from "../DebugPanel";
+import {
+  CaptainPanel,
+  ChatPanel,
+  ClusterPanel,
+  CrewPanel,
+  DecisionPanel,
+  EscalationPanel,
+  ModelMarket,
+  PersonaSelect,
+} from "./CommandPanels";
+import { canApprove, planHash, type Persona } from "./command";
 import { formatDuration, outcome } from "./derive";
 import {
-  BidCards,
-  CommanderPanel,
   HistoryPanel,
   Inbox,
   OutcomePanel,
   Repairs,
-  RescueTeam,
-  ServiceCard,
-  SpecialistsPanel,
   Terminal,
 } from "./panels";
 import { seasidePicture } from "./seaside";
@@ -72,7 +78,11 @@ export default function MaydayApp() {
   const [showLedger, setShowLedger] = useState(params.get("ledger") === "1");
   const [inboxOpen, setInboxOpen] = useState(() => window.matchMedia(WIDE).matches);
   const [detailOpen, setDetailOpen] = useState(() => window.matchMedia("(min-width: 1680px)").matches);
+  const [evidenceOpen, setEvidenceOpen] = useState(false);
+  const [persona, setPersona] = useState<Persona>("commander");
+  const [note, setNote] = useState<{ key: string; kind: "revision" | "reject" } | null>(null);
   const [now, setNow] = useState(Date.now());
+  const approvedKey = useRef<string | null>(null);
   const sourceRef = useRef<EventSource | null>(null);
   const lastEventWall = useRef(Date.now());
 
@@ -129,23 +139,34 @@ export default function MaydayApp() {
   const canTrigger = status !== null && !active && pending === null && (SOURCE === "fixture" || state.connected);
   const badge = modeBadge(state);
   const cost = incident?.restored?.total_cost_usd ?? outcome(state).aiCost;
+  const costLabel = state.config?.real_models && !state.config.fake_llm && SOURCE === "ws" ? "Actual provider cost" : "Simulated AI cost";
+  const planText = incident?.approval ? describePlan(incident.approval.steps) : "";
+  const planKey = incident?.approval ? `${incident.approval.task_id}-${incident.approval.attempt}-${planHash(planText)}` : null;
+  const personaLabel = persona === "commander" ? "Incident Commander" : persona;
+  const blocked = planKey && approvedKey.current === planKey ? "approved" : note?.key === planKey && note.kind === "reject" ? "rejected" : null;
   const approve = () => {
-    if (send({ type: "approve_repair" })) setPending("approve");
+    if (!planKey || approvedKey.current === planKey || pending === "approve") return;
+    if (!canApprove(persona, incident?.commander?.severity ?? null)) return;
+    if (note?.key === planKey && note.kind === "reject") return;
+    if (send({ type: "approve_repair" })) {
+      approvedKey.current = planKey;
+      setPending("approve");
+    }
   };
 
   return (
     <div className={`mayday mood-${mood}`}>
       <header className="mayday-header">
         <div className="brand">
-          <strong>MAYDAY</strong>
-          <span>Seaside incident command</span>
+          <strong>ABYSS</strong>
+          <span>Incident command</span>
         </div>
         <div className="header-facts" aria-label="Incident summary">
           <b className={active ? "sev" : picture.boat === "restored" ? "ok" : ""}>{picture.severity ?? "STANDBY"}</b>
           <span>{picture.service}</span>
           <span>{picture.region || "—"}</span>
           <span className="status">{(status ?? "connecting").replaceAll("_", " ")}</span>
-          <span className="cost">${cost.toFixed(4)}</span>
+          <span className="cost" title={costLabel}>${cost.toFixed(4)}</span>
         </div>
         <div className="incident-timer" title="Time since the outage started">
           <small>{status === "restored" ? "MTTR" : "INCIDENT"}</small>
@@ -156,10 +177,14 @@ export default function MaydayApp() {
             Inbox
           </button>
           <button type="button" className="ghost" aria-expanded={detailOpen} onClick={() => setDetailOpen((open) => !open)}>
-            Details
+            Crew
           </button>
+          <button type="button" className="ghost" aria-expanded={evidenceOpen} onClick={() => setEvidenceOpen((open) => !open)}>
+            Evidence
+          </button>
+          <PersonaSelect persona={persona} onChange={setPersona} />
           <button type="button" className={`ghost ${status === "restored" || status === "failed" ? "nudge" : ""}`} disabled={status === null}
-            onClick={() => { setPending(null); send({ type: "reset_incident" }); }}>
+            onClick={() => { setPending(null); setNote(null); approvedKey.current = null; send({ type: "reset_incident" }); }}>
             Reset
           </button>
           <button type="button" className="ghost" onClick={() => setShowLedger((open) => !open)}>
@@ -170,7 +195,12 @@ export default function MaydayApp() {
       </header>
 
       <div className="harbor-wrap">
-        <SeasideScene state={state} approving={pending === "approve"} onApprove={approve} />
+        <SeasideScene
+          state={state}
+          approving={pending === "approve"}
+          canApprove={Boolean(planKey) && blocked === null && canApprove(persona, incident?.commander?.severity ?? null)}
+          onApprove={approve}
+        />
 
         <aside className={`drawer left ${inboxOpen ? "open" : ""}`} aria-label="Incident inbox">
           <Inbox
@@ -182,29 +212,30 @@ export default function MaydayApp() {
           <HistoryPanel history={state.history} />
         </aside>
 
-        <aside className={`drawer right ${detailOpen ? "open" : ""}`} aria-label="Telemetry, responders, and approval">
-          <Fold title="Telemetry" open>
-            <ServiceCard state={state} />
+        <aside className={`drawer right ${detailOpen ? "open" : ""}`} aria-label="Crew, chat, and approval">
+          <CaptainPanel state={state} />
+          <CrewPanel state={state} revision={note?.kind === "revision" && note.key === planKey} />
+          <ChatPanel state={state} note={note && note.key === planKey ? { ...note, persona: personaLabel } : null} />
+          <DecisionPanel
+            state={state}
+            persona={persona}
+            approving={pending === "approve"}
+            blocked={blocked}
+            onApprove={approve}
+            onRevise={() => { if (planKey) setNote({ key: planKey, kind: "revision" }); }}
+            onReject={() => { if (planKey) setNote({ key: planKey, kind: "reject" }); }}
+          />
+          <Fold title="Assignments">
+            <Repairs state={state} />
           </Fold>
-          <Fold title="Commander" open={picture.classification !== null}>
-            <CommanderPanel state={state} />
-          </Fold>
-          <Fold title="Specialist auction" open={active}>
-            <BidCards state={state} />
-            <SpecialistsPanel state={state} />
-          </Fold>
-          <Fold title="Humans" open={picture.responders.length > 0}>
-            <RescueTeam state={state} />
-          </Fold>
-          <Fold title="Approval" open={picture.gate !== "idle" || (incident?.repairs.length ?? 0) > 0}>
-            <Repairs state={state} approving={pending === "approve"} onApprove={approve} />
-          </Fold>
-          <Fold title="Metrics" open={picture.boat === "restored" || picture.boat === "failed"}>
-            <OutcomePanel state={state} elapsedMs={elapsedMs} />
-          </Fold>
-          <Fold title="Terminal">
-            <Terminal state={state} />
-          </Fold>
+        </aside>
+
+        <aside className={`drawer bottom ${evidenceOpen ? "open" : ""}`} aria-label="Live evidence">
+          <Terminal state={state} />
+          <ClusterPanel state={state} />
+          <ModelMarket state={state} />
+          <EscalationPanel state={state} />
+          <OutcomePanel state={state} elapsedMs={elapsedMs} />
         </aside>
       </div>
 

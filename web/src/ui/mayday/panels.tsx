@@ -10,6 +10,7 @@ import {
 } from "../../contract";
 import { AGENT_ORDER, currentTask } from "../../scene/model";
 import type { HistoryEntry, MarketState } from "../../state/reducer";
+import { seededDomain } from "./command";
 import { formatDuration, outcome, pipeline, terminal } from "./derive";
 
 const pct = (value: number, digits = 1) => `${(value * 100).toFixed(digits)}%`;
@@ -38,18 +39,28 @@ export function Inbox({
       </header>
       <p className="muted">Incidents from different systems enter the same command center. One runs at a time.</p>
       <ul className="inbox-list">
-        {scenarios.map((scenario) => (
-          <InboxCard
-            key={scenario.scenario_id}
-            scenario={scenario}
-            current={current === scenario.scenario_id}
-            running={running && current === scenario.scenario_id}
-            status={current === scenario.scenario_id ? status : null}
-            disabled={!canTrigger}
-            pending={pending === scenario.scenario_id}
-            onTrigger={() => onTrigger(scenario.scenario_id)}
-          />
-        ))}
+        {scenarios.map((scenario) => {
+          const live = current === scenario.scenario_id;
+          const past = state.history.find((item) => item.scenarioId === scenario.scenario_id);
+          const owners = live
+            ? state.incident?.assignments?.required_approvers.join(", ")
+            : past?.approvedBy.join(", ");
+          return (
+            <InboxCard
+              key={scenario.scenario_id}
+              scenario={scenario}
+              current={live}
+              running={running && live}
+              status={live ? status : past?.outcome ?? "waiting"}
+              severity={live ? state.incident?.commander?.severity ?? state.incident?.current.severity ?? null : past?.severity ?? null}
+              domain={live ? state.incident?.commander?.domain ?? seededDomain(scenario.scenario_id) : past?.domain ?? seededDomain(scenario.scenario_id)}
+              owner={owners || "—"}
+              disabled={!canTrigger}
+              pending={pending === scenario.scenario_id}
+              onTrigger={() => onTrigger(scenario.scenario_id)}
+            />
+          );
+        })}
       </ul>
     </section>
   );
@@ -60,6 +71,9 @@ function InboxCard({
   current,
   running,
   status,
+  severity,
+  domain,
+  owner,
   disabled,
   pending,
   onTrigger,
@@ -68,6 +82,9 @@ function InboxCard({
   current: boolean;
   running: boolean;
   status: string | null;
+  severity: string | null;
+  domain: string;
+  owner: string;
   disabled: boolean;
   pending: boolean;
   onTrigger: () => void;
@@ -76,7 +93,8 @@ function InboxCard({
     <li className={`inbox-card ${current ? "current" : ""} ${running ? "live" : ""}`}>
       <div>
         <b>{scenario.name}</b>
-        <span>{scenario.service} · {scenario.region.toUpperCase()} · {scenario.source_system}</span>
+        <span>{severity ?? "—"} · {scenario.service} · {scenario.region.toUpperCase()}</span>
+        <span>{domain} · {(status ?? "waiting").replaceAll("_", " ")} · {owner}</span>
         <small>{scenario.alert}</small>
       </div>
       <button type="button" disabled={disabled} onClick={onTrigger}>
@@ -213,7 +231,7 @@ export function Terminal({ state }: { state: MarketState }) {
   return (
     <section className="panel terminal">
       <header className="panel-head">
-        <h2>Investigation terminal</h2>
+        <h2>Live Evidence</h2>
         <span className="muted">{lines.length} lines</span>
       </header>
       <ol ref={ref}>
@@ -338,7 +356,7 @@ export function RescueTeam({ state }: { state: MarketState }) {
   );
 }
 
-export function Repairs({ state, onApprove, approving }: { state: MarketState; onApprove: () => void; approving: boolean }) {
+export function Repairs({ state }: { state: MarketState }) {
   const incident = state.incident;
   const repairs = incident?.repairs ?? [];
   const awaiting = incident?.status === "awaiting_approval" && incident.approval;
@@ -384,9 +402,7 @@ export function Repairs({ state, onApprove, approving }: { state: MarketState; o
         <div className="approve-box">
           <p>{incident.approval.summary}</p>
           <p className="muted">Required: {incident.approval.approvers.join(", ")}</p>
-          <button type="button" className="approve-button" disabled={approving} onClick={onApprove}>
-            {approving ? "Deploying..." : "Approve Required Steps"}
-          </button>
+          <p className="muted">Use Approve repair, Request revision, or Reject repair in the decision panel.</p>
         </div>
       )}
     </section>
@@ -404,7 +420,7 @@ export function OutcomePanel({ state, elapsedMs }: { state: MarketState; elapsed
       </header>
       <dl className="metric-grid">
         <div><dt>{restored ? "MTTR" : "Elapsed"}</dt><dd>{formatDuration(restored ? restored.mttr_ms : elapsedMs)}</dd></div>
-        <div><dt>Total AI cost</dt><dd>{usd(restored?.total_cost_usd ?? result.aiCost)}</dd></div>
+        <div><dt>{state.config?.real_models && !state.config.fake_llm ? "Actual provider cost" : "Simulated AI cost"}</dt><dd>{usd(restored?.total_cost_usd ?? result.aiCost)}</dd></div>
         <div><dt>Repair attempts</dt><dd>{result.attempts}{result.failedAttempts ? ` (${result.failedAttempts} rejected)` : ""}</dd></div>
         <div><dt>Repair confidence</dt><dd>{result.confidence === null ? "—" : pct(result.confidence, 0)}</dd></div>
         <div><dt>Mean grade</dt><dd>{result.meanGrade === null ? "—" : `${result.meanGrade.toFixed(1)}/10`}</dd></div>
@@ -416,7 +432,7 @@ export function OutcomePanel({ state, elapsedMs }: { state: MarketState; elapsed
           <div><dt>Models skipped</dt><dd>{routing.models_skipped}</dd></div>
           <div><dt>Actual tokens in/out</dt><dd>{routing.actual_input_tokens}/{routing.actual_output_tokens}</dd></div>
           <div><dt>Est. tokens avoided</dt><dd>{routing.avoided_input_tokens_est}</dd></div>
-          <div><dt>Est. cost avoided</dt><dd>{usd(routing.avoided_cost_usd_est)}</dd></div>
+          <div><dt>Estimated savings</dt><dd>{usd(routing.avoided_cost_usd_est)}</dd></div>
           <div><dt>Actual calls</dt><dd>{routing.actual_calls}</dd></div>
         </dl>
       )}

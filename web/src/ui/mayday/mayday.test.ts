@@ -106,9 +106,9 @@ describe("seaside harbor", () => {
     expect(picture.classification).toBe("database · SEV-1");
     expect(picture.boat).toBe("active");
     expect(picture.stalls.map((stall) => stall.sign)).toEqual([
-      "Database Specialist · Haiku",
-      "Database Specialist · Sonnet",
-      "Database Specialist · Opus",
+      "Database Dock",
+      "Network Dock",
+      "Security Dock",
     ]);
     expect(picture.stalls.map((stall) => stall.agentId)).toEqual(["haiku", "sonnet", "opus"]);
   });
@@ -135,9 +135,15 @@ describe("seaside harbor", () => {
   });
 
   it("uses each domain's specialist title", () => {
-    expect(seasidePicture(play(auth as AbyssEvent[])).stalls[0].sign).toBe("Security Specialist · Haiku");
-    expect(seasidePicture(play(net as AbyssEvent[])).stalls[1].sign).toBe("Networking Specialist · Sonnet");
-    expect(seasidePicture(play(pool as AbyssEvent[])).stalls[2].sign).toBe("Database Specialist · Opus");
+    const security = seasidePicture(play(auth as AbyssEvent[]));
+    expect(security.stalls[2].sign).toBe("Security Dock");
+    expect(security.stalls[2].winner).toBe(true);
+    const network = seasidePicture(play(net as AbyssEvent[]));
+    expect(network.stalls[1].sign).toBe("Network Dock");
+    expect(network.stalls[1].winner).toBe(true);
+    const payments = seasidePicture(play(pool as AbyssEvent[]));
+    expect(payments.stalls[0].sign).toBe("Database Dock");
+    expect(payments.stalls[0].winner).toBe(true);
     expect(specialtySign("payments", "opus")).toBe("Payments Specialist · Opus");
   });
 
