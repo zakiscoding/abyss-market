@@ -9,15 +9,21 @@ The Commander only routes work; it never produces or executes remediation.
 from __future__ import annotations
 
 import json
+import logging
 
-from . import config, prompts
+from . import config, prompts, safety
 from .agents import est_input_tokens
 from .incident import Scenario
 from .ledger import Ledger
 from .llm import LLM, LLMError
 
+logger = logging.getLogger(__name__)
+
 LOG_EXCERPT_LINES = 4
 SEVERITY_RANK = {"SEV-3": 0, "SEV-2": 1, "SEV-1": 2}
+# The deterministic winner conflicts strongly when it leads by this many points
+# and is at least twice the model domain's score.
+STRONG_LEAD = 4
 
 # Evidence that points at each specialist domain. Breached metric keys count
 # double, a recent change under a domain's config prefix counts triple.
@@ -77,8 +83,51 @@ def full_context_tokens(sim: Scenario) -> int:
     return est_input_tokens(prompts.COMMANDER_SYSTEM, prompts.COMMANDER_USER.format(package=json.dumps(full, sort_keys=True)))
 
 
+def package_from_prompt(user: str) -> dict:
+    """Read the incident package JSON out of a commander user message."""
+    start = user.find("{")
+    end = user.rfind("}")
+    if start < 0 or end <= start:
+        raise ValueError("incident package missing")
+    loaded = json.loads(user[start : end + 1])
+    if not isinstance(loaded, dict):
+        raise ValueError("incident package must be an object")
+    return loaded
+
+
 def _commander_user(package: dict) -> str:
-    return prompts.COMMANDER_USER.format(package=json.dumps(package, sort_keys=True))
+    # The model sees a redacted copy. Callers keep the original package for scoring.
+    safe = safety.for_model(package)
+    body = prompts.COMMANDER_USER.format(package=json.dumps(safe, sort_keys=True))
+    return safety.cap_context(body)
+
+
+def _ranked_domains(scores: dict[str, int]) -> list[str]:
+    return sorted(
+        (domain for domain in scores if scores[domain] > 0),
+        key=lambda domain: (-scores[domain], config.DOMAINS.index(domain)),
+    )
+
+
+def domain_supported(domain: str, scores: dict[str, int]) -> bool:
+    """A specialist domain needs a positive score. Generalist is only supported when none do."""
+    if domain == "generalist":
+        return not _ranked_domains(scores)
+    return scores.get(domain, 0) > 0
+
+
+def conflicts_strongly(domain: str, scores: dict[str, int]) -> bool:
+    ranked = _ranked_domains(scores)
+    if not ranked:
+        return domain != "generalist"
+    winner = ranked[0]
+    if domain == winner:
+        return False
+    if domain == "generalist" or domain not in scores:
+        return True
+    model_score = scores[domain]
+    winner_score = scores[winner]
+    return winner_score >= model_score * 2 and winner_score - model_score >= STRONG_LEAD
 
 
 def domain_scores(package: dict) -> dict[str, int]:
@@ -107,13 +156,55 @@ def rules_severity(package: dict) -> tuple[str, str]:
 
 def rules_classify(package: dict) -> dict:
     scores = domain_scores(package)
-    ranked = sorted((d for d in scores if scores[d] > 0), key=lambda d: (-scores[d], config.DOMAINS.index(d)))
+    ranked = _ranked_domains(scores)
     domain = ranked[0] if ranked else "generalist"
     secondary = ranked[1:3]
     severity, why = rules_severity(package)
     evidence = ", ".join(f"{d} {scores[d]}" for d in ranked) or "no domain signals"
     rationale = f"Signal scores: {evidence}. {severity} because {why}."
     return {"domain": domain, "secondary_domains": secondary, "severity": severity, "rationale": rationale[:300]}
+
+
+def apply_domain_guardrails(decision: dict, package: dict, usage: dict | None) -> dict:
+    """Keep a model domain only when deterministic evidence supports it."""
+    scores = domain_scores(package)
+    rules = rules_classify(package)
+    domain = decision["domain"]
+    if domain == "generalist" and _ranked_domains(scores):
+        reason = f"rejected generalist: evidence supports {rules['domain']}"
+        return {**rules, "source": "rules", "fallback_reason": reason[:200], "usage": usage}
+    if not domain_supported(domain, scores):
+        reason = f"rejected model domain {domain}: no supporting evidence"
+        return {**rules, "source": "rules", "fallback_reason": reason[:200], "usage": usage}
+    if conflicts_strongly(domain, scores):
+        reason = f"rejected model domain {domain}: conflicts with evidence for {rules['domain']}"
+        return {**rules, "source": "rules", "fallback_reason": reason[:200], "usage": usage}
+
+    notes: list[str] = []
+    secondary: list[str] = []
+    for item in decision["secondary_domains"]:
+        if item == domain or item in secondary or scores.get(item, 0) <= 0:
+            continue
+        secondary.append(item)
+    secondary = secondary[:2]
+    if secondary != decision["secondary_domains"]:
+        notes.append("unsupported secondary domains removed")
+
+    severity = decision["severity"]
+    rationale = decision["rationale"]
+    if SEVERITY_RANK[severity] < SEVERITY_RANK[rules["severity"]]:
+        severity = rules["severity"]
+        rationale = f"{rationale} Severity raised to {rules['severity']} by rules."[:300]
+        notes.append(f"severity raised to {rules['severity']}")
+    return {
+        "domain": domain,
+        "secondary_domains": secondary,
+        "severity": severity,
+        "rationale": rationale,
+        "source": "model",
+        "fallback_reason": "; ".join(notes)[:200] if notes else None,
+        "usage": usage,
+    }
 
 
 def _validated(data: object) -> dict:
@@ -138,7 +229,11 @@ def _validated(data: object) -> dict:
 
 
 async def classify(llm: LLM, ledger: Ledger, package: dict) -> dict:
-    """Return the commander_classified fields (without required_specialties)."""
+    """Return the commander_classified fields (without required_specialties).
+
+    Domain scores are always computed from the original package. The model only
+    sees a redacted copy, and a domain with no evidence cannot win.
+    """
     rules = rules_classify(package)
     try:
         result = await llm.call(
@@ -152,16 +247,14 @@ async def classify(llm: LLM, ledger: Ledger, package: dict) -> dict:
             schema=prompts.COMMANDER_SCHEMA,
         )
     except LLMError as exc:
-        return {**rules, "source": "rules", "fallback_reason": f"commander model failed: {exc}"[:200], "usage": None}
+        logger.error("commander model failed: %s", safety.redact_text(str(exc), limit=safety.MAX_ERROR))
+        return {**rules, "source": "rules", "fallback_reason": "commander model failed", "usage": None}
     try:
         decision = _validated(result.data)
     except ValueError as exc:
-        return {**rules, "source": "rules", "fallback_reason": f"invalid commander output: {exc}"[:200],
-                "usage": result.usage}
-    if SEVERITY_RANK[decision["severity"]] < SEVERITY_RANK[rules["severity"]]:
-        decision["severity"] = rules["severity"]
-        decision["rationale"] = f"{decision['rationale']} Severity raised to {rules['severity']} by rules."[:300]
-    return {**decision, "source": "model", "fallback_reason": None, "usage": result.usage}
+        reason = safety.redact_text(f"invalid commander output: {exc}", limit=safety.MAX_ERROR)
+        return {**rules, "source": "rules", "fallback_reason": reason, "usage": result.usage}
+    return apply_domain_guardrails(decision, package, result.usage)
 
 
 def dispatch(domain: str) -> dict:
@@ -174,7 +267,8 @@ def dispatch(domain: str) -> dict:
         "eligible": eligible,
         "specialists": specialists,
         "reason": (
-            f"Only the {eligible} {config.DOMAIN_LABELS[domain]} models receive the full incident; "
-            f"{len(specialists) - eligible} other specialists are skipped."
+            f"Only the {eligible} {config.DOMAIN_LABELS[domain]} specialist routes receive the full "
+            f"incident; {len(specialists) - eligible} other specialist routes are skipped. "
+            f"The routes share {len(config.AGENTS)} underlying models."
         ),
     }

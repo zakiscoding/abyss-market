@@ -530,8 +530,14 @@ class CommanderClassifiedData(ContractModel):
 
     @model_validator(mode="after")
     def validate_source(self) -> "CommanderClassifiedData":
-        if (self.source == "rules") != (self.fallback_reason is not None):
-            raise ValueError("rules classifications carry a fallback_reason; model ones do not")
+        # Rules overrides keep this schema. source "rules" still requires
+        # fallback_reason. source "model" may also carry fallback_reason when
+        # deterministic checks adjust severity or drop unsupported secondary
+        # domains; usage stays required. Existing events with a null reason
+        # remain valid. The frontend already renders fallback_reason whenever
+        # it is present, so no client schema change is required.
+        if self.source == "rules" and not self.fallback_reason:
+            raise ValueError("rules classifications carry a fallback_reason")
         if self.source == "model" and self.usage is None:
             raise ValueError("model classifications carry usage")
         if self.domain in self.secondary_domains:
@@ -646,6 +652,9 @@ class IncidentEscalatedData(ContractModel):
 
 
 class RoutingStatsData(ContractModel):
+    # models_contacted and models_skipped count specialist routes per auction
+    # (5 domains x 3 model routes), not unique foundation models. Commander
+    # compression is not added into either count.
     domain: Domain
     registered_specialists: Annotated[int, Field(ge=1)]
     eligible_specialists: Annotated[int, Field(ge=1)]

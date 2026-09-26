@@ -11,7 +11,7 @@ from typing import Any, Literal
 
 import anthropic
 
-from . import config, prompts
+from . import config, prompts, safety
 from .ledger import Ledger, cost_usd
 
 
@@ -86,7 +86,7 @@ class LLM:
                 self._record_error(
                     ledger, purpose, model, task_id, agent_id, started, str(exc)
                 )
-                raise LLMError(str(exc)) from exc
+                raise LLMError(safety.client_model_error()) from None
             fallback = self._fallback_request(request, system, schema)
             try:
                 response = await self._create(client, fallback)
@@ -104,12 +104,12 @@ class LLM:
                     started,
                     str(fallback_exc),
                 )
-                raise LLMError(str(fallback_exc)) from fallback_exc
+                raise LLMError(safety.client_model_error()) from None
         except (anthropic.APIConnectionError, asyncio.TimeoutError) as exc:
             self._record_error(
                 ledger, purpose, model, task_id, agent_id, started, str(exc)
             )
-            raise LLMError(str(exc)) from exc
+            raise LLMError(safety.client_model_error()) from None
 
         return self._result_from_response(
             ledger=ledger,
@@ -233,9 +233,9 @@ class LLM:
                     duration_ms,
                     False,
                     stop_reason,
-                    str(exc),
+                    safety.redact_text(str(exc), limit=safety.MAX_ERROR),
                 )
-                raise LLMError(f"invalid JSON response: {exc}") from exc
+                raise LLMError(safety.client_model_error()) from None
 
         self._record(
             ledger,
@@ -425,9 +425,9 @@ def _fake_output(
         if incident is not None:
             return incident, None
     if purpose == "split" and system == prompts.COMMANDER_SYSTEM:
-        from .commander import rules_classify
+        from .commander import package_from_prompt, rules_classify
 
-        data = rules_classify(json.loads(user.split("\n", 1)[1]))
+        data = rules_classify(package_from_prompt(user))
         return json.dumps(data), data
     if purpose == "split":
         data = {
