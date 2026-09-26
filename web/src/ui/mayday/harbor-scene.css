@@ -1,0 +1,66 @@
+/* Five physical buildings are baked into the art; this layer only anchors live UI. */
+.harbor-world { position: absolute; inset: 102px 0 78px; overflow: hidden; background: radial-gradient(ellipse, #145b77, #0b2f44); }
+.harbor-painting { position: absolute; container-type: inline-size; }
+.harbor-art { display: block; width: 100%; height: 100%; }
+.specialty-building { position: absolute; top: 25.9%; width: 15.4%; height: 21%; transform: translateX(-50%); }
+.mayday .building-sign { position: relative; z-index: 3; display: grid; place-items: center; width: 100%; min-height: 38px; padding: 6px 4px; border: 2px solid #83532d; border-bottom-width: 4px; background: #fff0cf; border-radius: 5px; color: #322313; font: 700 clamp(10px, 1.03cqw, 16px)/1.25 var(--ui-font); box-shadow: 0 3px 5px #33200d55; }
+.mayday .building-sign:hover { background: #fff8e6; border-color: #c99a4d; }
+.building-status { position: absolute; top: 91%; left: 50%; transform: translateX(-50%); display: block; width: max-content; max-width: 110%; padding: 4px 5px; border: 1px solid #658d8760; border-radius: 5px; background: #0c2530f2; color: #d2e1e7; text-align: center; font: 700 clamp(7px, .7cqw, 11px)/1.3 var(--ui-font); }
+.state-active .building-status { color: #ffdda1; border-color: #efb354; }
+.state-monitoring .building-status { color: #92dcff; border-color: #62b9e0; }
+.state-restored .building-status { color: #9bf0c5; border-color: #57c995; }
+.state-active .building-sign { box-shadow: 0 0 0 2px #edc47480, 0 4px 12px #edc47455; }
+.building-worker { position: absolute; inset: 23% 0 0; pointer-events: none; }
+.harbor-painting .building-worker .dock-worker { position: relative; left: 26%; top: 0; width: 130%; transform: none; filter: drop-shadow(1px 2px 0 #15272066); }
+.building-worker .worker-action { display: none; }
+.harbor-painting .building-worker .worker-catch { top: 78%; left: -12%; width: 75%; justify-content: center; }
+.building-worker .worker-catch span, .building-worker .worker-catch strong { font: 600 clamp(8px, .75cqw, 12px)/1.2 var(--ui-font); padding: 3px 5px; }
+.harbor-painting .building-worker.fishing .worker-catch { top: 70%; }
+.harbor-workflow { position: absolute; left: 3%; top: 53%; width: 94%; z-index: 4; }
+.harbor-workflow .pipeline { display: grid; grid-template-columns: repeat(6, minmax(0,1fr)); gap: 5px; }
+.harbor-workflow .pipeline li { background: #0c2530ed; padding: 7px 8px; min-width: 0; }
+.harbor-workflow .pipeline b { font: 600 clamp(9px,.85cqw,13px)/1.3 var(--ui-font); }
+.harbor-workflow .pipeline small { font: 10px/1.3 var(--ui-font); overflow: hidden; text-overflow: ellipsis; }
+.harbor-workflow .pipeline li::after { display: none; }
+.harbor-repair-route { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.harbor-repair-route path { stroke: #81dbc4; stroke-width: .15; stroke-dasharray: .7 .6; fill: none; opacity: .8; }
+.mayday .boat-captain { position: absolute; top: 69%; left: 36.5%; transform: translateX(-50%); display: grid; justify-items: center; gap: 3px; padding: 0; border: 0; background: transparent; z-index: 3; }
+.boat-captain svg { width: clamp(30px, 3.5cqw, 62px); height: auto; filter: drop-shadow(2px 3px 0 #0d273f77); }
+.boat-captain > span { padding: 5px 12px; border: 1px solid #ddc694; border-radius: 6px; background: #0c2530f2; display: grid; gap: 2px; }
+.boat-captain strong { font: 700 12px var(--ui-font); color: #fff1c9; }
+.boat-captain small { font: 9px var(--ui-font); color: #b6d6df; }
+.harbor-sandbox { position: absolute; top: 67%; left: 65%; width: 22%; max-width: 240px; display: grid; gap: 4px; text-align: center; border-radius: 10px; padding: 12px; border: 1px solid #7895a8; background: #102936ed; color: #cedde5; }
+.harbor-sandbox small { font: 600 clamp(9px,.85cqw,13px) var(--ui-font); }
+.harbor-sandbox strong { font: 700 clamp(12px,1.2cqw,18px) var(--ui-font); }
+.harbor-sandbox > span { font-size: 11px; }
+.harbor-sandbox.sandbox-testing { border-color: #72e2ed; color: #a5f5ff; animation: sandbox-breathe 2s ease-in-out infinite; }
+.harbor-sandbox.sandbox-rejected { border-color: #f07b71; color: #ffb5a9; }
+.harbor-sandbox.sandbox-passed, .harbor-sandbox.sandbox-applied { border-color: #7ae0ae; color: #a5f1c7; }
+@keyframes sandbox-breathe { 50% { box-shadow: 0 0 20px #45d5e64d; } }
+.approval-receipt { display: grid; gap: 8px; padding: 14px; border: 1px solid #72cca4; border-radius: 10px; background: #123a2e55; }
+.approval-receipt strong { color: #a5f1c7; }
+.approval-receipt ul { margin: 0; padding-left: 18px; }
+.crew-summary { padding: 10px; background: #172d3a; border-radius: 6px; line-height: 1.5; }
+@media (max-width: 760px) {
+  .harbor-world { inset: auto 0 70px; height: 310px; }
+  .command-layout .harbor-wrap { padding-bottom: 390px; }
+  .harbor-world { overflow-x: auto; }
+  .mayday .building-sign { min-height: 22px; font-size: 7px; padding: 2px; border-width: 1px; }
+  .building-status { font-size: 5px; padding: 2px; }
+  .harbor-workflow .pipeline { gap: 2px; }
+  .harbor-workflow .pipeline li { padding: 3px 2px; }
+  .harbor-workflow .pipeline b { font-size: 5px; }
+  .harbor-workflow .pipeline small { display: none; }
+  .boat-captain strong { font-size: 8px; }
+  .boat-captain small { font-size: 6px; }
+  .boat-captain > span { padding: 2px 5px; }
+  .boat-captain svg { width: 20px; }
+  .harbor-sandbox { padding: 5px; gap: 2px; }
+  .harbor-sandbox small { font-size: 6px; }
+  .harbor-sandbox strong { font-size: 8px; }
+  .harbor-sandbox > span { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .harbor-sandbox.sandbox-testing { animation: none; } }
+.harbor-painting .building-worker .worker-catch { display: none; }
+.building-status { font-size: clamp(9px, .7cqw, 11px); max-width: 105%; }
+@media (max-width: 760px) { .building-status { font-size: 5px; } }

@@ -55,7 +55,7 @@ describe("MAYDAY selectors", () => {
     expect(pipeline(received).find((s) => s.key === "classify")?.state).toBe("active");
     const approval = upTo(events, (e) => e.type === "approval_required");
     expect(Object.fromEntries(pipeline(approval).map((s) => [s.key, s.state]))).toEqual({
-      classify: "done", select: "done", sandbox: "done",
+      detect: "done", classify: "done", select: "done", sandbox: "done",
       review: "active", restore: "pending",
     });
     expect(harborModel(approval).mood).toBe("alarm");
@@ -100,17 +100,19 @@ describe("MAYDAY selectors", () => {
 });
 
 describe("seaside harbor", () => {
-  it("renames the three stalls when the Commander classifies the domain", () => {
+  it("shows all specialty stalls when the Commander classifies the domain", () => {
     const classified = upTo(events, (e) => e.type === "commander_classified");
     const picture = seasidePicture(classified);
     expect(picture.classification).toBe("database · SEV-1");
     expect(picture.boat).toBe("active");
     expect(picture.stalls.map((stall) => stall.sign)).toEqual([
-      "Database Repair Stall",
-      "Network Routing Stall",
-      "Security Watch Stall",
+      "Database Repair",
+      "Payments Operations",
+      "Network Routing",
+      "General Repair",
+      "Security Watch",
     ]);
-    expect(picture.stalls.map((stall) => stall.agentId)).toEqual(["haiku", "sonnet", "opus"]);
+    expect(picture.stalls.map((stall) => stall.agentId)).toEqual(["haiku", null, "sonnet", null, "opus"]);
   });
 
   it("lights bids, rejects in the sandbox, then opens the gate for the paged crew", () => {
@@ -136,13 +138,13 @@ describe("seaside harbor", () => {
 
   it("uses each domain's specialist title", () => {
     const security = seasidePicture(play(auth as AbyssEvent[]));
-    expect(security.stalls[2].sign).toBe("Security Watch Stall");
-    expect(security.stalls[2].winner).toBe(true);
+    expect(security.stalls.find((stall) => stall.domain === "security")!.sign).toBe("Security Watch");
+    expect(security.stalls.find((stall) => stall.domain === "security")!.winner).toBe(true);
     const network = seasidePicture(play(net as AbyssEvent[]));
-    expect(network.stalls[1].sign).toBe("Network Routing Stall");
-    expect(network.stalls[1].winner).toBe(true);
+    expect(network.stalls.find((stall) => stall.domain === "networking")!.sign).toBe("Network Routing");
+    expect(network.stalls.find((stall) => stall.domain === "networking")!.winner).toBe(true);
     const payments = seasidePicture(play(pool as AbyssEvent[]));
-    expect(payments.stalls[0].sign).toBe("Database Repair Stall");
+    expect(payments.stalls[0].sign).toBe("Database Repair");
     expect(payments.stalls[0].winner).toBe(true);
     expect(specialtySign("payments", "opus")).toBe("Payments Specialist · Opus");
   });

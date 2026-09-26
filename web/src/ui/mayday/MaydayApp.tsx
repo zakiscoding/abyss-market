@@ -10,7 +10,6 @@ import { store } from "../../state/store";
 import { DebugPanel } from "../DebugPanel";
 import {
   CaptainPanel,
-  ChatPanel,
   CrewPanel,
   DecisionPanel,
   EscalationPanel,
@@ -106,9 +105,9 @@ export default function MaydayApp() {
       if (event.type === "incident_received") setNotice({ title: "New incident received", message: event.data.alert, tab: "evidence" });
       if (event.type === "approval_required") {
         setActiveTab("crew");
-        setNotice({ title: "Your approval is needed", message: event.data.summary, tab: "crew" });
+        setNotice({ title: "Your approval is needed", message: "Review the validated plan before applying it to the simulated cluster.", tab: "crew" });
       }
-      if (event.type === "service_restored") setNotice({ title: "Service restored", message: "Recovery checks passed. View the incident outcome in Evidence.", tab: "evidence" });
+      if (event.type === "service_restored") { setActiveTab("evidence"); setNotice({ title: "Service restored", message: "Applied to simulated cluster. View the recovery checks in Evidence.", tab: "evidence" }); }
       if (event.type === "incident_escalated") setNotice({ title: "Incident needs attention", message: event.data.reason, tab: "crew" });
       if (event.type === "incident_status" && event.data.status === "healthy") setNotice(null);
       if (event.type === "incident_status" || event.type === "error") setPending(null);
@@ -145,10 +144,9 @@ export default function MaydayApp() {
   const canTrigger = status !== null && !active && pending === null && (SOURCE === "fixture" || state.connected);
   const badge = modeBadge(state);
   const cost = incident?.restored?.total_cost_usd ?? outcome(state).aiCost;
-  const costLabel = state.config && !state.config.fake_llm && SOURCE === "ws" ? "Actual provider cost" : "Simulated AI cost";
+  const costLabel = state.config && !state.config.fake_llm && SOURCE === "ws" ? "Actual AI cost" : "Simulated cost";
   const planText = incident?.approval ? describePlan(incident.approval.steps) : "";
   const planKey = incident?.approval ? `${incident.jobId}-${incident.approval.task_id}-${incident.approval.attempt}-${planHash(planText)}` : null;
-  const personaLabel = persona === "commander" ? "Incident Commander" : persona;
   const blocked = planKey && approvedKey.current === planKey ? "approved" : note?.key === planKey ? (note.kind === "reject" ? "rejected" : "review") : null;
   const approve = () => {
     if (status !== "awaiting_approval" || !planKey || approvedKey.current === planKey || pending === "approve") return;
@@ -172,7 +170,7 @@ export default function MaydayApp() {
           <span>{picture.service}</span>
           <span>{picture.region || "—"}</span>
           <span className="status">{(status ?? "connecting").replaceAll("_", " ")}</span>
-          <span className="cost" title={costLabel}>${cost.toFixed(4)}</span>
+          <span className="cost" title={costLabel}>{costLabel}: ${cost.toFixed(4)}</span>
         </div>}
         <div className="incident-timer" title="Time since the outage started">
           <small>{status === "restored" ? "MTTR" : "INCIDENT"}</small>
@@ -207,14 +205,12 @@ export default function MaydayApp() {
             }}>Open inbox</button>
           </div>}
         </div>
-        <SeasideScene
-          state={state}
-          approving={pending === "approve"}
-          canApprove={status === "awaiting_approval" && Boolean(planKey) && blocked === null && canApprove(persona, incident?.commander?.severity ?? null)}
-          onApprove={approve}
-        />
+        <SeasideScene state={state} onCaptain={() => {
+          setActiveTab("crew");
+          requestAnimationFrame(() => document.getElementById("panel-crew")?.focus());
+        }} />
 
-      <div className="harbor-caption"><span>LIVE HARBOR</span><p>{status === "awaiting_approval" ? "Sandbox passed. Your crew can now review the repair." : status === "restored" ? "Service restored. Explore the evidence or start another incident." : status === "failed" ? "Investigation escalated. Review the evidence for details." : active ? "Specialists are working on this incident." : "Select a source in the inbox to begin an investigation."}</p>
+      <div className="harbor-caption"><span>CAPTAIN READOUT</span><p>{status === "awaiting_approval" ? "Deterministic sandbox checks passed. Your crew can now review the repair." : status === "restored" ? "Service restored. Explore the evidence or start another incident." : status === "failed" ? "Investigation escalated. Review the evidence for details." : active ? "Specialists are working on this incident." : "Select a source in the inbox to begin an investigation."}</p>
         {status === "awaiting_approval" && <button type="button" onClick={() => { setActiveTab("crew"); requestAnimationFrame(() => document.getElementById("panel-crew")?.focus()); }}>Review repair</button>}
       </div>
       </div>
@@ -242,17 +238,16 @@ export default function MaydayApp() {
             onReject={() => { if (planKey) setNote({ key: planKey, kind: "reject" }); }}
           />
           <CrewPanel state={state} revision={note?.kind === "revision" && note.key === planKey} />
-          <ChatPanel state={state} note={note && note.key === planKey ? { ...note, persona: personaLabel } : null} />
           <ModelMarket state={state} />
           <Fold title="Assignments">
             <Repairs state={state} />
           </Fold>
         </>,
         evidence: <>
+          <OutcomePanel state={state} elapsedMs={elapsedMs} costLabel={costLabel} />
           <Terminal state={state} />
           <ModelMarket state={state} />
           <EscalationPanel state={state} />
-          <OutcomePanel state={state} elapsedMs={elapsedMs} />
         </>,
         ledger: <DebugPanel state={state} /> }}
       </WorkspaceTabs>

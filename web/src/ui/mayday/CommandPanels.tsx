@@ -1,6 +1,7 @@
 import { describePlan, formatMetric, type Region } from "../../contract";
 import type { MarketState } from "../../state/reducer";
 import { currentTask } from "../../scene/model";
+import { validationReadout } from "./harborView";
 import {
   PERSONAS,
   canApprove,
@@ -35,13 +36,15 @@ export function CaptainPanel({ state }: { state: MarketState }) {
         <span className="badge ai">AI COMMANDER</span>
       </header>
       <p>{captain.text}</p>
+      {state.incident?.commander && <p className="muted">Evidence: {state.incident.commander.rationale}</p>}
       {worker.worker && (
         <p className="worker-line">
           <b>{worker.title}</b>
-          <span>Worker: {worker.worker}</span>
+          <span><span className="badge worker">AI WORKER</span> {worker.worker}</span>
           <small>{worker.reason}</small>
         </p>
       )}
+      <p className="captain-validation">{validationReadout(state)}</p>
     </section>
   );
 }
@@ -116,10 +119,13 @@ export function CrewPanel({ state, revision }: { state: MarketState; revision: b
         <span className="badge human">HUMAN</span>
       </header>
       {people.length === 0 && <p className="muted">No one is paged yet.</p>}
+      {people.length > 0 && <p className="crew-summary">Crew alerted · {people.map((person) => person.name).join(", ")}</p>}
       <ul className="crew-list">
         {people.map((person) => {
           const needs = approvers.has(person.name);
-          const phase = crewState(status, needs, revision);
+          const phase = status === "restored"
+            ? (state.incident?.granted?.approved_by.includes(person.name) ? "approved · complete" : "incident resolved")
+            : crewState(status, needs, revision);
           return (
             <li key={person.responder_id}>
               <b>{person.name}</b>
@@ -188,6 +194,20 @@ export function DecisionPanel({
   const allowApprove = Boolean(awaiting) && canApprove(persona, severity) && blocked === null && !approving;
   const allowRevise = Boolean(awaiting) && canRevise(persona) && blocked !== "approved";
   const allowReject = Boolean(awaiting) && canReject(persona) && blocked !== "approved";
+  const restored = state.incident?.restored;
+  if (state.incident?.status === "restored" && restored) return (
+    <section className="panel decision-panel">
+      <header className="panel-head"><h2>Completed approval receipt</h2><span className="badge human">HUMAN</span></header>
+      <div className="approval-receipt">
+        <strong>Applied to simulated cluster</strong>
+        <span>Approved by {restored.approved_by.join(", ")}</span>
+        <span>Plan applied once</span>
+        <code>{describePlan(restored.steps)}</code>
+        <strong>Deterministic recovery checks {restored.verification.every((check) => check.passed) ? "passed" : "need attention"}</strong>
+        <ul>{restored.verification.map((check) => <li key={check.name}>{check.passed ? "✓" : "×"} {check.name}</li>)}</ul>
+      </div>
+    </section>
+  );
   return (
     <section className="panel decision-panel">
       <header className="panel-head">
@@ -196,7 +216,7 @@ export function DecisionPanel({
       </header>
       {approval && (
         <>
-          <p>{approval.summary}</p>
+          <p>Review the sandbox-validated plan before applying it to the simulated cluster.</p>
           <p><b>Plan.</b> {plan}</p>
           <p><b>Worker.</b> {worker.worker ?? "—"}</p>
           <p className="muted">{worker.reason}</p>
@@ -212,17 +232,25 @@ export function DecisionPanel({
             : state.incident?.repairs.at(-1)?.sandbox?.passed
               ? "Sandbox passed. Preparing the approval checklist."
               : "Approval opens after the sandbox passes."}</p>}
-      {blocked === "rejected" && <p>You declined this plan in this session. Deployment remains paused.</p>}
+      {blocked === "rejected" && <p>You declined this plan in this session. Simulated application remains paused.</p>}
       {blocked === "review" && <p>Plan held for review in this session. Resume when you are ready to decide.</p>}
       {blocked === "approved" && <p>This plan version was approved once.</p>}
-      <div className="decision-actions">
-        <button type="button" className="approve-button" disabled={!allowApprove} onClick={onApprove}>
-          {approving ? "Applying..." : "Approve repair"}
-        </button>
-        <button type="button" className="ghost" disabled={!allowRevise} onClick={onRevise}>Request revision</button>
-        <button type="button" className="ghost" disabled={!allowReject} onClick={onReject}>Reject repair</button>
-        {awaiting && (blocked === "review" || blocked === "rejected") && (canRevise(persona) || canReject(persona)) && <button type="button" className="ghost" onClick={onResume}>Resume review</button>}
-      </div>
+      {state.incident?.status === "restored" ? (
+        <div className="approval-complete">
+          <strong>Approved by {approval?.approvers.join(" and ") ?? "the human crew"}</strong>
+          <span>Plan applied once</span>
+          <span>Recovery verified</span>
+        </div>
+      ) : (
+        <div className="decision-actions">
+          <button type="button" className="approve-button" disabled={!allowApprove} onClick={onApprove}>
+            {approving ? "Applying..." : "Approve repair"}
+          </button>
+          <button type="button" className="ghost" disabled={!allowRevise} onClick={onRevise}>Request revision</button>
+          <button type="button" className="ghost" disabled={!allowReject} onClick={onReject}>Reject repair</button>
+          {awaiting && (blocked === "review" || blocked === "rejected") && (canRevise(persona) || canReject(persona)) && <button type="button" className="ghost" onClick={onResume}>Resume review</button>}
+        </div>
+      )}
       {awaiting && !canApprove(persona, severity) && (
         <p className="muted">This demo persona cannot give the final {severity ?? ""} authorization.</p>
       )}

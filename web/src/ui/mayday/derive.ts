@@ -1,11 +1,12 @@
 // Pure selectors for the MAYDAY dashboard. Every number shown is read from
 // events or calculated here; nothing is hardcoded.
 import { describePlan, type AbyssEvent, type Check, type RepChange, type RoutingStatsData } from "../../contract";
+import { workerName } from "./command";
 import type { MarketState } from "../../state/reducer";
 
 export type StageState = "pending" | "active" | "done" | "failed";
 export interface Stage {
-  key: "classify" | "select" | "sandbox" | "review" | "restore";
+  key: "detect" | "classify" | "select" | "sandbox" | "review" | "restore";
   label: string;
   state: StageState;
   detail: string;
@@ -29,6 +30,7 @@ export function pipeline(state: MarketState): Stage[] {
   const assignments = incident?.assignments ?? null;
 
   const stages: Stage[] = [
+    { key: "detect", label: "Detected", state: incident?.received ? "done" : "pending", detail: incident?.received?.service ?? "Waiting" },
     {
       key: "classify",
       label: "Classified",
@@ -37,9 +39,9 @@ export function pipeline(state: MarketState): Stage[] {
     },
     {
       key: "select",
-      label: "Selecting worker",
+      label: "Worker selected",
       state: repairs.length || tasks.some((task) => task.status === "assigned" || task.status === "working") ? "done" : commander ? "active" : "pending",
-      detail: last?.proposal.agent_id?.toUpperCase() ?? "",
+      detail: last?.proposal.agent_id ? workerName(last.proposal.agent_id) : "",
     },
     {
       key: "sandbox",

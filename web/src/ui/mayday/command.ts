@@ -17,9 +17,11 @@ export const PERSONAS: { id: Persona; label: string }[] = [
 ];
 
 export const DOCKS: { domain: Domain; title: string; stall: AgentId | null }[] = [
-  { domain: "database", title: "Database Repair Stall", stall: "haiku" },
-  { domain: "networking", title: "Network Routing Stall", stall: "sonnet" },
-  { domain: "security", title: "Security Watch Stall", stall: "opus" },
+  { domain: "database", title: "Database Repair", stall: "haiku" },
+  { domain: "payments", title: "Payments Operations", stall: null },
+  { domain: "networking", title: "Network Routing", stall: "sonnet" },
+  { domain: "generalist", title: "General Repair", stall: null },
+  { domain: "security", title: "Security Watch", stall: "opus" },
 ];
 
 const WORKER: Record<AgentId, string> = {
@@ -71,6 +73,10 @@ export function captainReadout(state: MarketState): CaptainLine {
     };
   }
   const dock = dockTitle(commander.domain);
+  if (state.incident?.current.scenario_id === "payments_pool" && commander.domain === "database") return {
+    domain: commander.domain, dock,
+    text: "Payments API is affected, but the root cause is database connection-pool exhaustion. Routing remediation to Database Repair while Payments Operations monitors recovery.",
+  };
   if (state.incident?.status === "restored") return { domain: commander.domain, dock, text: `${state.incident.current.service} is restored. Recovery checks passed.` };
   if (state.incident?.status === "failed") return { domain: commander.domain, dock, text: "The incident has been escalated to the human crew." };
   const evidence = commander.rationale.replace(/\s+/g, " ").trim();
@@ -139,11 +145,12 @@ export function escalationCost(attempts: AttemptRow[]): { initial: number; extra
   return { initial, extra: Math.max(0, final - initial), final };
 }
 
-export type CrewState = "alerted" | "watching" | "reviewing" | "approved" | "revision requested";
+export type CrewState = "alerted" | "watching" | "reviewing" | "approved" | "review complete" | "recovery confirmed" | "customer update prepared" | "revision requested";
 
 export function crewState(status: string, needsApproval: boolean, revision: boolean): CrewState {
   if (revision && needsApproval) return "revision requested";
-  if (status === "restored" || status === "recovering") return needsApproval ? "approved" : "watching";
+  if (status === "restored") return needsApproval ? "approved" : "recovery confirmed";
+  if (status === "recovering") return needsApproval ? "approved" : "recovery confirmed";
   if (status === "awaiting_approval" && needsApproval) return "reviewing";
   if (status === "awaiting_approval") return "watching";
   return "alerted";
@@ -154,6 +161,72 @@ export interface ChatLine {
   who: string;
   badge: "AI COMMANDER" | "AI WORKER" | "HUMAN";
   text: string;
+}
+
+export interface CaptainAnswer {
+  answer: string;
+  evidence: string[];
+}
+
+export function captainAnswer(state: MarketState, question: string): CaptainAnswer {
+  const incident = state.incident;
+  if (!incident?.received && !incident?.current) {
+    return { answer: "There is no active incident to explain yet. Trigger an incident and I will use its evidence package.", evidence: [] };
+  }
+  const normalized = question.trim().toLowerCase();
+  const captain = captainReadout(state);
+  const worker = dockWorker(state);
+  const plan = incident.approval ? describePlan(incident.approval.steps) : null;
+  const sandbox = incident.repairs.at(-1)?.sandbox;
+  const evidence = incident.received?.alert ? [incident.received.alert] : [];
+  if (normalized.includes("why") && (normalized.includes("route") || normalized.includes("classif"))) {
+    return {
+      answer: incident.commander
+        ? `${incident.commander.rationale} I routed this incident to the ${captain.dock}.`
+        : "I am still classifying the incident.",
+      evidence,
+    };
+  }
+  if (normalized.includes("model") || normalized.includes("worker") || normalized.includes("selected")) {
+    return {
+      answer: worker.worker
+        ? `${worker.worker} is the recorded worker. ${worker.reason}`
+        : "The specialty stall is still evaluating workers.",
+      evidence,
+    };
+  }
+  if (normalized.includes("approve") || normalized.includes("human") || normalized.includes("who")) {
+    return {
+      answer: incident.approval?.approvers.length
+        ? `Required approvers: ${incident.approval.approvers.join(", ")}. I cannot approve or deploy the repair.`
+        : "Human approvers have not been assigned yet.",
+      evidence: incident.approval?.approvers ?? [],
+    };
+  }
+  if (normalized.includes("repair") || normalized.includes("plan") || normalized.includes("change")) {
+    return {
+      answer: plan
+        ? `The proposed repair is ${plan}. It ${sandbox?.passed ? "passed" : "has not passed"} sandbox validation. Production remains gated on human approval.`
+        : "A repair plan has not passed sandbox validation yet.",
+      evidence: plan ? [plan] : [],
+    };
+  }
+  if (normalized.includes("sandbox") || normalized.includes("fail") || normalized.includes("risk")) {
+    const failed = incident.repairs.filter((attempt) => attempt.sandbox && !attempt.sandbox.passed).length;
+    const checkSummary = sandbox
+      ? `${sandbox.checks.filter((check) => check.passed).length}/${sandbox.checks.length} checks passed`
+      : "";
+    return {
+      answer: sandbox
+        ? `Sandbox status is ${sandbox.passed ? "passed" : "failed"}${failed ? `, with ${failed} rejected attempt${failed === 1 ? "" : "s"}` : ""}. ${checkSummary}.`
+        : "Sandbox validation has not completed yet.",
+      evidence: sandbox ? [checkSummary] : [],
+    };
+  }
+  return {
+    answer: `${captain.text} Ask me about the route, selected worker, repair plan, sandbox result, or required approvers.`,
+    evidence,
+  };
 }
 
 export function incidentChat(state: MarketState, note?: { kind: "revision" | "reject"; persona: string } | null): ChatLine[] {

@@ -25,7 +25,9 @@ export type BoatPhase = "calm" | "active" | "restored" | "failed";
 export type GatePhase = "idle" | "closed" | "open";
 
 export interface SeasideStall {
-  agentId: AgentId;
+  id: string;
+  agentId: AgentId | null;
+  domain: Domain;
   sign: string;
   color: string;
   lit: boolean;
@@ -72,11 +74,10 @@ export function seasidePicture(state: MarketState): SeasidePicture {
   const domain = commander?.domain ?? null;
   const last = incident?.repairs.at(-1);
   const recorded = task?.winner ?? last?.proposal.agent_id ?? null;
-  const stalls = DOCKS.flatMap((dock): SeasideStall[] => {
-    if (!dock.stall) return [];
+  const stalls = DOCKS.map((dock): SeasideStall => {
     const agentId = dock.stall;
     const active = domain === dock.domain;
-    const agent = state.agents[agentId];
+    const agent = agentId ? state.agents[agentId] : undefined;
     let bubble: string | null = null;
     let lit = false;
     let winner = false;
@@ -88,14 +89,16 @@ export function seasidePicture(state: MarketState): SeasidePicture {
       lit = true;
       winner = true;
     }
-    return [{
+    return {
+      id: dock.domain,
       agentId,
+      domain: dock.domain,
       sign: dock.title,
       color: agent?.color ?? "#f4dc97",
       bubble,
       lit,
       winner,
-    }];
+    };
   });
 
   const approvers = new Set(incident?.approval?.approvers ?? []);

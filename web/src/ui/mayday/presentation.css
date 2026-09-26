@@ -92,7 +92,7 @@
 .scene-frame .stall-resident .dock-worker { position: relative; left: auto; top: auto; width: 100%; transform: none; }
 .stall-resident .worker-action { white-space: nowrap; bottom: -5%; }
 .stall-resident .worker-catch { top: 0; left: 42%; }
-.stall-focused .commander-banner, .stall-focused .dock-strip, .stall-focused .dock-crew, .stall-focused .remedy, .stall-focused .boat-marker { visibility: hidden; }
+.stall-focused .commander-banner, .stall-focused .dock-strip, .stall-focused .dock-crew, .stall-focused .remedy, .stall-focused .boat-marker, .stall-focused .captain-dock, .stall-focused .captain-harbor-chat { visibility: hidden; }
 .harbor-zoom-out { position: absolute; bottom: 125px; right: 18px; z-index: 6; box-shadow: 0 4px 14px #0004; }
 @media (max-width: 760px) { .harbor-zoom-out { bottom: 88px; right: 10px; font-size: 11px; } }
 @media (prefers-reduced-motion: reduce) { .harbor-stage .scene-frame { transition: none; } }

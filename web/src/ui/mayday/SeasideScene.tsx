@@ -1,26 +1,12 @@
 import { useLayoutEffect, useRef, useState, type CSSProperties } from "react";
-
-import type { AgentId } from "../../contract";
-import { DOCKS, captainReadout, selectionFor } from "./command";
-import { alertBadge, stallAlerts } from "./alerts";
-import { useRepairCinema } from "./RepairCinema";
-import { repairShot } from "./repairPhase";
-import { DockWorker } from "./DockWorker";
-import { Pipeline } from "./panels";
-import { seasidePicture, type SeasidePicture } from "./seaside";
+import type { Domain } from "../../contract";
 import type { MarketState } from "../../state/reducer";
-
-const ART = { w: 1024, h: 576 };
-const ART_SRC = "/art/seaside-market.jpg";
-
-/** Fractions of the painting. Tuned to the blank stall signs, the pier, the boat, and the water beside it. */
-const SPOT: Record<AgentId, { x: number; y: number }> = {
-  haiku: { x: 28.2, y: 30.4 },
-  sonnet: { x: 56.2, y: 30.6 },
-  opus: { x: 78.8, y: 30.4 },
-};
-const SANDBOX = { x: 70, y: 64 };
-
+import { selectionFor } from "./command";
+import { DockWorker } from "./DockWorker";
+import { repairShot } from "./repairPhase";
+import { Pipeline } from "./panels";
+import { HARBOR_STALLS, specialtyState, sandboxState, validationReadout } from "./harborView";
+const ART = { w: 1672, h: 941 };
 interface Frame {
   left: number;
   top: number;
@@ -50,219 +36,74 @@ export function coverFrame(viewW: number, viewH: number): Frame {
   };
 }
 
-function Remedy({ picture }: { picture: SeasidePicture }) {
-  const agent = picture.remedyAgent;
-  const [arrived, setArrived] = useState(false);
-  const key = picture.remedyKey;
-  useLayoutEffect(() => {
-    if (!key) return;
-    setArrived(false);
-    let inner = 0;
-    const outer = requestAnimationFrame(() => {
-      inner = requestAnimationFrame(() => setArrived(true));
-    });
-    return () => {
-      cancelAnimationFrame(outer);
-      cancelAnimationFrame(inner);
-    };
-  }, [key]);
-  if (!agent || !picture.remedyText) return null;
-  const from = SPOT[agent];
-  const at = arrived ? SANDBOX : { x: from.x, y: from.y + 8 };
-  return (
-    <div className={`remedy remedy-${picture.sandbox}`} style={{ left: `${at.x}%`, top: `${at.y}%` }}>
-      {picture.remedyText}
-    </div>
-  );
-}
-
-export function SeasideScene({
-  state,
-  approving,
-  canApprove,
-  onApprove,
-}: {
+export function SeasideScene({ state, onCaptain }: {
   state: MarketState;
-  approving: boolean;
-  canApprove: boolean;
-  onApprove: () => void;
+  onCaptain: () => void;
 }) {
-  const stageRef = useRef<HTMLDivElement | null>(null);
-  const cinema = useRepairCinema(state);
-  const workerPhase = repairShot(state) ?? (state.incident?.status === "awaiting_approval" ? "validated" : null);
-  const [viewport, setViewport] = useState({ width: 0, height: 0 });
+  const stage = useRef<HTMLDivElement>(null);
+  const dialog = useRef<HTMLDialogElement>(null);
   const [frame, setFrame] = useState<Frame | null>(null);
+  const [open, setOpen] = useState<Domain | null>(null);
   const [artOk, setArtOk] = useState(true);
-  const [openStall, setOpenStall] = useState<AgentId | null>(null);
-  const dialogRef = useRef<HTMLDialogElement>(null);
-  const dock = DOCKS.find((item) => item.stall === openStall);
+  const incident = state.incident;
+  const phase = repairShot(state) ?? (incident?.status === "awaiting_approval" ? "validated" : null);
+  const sandbox = sandboxState(state);
+  const primary = HARBOR_STALLS.find((stall) => stall.domain === incident?.commander?.domain);
   const market = selectionFor(state);
-  const openAlerts = dock ? stallAlerts(state, dock.domain) : [];
-  const picture = seasidePicture(state);
-  const captain = captainReadout(state);
-  const activeStall = DOCKS.find((item) => item.domain === state.incident?.commander?.domain)?.stall;
-  const focusSpot = activeStall ? SPOT[activeStall] : null;
-  const zoomed = Boolean(cinema.shot && focusSpot && frame);
-  const camera = frame && zoomed && focusSpot ? (() => {
-    const width = frame.width * 1.65;
-    const height = frame.height * 1.65;
-    return {
-      width, height,
-      left: Math.min(0, Math.max(viewport.width - width, viewport.width / 2 - width * focusSpot.x / 100)),
-      top: Math.min(0, Math.max(viewport.height - height, viewport.height * .48 - height * .39)),
-    };
-  })() : frame;
-
+  const chosenDock = HARBOR_STALLS.find((stall) => stall.domain === open);
   useLayoutEffect(() => {
-    if (openStall) dialogRef.current?.showModal();
-  }, [openStall]);
-
+    if (open) dialog.current?.showModal();
+  }, [open]);
   useLayoutEffect(() => {
-    const el = stageRef.current;
-    if (!el) return;
+    const element = stage.current;
+    if (!element) return;
     const fit = () => {
-      const w = el.clientWidth;
-      const h = el.clientHeight;
-      if (w && h) { setFrame(coverFrame(w, h)); setViewport({ width: w, height: h }); }
+      const scale = Math.min(element.clientWidth / ART.w, element.clientHeight / ART.h);
+      const width = ART.w * scale;
+      const height = ART.h * scale;
+      setFrame({ width, height, left: (element.clientWidth - width) / 2, top: (element.clientHeight - height) / 2 });
     };
     fit();
     const observer = new ResizeObserver(fit);
-    observer.observe(el);
+    observer.observe(element);
     return () => observer.disconnect();
   }, []);
-
-  return (
-    <div className={`harbor-stage scene-mood-${picture.mood} ${zoomed ? "stall-focused" : ""}`} ref={stageRef}>
-      <p className="sr-only">
-        Abyss command harbor. The boat is Captain AI. The stalls are the Database Repair, Network Routing, and Security Watch stalls.
-        The water beside the dock is the sandbox.
-      </p>
-      <div
-        className={`scene-frame ${frame ? "" : "pending"}`}
-        style={camera ? { left: camera.left, top: camera.top, width: camera.width, height: camera.height } : undefined}
-      >
-        {artOk ? (
-          <img src={ART_SRC} alt="" draggable={false} onError={() => setArtOk(false)} />
-        ) : (
-          <div className="art-missing" role="status">Harbor artwork failed to load. Incident controls are still live.</div>
-        )}
-        {frame && (
-          <>
-            {workerPhase && focusSpot && <div className={`stall-resident phase-${workerPhase}`} style={{ left: `${focusSpot.x - 3.4}%`, top: "29.5%" }}>
-              <DockWorker state={state} phase={workerPhase} />
-            </div>}
-            <div className={`boat-marker ${picture.boat}`} style={{ left: "32%", top: "76%" }}>
-              <b>Captain AI</b>
-              <small>{picture.boat === "calm" ? "Standing by" : `${picture.service} · ${picture.region}`}</small>
-            </div>
-
-            {picture.classification && (
-              <div className="commander-banner" key={picture.classification}>
-                <small>Captain AI</small>
-                <strong>{picture.classification}</strong>
-                <p>{captain.text}</p>
-              </div>
-            )}
-
-            {picture.stalls.map((stall) => {
-              const stallDock = DOCKS.find((item) => item.stall === stall.agentId)!;
-              const alerts = stallAlerts(state, stallDock.domain);
-              const count = alerts.length;
-              return (
-              <button
-                key={stall.agentId}
-                type="button"
-                aria-label={`Explore ${stall.sign}`}
-                aria-haspopup="dialog"
-                aria-describedby={`stall-preview-${stall.agentId}`}
-                onClick={() => setOpenStall(stall.agentId)}
-                className={`stall ${count ? "has-alerts" : "all-clear"} ${stall.lit ? "lit" : ""} ${stall.winner ? "winner" : ""}`}
-                style={{ left: `${SPOT[stall.agentId].x}%`, top: `${SPOT[stall.agentId].y}%`, "--glow": stall.color } as CSSProperties}
-              >
-                <span className="stall-glow" />
-                {count > 0 && <span className="stall-alert-badge" aria-label={`${count} unresolved ${count === 1 ? "alert" : "alerts"}`}>{alertBadge(count)}</span>}
-                <span className="stall-sign">
-                  {stall.sign}
-                </span>
-                <span className="stall-hint"><span className="stall-status-dot" />{count ? `${alertBadge(count)} ${count === 1 ? "alert" : "alerts"}` : "All clear"}</span>
-                <span className="stall-preview" id={`stall-preview-${stall.agentId}`} role="tooltip">
-                  <span className="stall-preview-heading">{count ? "ATTENTION NEEDED" : "READY TO RESPOND"}</span>
-                  <strong>{stall.sign}</strong>
-                  <span className="stall-preview-detail">{count ? `${alerts[0].severity ?? "Alert"} / ${alerts[0].service}` : "No active alerts for this specialty."}</span>
-                  {count > 0 && <span className="stall-preview-message">{alerts[0].message}</span>}
-                  <span className="stall-preview-link">Click to inspect specialists &amp; alerts <span aria-hidden="true">&#8599;</span></span>
-                </span>
-                {stall.bubble && !(workerPhase && activeStall === stall.agentId) && <span className={`stall-bubble ${stall.winner ? "won" : ""}`}>{stall.bubble}</span>}
-              </button>
-            ); })}
-
-            <div className="dock-strip">
-              {picture.boat === "calm" ? (
-                <p className="dock-legend">
-                  Incidents enter one harbor. The Commander routes each one. Specialists compete. The sandbox tests the repair. Humans approve production.
-                </p>
-              ) : (
-                <Pipeline state={state} />
-              )}
-            </div>
-
-            <div className={`approval-gate ${picture.gate}`}>
-              <span className="gate-leaf" />
-              <span className="gate-leaf" />
-              {picture.gate === "closed" && canApprove && (
-                <button type="button" className="approve-button" disabled={approving} onClick={onApprove}>
-                  {approving ? "Applying..." : "Approve repair"}
-                </button>
-              )}
-            </div>
-
-            {picture.responders.length > 0 && (
-              <ul className="dock-crew">
-                {picture.responders.map((person) => (
-                  <li key={person.id} className={person.needsApproval ? "needed" : ""}>
-                    {person.name}
-                  </li>
-                ))}
-              </ul>
-            )}
-
-            <div className={`sandbox sandbox-${picture.sandbox}`} aria-live="polite">
-              <b>Sandbox</b>
-              <small>
-                {picture.sandbox === "pass" ? "Passed" : picture.sandbox === "fail" ? "Rejected" : picture.sandbox === "testing" ? "Testing" : "Waiting for a plan"}
-              </small>
-            </div>
-            <Remedy picture={picture} />
-          </>
-        )}
+  return <div className="harbor-world" ref={stage}>
+    <div className="harbor-painting" style={frame ? { ...frame } : undefined}>
+      {artOk ? <img className="harbor-art" src="/art/seaside-five-stalls.png" alt="Five wooden specialty stalls with blue, gold, red, teal and purple awnings on a tropical harbor, with the Captain's sailboat below." onError={() => setArtOk(false)} /> : <p className="art-missing">Harbor artwork could not load. Incident controls remain available in the workspace.</p>}
+      {HARBOR_STALLS.map((stall) => {
+        const view = specialtyState(state, stall.domain);
+        return <div key={stall.domain} className={`specialty-building state-${view.kind}`} data-domain={stall.domain}
+          style={{ left: `${stall.x}%`, "--stall-color": stall.color } as CSSProperties}>
+          <button type="button" className="building-sign" aria-haspopup="dialog" onClick={() => setOpen(stall.domain)} aria-label={`Explore ${stall.title}`}>{stall.title}</button>
+          <span className="building-status">{view.label}</span>
+          {view.primary && phase && <div className={`building-worker phase-${phase}`}><DockWorker state={state} phase={phase} /></div>}
+        </div>;
+      })}
+      <div className="harbor-workflow"><Pipeline state={state} /></div>
+      {primary && incident?.repairs.length ? <svg className="harbor-repair-route" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+        <path d={`M ${primary.x} 46 L ${primary.x} 60 Q ${primary.x} 66 75 66`} />
+      </svg> : null}
+      <button type="button" className="boat-captain" onClick={onCaptain} aria-label="Open Captain AI readout">
+        <svg viewBox="0 0 24 38" shapeRendering="crispEdges" aria-hidden="true">
+          <path fill="#143443" d="M5 0h14v4h3v7h-3v9h2v13h-3v5h-7v-4H9v4H2v-5h3V20H3V7h2z" />
+          <path fill="#f5ebc9" d="M6 2h12v3h3v5H3V6h3z" /><path fill="#458f9a" d="M3 9h18v3H3z" /><path fill="#e9b884" d="M7 12h11v8H9v-2H7z" />
+          <path fill="#223f57" d="M6 21h13v12H5z" /><path fill="#f5ebc9" d="M8 21h3v10H8zM14 21h3v10h-3z" /><path fill="#edc763" d="M6 22h3v3H6zM16 22h3v3h-3z" />
+          <path fill="#4e7380" d="M6 33h4v4H4v-2h2zM13 33h5v2h2v2h-7z" /><path fill="#173445" d="M14 14h2v2h-2z" />
+        </svg>
+        <span><strong>Captain AI</strong><small>AI Commander</small></span>
+      </button>
+      <div className={`harbor-sandbox sandbox-${sandbox.kind}`} role="status">
+        <small>Deterministic sandbox</small><strong>{sandbox.label}</strong><span>{sandbox.detail}</span>
       </div>
-      {zoomed && <button type="button" className="harbor-zoom-out" onClick={cinema.skip}>Show whole harbor</button>}
-      <dialog ref={dialogRef} className="stall-dialog" aria-labelledby="stall-dialog-title"
-        onClose={() => setOpenStall(null)} onClick={(event) => {
-          if (event.target === event.currentTarget) {
-            const bounds = event.currentTarget.getBoundingClientRect();
-            if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) event.currentTarget.close();
-          }
-        }}>
-        <header className="panel-head">
-          <div><small>SPECIALIST DOCK</small><h2 id="stall-dialog-title">{dock?.title}</h2></div>
-          <button type="button" autoFocus onClick={() => dialogRef.current?.close()} aria-label="Close specialist details">Close</button>
-        </header>
-        <p>{state.incident?.commander?.domain === dock?.domain
-          ? "This dock is handling the current incident. Specialists compete to diagnose and repair it."
-          : "Standing by. The Commander dispatches this dock when an incident needs its specialty."}</p>
-        <section className={`stall-alert-summary ${openAlerts.length ? "has-alerts" : ""}`}>
-          <h3>{openAlerts.length ? `${alertBadge(openAlerts.length)} unresolved ${openAlerts.length === 1 ? "alert" : "alerts"}` : "No active alerts"}</h3>
-          {openAlerts.length ? <ul>{openAlerts.map((alert) => <li key={alert.id}><strong>{alert.service}</strong><span>{alert.severity ?? "Alert"} - {alert.message}</span></li>)}</ul> : <p>This specialty is standing by.</p>}
-        </section>
-        <h3>Available specialists</h3>
-        <ul className="stall-specialists">
-          {market.models.filter((model) => dock && model.domains.includes(dock.domain)).map((model) => (
-            <li key={model.id}><strong>{model.displayName}</strong><span className={`avail avail-${model.availability}`}>{model.availability}</span><small>{model.provider}</small></li>
-          ))}
-        </ul>
-        <p className="muted">Follow bids and validation in the Evidence tab. Production changes require human approval.</p>
-      </dialog>
     </div>
-  );
+    <dialog ref={dialog} className="stall-dialog" aria-labelledby="specialty-title" onClose={() => setOpen(null)}>
+      <header className="panel-head"><h2 id="specialty-title">{chosenDock?.title}</h2><button type="button" autoFocus onClick={() => dialog.current?.close()}>Close</button></header>
+      {open && <p>{specialtyState(state, open).label}</p>}
+      <p>{open && specialtyState(state, open).primary ? validationReadout(state) : open === "payments" && incident?.current.scenario_id === "payments_pool" ? "Payments Operations monitors the affected service while Database Repair handles the connection-pool root cause." : "Ready for incidents that need this specialty."}</p>
+      <h3>Specialist models</h3>
+      <ul className="stall-specialists">{market.models.filter((model) => open && model.domains.includes(open)).map((model) => <li key={model.id}><strong>{model.displayName}</strong><span>{model.availability}</span></li>)}</ul>
+      <p className="muted">Only the primary remediation stall selects a worker.</p>
+    </dialog>
+  </div>;
 }

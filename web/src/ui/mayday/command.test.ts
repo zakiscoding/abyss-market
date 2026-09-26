@@ -7,6 +7,7 @@ import {
   canApprove,
   canReject,
   canRevise,
+  captainAnswer,
   captainReadout,
   escalationCost,
   incidentChat,
@@ -83,24 +84,33 @@ describe("model registry", () => {
 });
 
 describe("captain and crew workflow", () => {
-  it("routes Amsterdam to the Database Repair Stall from the recorded rationale", () => {
+  it("routes Amsterdam to the Database Repair from the recorded rationale", () => {
     const state = upTo((event) => event.type === "commander_classified");
     const captain = captainReadout(state);
-    expect(captain.dock).toBe("Database Repair Stall");
-    expect(captain.text).toContain("Routing to Database Repair Stall");
+    expect(captain.dock).toBe("Database Repair");
+    expect(captain.text).toContain("Routing to Database Repair");
     expect(captain.text.toLowerCase()).not.toContain("eval(");
   });
 
   it("builds chat from events and prices escalation from usage", () => {
     const state = play(events);
     const chat = incidentChat(state);
-    expect(chat.some((line) => line.badge === "AI COMMANDER" && line.text.includes("Database Repair Stall"))).toBe(true);
+    expect(chat.some((line) => line.badge === "AI COMMANDER" && line.text.includes("Database Repair"))).toBe(true);
     expect(chat.some((line) => line.badge === "HUMAN")).toBe(true);
     const attempts = repairAttempts(state);
     expect(attempts.map((row) => row.passed)).toEqual([false, true]);
     const cost = escalationCost(attempts);
     expect(cost.extra).toBeGreaterThan(0);
     expect(cost.final).toBeCloseTo(cost.initial + cost.extra, 6);
+  });
+
+  it("answers incident questions from recorded evidence without adding authority", () => {
+    const state = upTo((event) => event.type === "approval_required");
+    const answer = captainAnswer(state, "Who must approve this repair?");
+    expect(answer.answer).toContain("Maya");
+    expect(answer.answer).toContain("Zak");
+    expect(answer.answer).toContain("cannot approve");
+    expect(captainAnswer(state, "Why this worker?").answer).toContain("Claude");
   });
 
   it("keeps a plan hash stable and limits SEV-1 approval to the commander", () => {

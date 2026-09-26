@@ -503,7 +503,7 @@ export function Repairs({ state }: { state: MarketState }) {
   );
 }
 
-export function OutcomePanel({ state, elapsedMs }: { state: MarketState; elapsedMs: number }) {
+export function OutcomePanel({ state, elapsedMs, costLabel = "Simulated cost" }: { state: MarketState; elapsedMs: number; costLabel?: string }) {
   const result = outcome(state);
   const restored = state.incident?.restored ?? null;
   const routing = result.routing;
@@ -512,9 +512,10 @@ export function OutcomePanel({ state, elapsedMs }: { state: MarketState; elapsed
       <header className="panel-head">
         <h2>{restored ? "Incident resolved" : "Incident metrics"}</h2>
       </header>
+      {restored && <p className="outcome-applied">Applied to simulated cluster</p>}
       <dl className="metric-grid">
         <div><dt>{restored ? "MTTR" : "Elapsed"}</dt><dd>{formatDuration(restored ? restored.mttr_ms : elapsedMs)}</dd></div>
-        <div><dt>{state.config?.real_models && !state.config.fake_llm ? "Actual provider cost" : "Simulated AI cost"}</dt><dd>{usd(restored?.total_cost_usd ?? result.aiCost)}</dd></div>
+        <div><dt>{costLabel}</dt><dd>{usd(restored?.total_cost_usd ?? result.aiCost)}</dd></div>
         <div><dt>Repair attempts</dt><dd>{result.attempts}{result.failedAttempts ? ` (${result.failedAttempts} rejected)` : ""}</dd></div>
         <div><dt>Repair confidence</dt><dd>{result.confidence === null ? "—" : pct(result.confidence, 0)}</dd></div>
         <div><dt>Mean grade</dt><dd>{result.meanGrade === null ? "—" : `${result.meanGrade.toFixed(1)}/10`}</dd></div>
