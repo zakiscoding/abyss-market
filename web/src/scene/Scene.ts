@@ -48,6 +48,9 @@ const TYPE_COLOR: Record<TaskType, string> = {
   research: PALETTE.research,
   writing: PALETTE.writing,
   checking: PALETTE.checking,
+  diagnose: PALETTE.research,
+  remediate: PALETTE.bad,
+  verify: PALETTE.good,
 };
 const BUBBLE_TEXT_COLOR: Record<BubbleTone, string> = {
   thinking: PALETTE.muted,

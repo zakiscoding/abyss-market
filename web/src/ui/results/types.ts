@@ -1,5 +1,5 @@
 // Shape of experiments/results/<stamp>.json written by backend/abyss/experiment.py.
-import type { AgentId, TaskType } from "../../contract";
+import type { AgentId, JobTaskType } from "../../contract";
 
 export interface ArmResult {
   arm: string;
@@ -13,8 +13,8 @@ export interface ArmResult {
   graded_tasks: number;
   failed_tasks: number;
   usd_per_grade_point: number | null;
-  wins: Record<AgentId, Record<TaskType, number>>;
-  rep_final: Record<AgentId, Record<TaskType, number>> | null;
+  wins: Record<AgentId, Record<JobTaskType, number>>;
+  rep_final: Record<AgentId, Record<JobTaskType, number>> | null;
   per_job: { job_idx: number; job_id: string; status: string; grade_mean: number | null; cost_usd: number }[];
 }
 
@@ -35,7 +35,7 @@ export interface ExperimentResults {
 }
 
 export const AGENT_IDS: AgentId[] = ["haiku", "sonnet", "opus"];
-export const TASK_TYPES: TaskType[] = ["research", "writing", "checking"];
+export const TASK_TYPES: JobTaskType[] = ["research", "writing", "checking"];
 
 // Identity colors: market arms share one hue; fixed arms wear their agent's color
 // (same entity → same color as the market scene).

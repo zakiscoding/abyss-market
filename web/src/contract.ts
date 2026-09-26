@@ -1,8 +1,19 @@
 // Abyss event contract v1 — mirrored from SPEC.md §7.
 
 export type AgentId = "haiku" | "sonnet" | "opus";
-export type TaskType = "research" | "writing" | "checking";
+export type JobTaskType = "research" | "writing" | "checking";
+export type IncidentTaskType = "diagnose" | "remediate" | "verify";
+export type TaskType = JobTaskType | IncidentTaskType;
 export type Purpose = "split" | "bid" | "work" | "review";
+export type IncidentState =
+  | "healthy"
+  | "outage"
+  | "investigating"
+  | "repairing"
+  | "awaiting_approval"
+  | "recovering"
+  | "restored"
+  | "failed";
 
 export interface Usage {
   model: string;
@@ -66,6 +77,8 @@ export interface BidData {
   est_input_tokens: number | null;
   predicted_cost_usd: number | null;
   promised_quality: number | null;
+  confidence: number | null;
+  eta_ms: number | null;
   pitch: string | null;
   reputation: number | null;
   score: number | null;
@@ -158,6 +171,121 @@ export interface ErrorData {
   fatal: boolean;
 }
 
+export interface Telemetry {
+  db_pool_size: number;
+  db_connections_in_use: number;
+  p95_latency_ms: number;
+  error_rate: number;
+  payment_success_rate: number;
+  requests_per_min: number;
+  timeouts_per_min: number;
+  failed_payments_per_min: number;
+}
+
+export interface ConfigChange {
+  change_id: string;
+  key: string;
+  old: string;
+  new: string;
+  author: string;
+  minutes_ago: number;
+}
+
+export interface IncidentStatusData {
+  status: IncidentState;
+  service: string;
+  severity: "SEV-1" | "SEV-2" | "SEV-3" | null;
+  summary: string;
+  telemetry: Telemetry;
+  logs: string[];
+  config_changes: ConfigChange[];
+}
+
+export interface Responder {
+  responder_id: string;
+  name: string;
+  role: string;
+  selected: boolean;
+  score: number;
+  matched_skills: string[];
+  available: boolean;
+  workload: number;
+  reason: string;
+}
+
+export interface Briefings {
+  engineering: string;
+  support: string;
+  commander: string;
+  leadership: string;
+}
+
+export interface RespondersSelectedData {
+  required_skills: string[];
+  responders: Responder[];
+  briefings: Briefings;
+}
+
+export interface RemediationAction {
+  action: "set_db_pool_size" | "restart_service" | "rollback_config";
+  value: number | null;
+}
+
+export interface RemediationProposedData {
+  task_id: string;
+  agent_id: AgentId;
+  attempt: number;
+  action: RemediationAction | null;
+  accepted: boolean;
+  reason: string;
+}
+
+export interface Check {
+  name: string;
+  passed: boolean;
+  detail: string;
+}
+
+export interface SandboxResultData {
+  task_id: string;
+  agent_id: AgentId;
+  attempt: number;
+  action: RemediationAction | null;
+  passed: boolean;
+  checks: Check[];
+  telemetry: Telemetry;
+}
+
+export interface ApprovalRequiredData {
+  task_id: string;
+  agent_id: AgentId;
+  attempt: number;
+  action: RemediationAction;
+  summary: string;
+  approvers: string[];
+}
+
+export interface RepChange {
+  agent_id: AgentId;
+  task_type: TaskType;
+  old: number;
+  new: number;
+}
+
+export interface ServiceRestoredData {
+  mttr_ms: number;
+  total_cost_usd: number;
+  repair_attempts: number;
+  failed_attempts: number;
+  action: RemediationAction;
+  confidence: number;
+  approved_by: string;
+  verification: Check[];
+  grades: FinalTask[];
+  rep_changes: RepChange[];
+  telemetry: Telemetry;
+}
+
 type Envelope<T extends string, D> = {
   v: 1;
   seq: number;
@@ -179,8 +307,21 @@ export type AbyssEvent =
   | Envelope<"rep_update", RepUpdateData>
   | Envelope<"stats", StatsData>
   | Envelope<"final", FinalData>
-  | Envelope<"error", ErrorData>;
+  | Envelope<"error", ErrorData>
+  | Envelope<"incident_status", IncidentStatusData>
+  | Envelope<"responders_selected", RespondersSelectedData>
+  | Envelope<"remediation_proposed", RemediationProposedData>
+  | Envelope<"sandbox_result", SandboxResultData>
+  | Envelope<"approval_required", ApprovalRequiredData>
+  | Envelope<"service_restored", ServiceRestoredData>;
 
 export type ClientMsg =
   | { type: "start_job"; job: string; price_weight?: number }
-  | { type: "reset" };
+  | { type: "reset" }
+  | { type: "start_incident"; price_weight?: number }
+  | { type: "approve_repair" }
+  | { type: "reset_incident" };
+
+export function describeAction(action: RemediationAction): string {
+  return action.action === "set_db_pool_size" ? `set_db_pool_size(${action.value})` : action.action;
+}
