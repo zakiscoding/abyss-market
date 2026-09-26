@@ -28,6 +28,26 @@ def est_input_tokens(system: str, user: str) -> int:
     return math.ceil(len(system + user) / 4)
 
 
+def bid_prompt(
+    agent: AgentSpec,
+    job_text: str,
+    task: TaskSpec,
+    dep_sizes: dict[str, int],
+    reputation: float,
+    agent_name: str | None = None,
+) -> tuple[str, str]:
+    return prompts.BID_SYSTEM, prompts.BID_USER.format(
+        agent_name=agent_name or agent.display_name,
+        agent_id=agent.agent_id,
+        job_text=job_text,
+        task_type=task.type,
+        title=task.title,
+        brief=task.brief,
+        dependency_sizes=json.dumps(dep_sizes, sort_keys=True),
+        reputation=reputation,
+    )
+
+
 async def request_bid(
     llm: LLM,
     ledger: Ledger,
@@ -36,22 +56,15 @@ async def request_bid(
     task: TaskSpec,
     dep_sizes: dict[str, int],
     reputation: float,
+    agent_name: str | None = None,
 ) -> tuple[dict, dict]:
+    system, user = bid_prompt(agent, job_text, task, dep_sizes, reputation, agent_name)
     result = await llm.call(
         ledger=ledger,
         purpose="bid",
         nominal_model=agent.model,
-        system=prompts.BID_SYSTEM,
-        user=prompts.BID_USER.format(
-            agent_name=agent.display_name,
-            agent_id=agent.agent_id,
-            job_text=job_text,
-            task_type=task.type,
-            title=task.title,
-            brief=task.brief,
-            dependency_sizes=json.dumps(dep_sizes, sort_keys=True),
-            reputation=reputation,
-        ),
+        system=system,
+        user=user,
         max_tokens=2048,
         effort=BID_EFFORT,
         schema=prompts.BID_SCHEMA,

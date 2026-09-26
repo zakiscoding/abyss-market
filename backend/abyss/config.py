@@ -36,6 +36,39 @@ TOKENS_PER_SEC: dict[str, float] = {
 }
 MAX_REPAIR_ATTEMPTS = 3
 
+# Specialist markets. A specialist is a domain role powered by one of the AGENTS'
+# models; reputation for incident work is tracked per agent, domain and task type.
+DOMAINS: list[str] = ["database", "networking", "security", "payments", "generalist"]
+DOMAIN_LABELS: dict[str, str] = {
+    "database": "Database Specialist",
+    "networking": "Networking Specialist",
+    "security": "Security Specialist",
+    "payments": "Payments Specialist",
+    "generalist": "Generalist",
+}
+SPECIALIST_MODELS: dict[str, list[str]] = {domain: ["haiku", "sonnet", "opus"] for domain in DOMAINS}
+REP_KEYS: list[str] = TASK_TYPES + [
+    f"{domain}.{task_type}" for domain in DOMAINS for task_type in INCIDENT_TASK_TYPES
+]
+
+
+def rep_key(task_type: str, domain: str | None = None) -> str:
+    return f"{domain}.{task_type}" if domain else task_type
+
+
+def specialists() -> list[dict]:
+    names = {agent.agent_id: agent.agent_id.title() for agent in AGENTS}
+    return [
+        {
+            "specialist_id": f"{domain}.{agent_id}",
+            "domain": domain,
+            "agent_id": agent_id,
+            "label": f"{DOMAIN_LABELS[domain]} · {names[agent_id]}",
+        }
+        for domain in DOMAINS
+        for agent_id in SPECIALIST_MODELS[domain]
+    ]
+
 PRICE_WEIGHT = float(os.getenv("ABYSS_PRICE_WEIGHT", "1.0"))
 REP_INIT = 1.0
 REP_ALPHA = 0.3

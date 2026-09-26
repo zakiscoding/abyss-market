@@ -105,6 +105,7 @@ async def run_job(
                 "index": index,
                 "total": len(task_specs),
                 "est_input_tokens": estimated_input,
+                "domain": None,
             },
         )
 
@@ -215,6 +216,7 @@ async def run_job(
                     "task_id": task.task_id,
                     "agent_id": winner.agent_id,
                     "task_type": task.type,
+                    "rep_key": task.type,
                     "old": old,
                     "new": new,
                     "ratio": ratio,
@@ -266,9 +268,12 @@ async def _run_auction(
     estimated_input: int,
     price_weight: float,
     tasks_won: dict[str, int],
+    rep_key: str | None = None,
+    agent_names: dict[str, str] | None = None,
 ) -> tuple[config.AgentSpec, int, int, float, float] | None:
     dep_sizes = {task_id: len(output) for task_id, output in dep_outputs.items()}
     confidences: dict[str, float] = {}
+    key = rep_key or task.type
     calls = [
         request_bid(
             llm,
@@ -277,7 +282,8 @@ async def _run_auction(
             job_text,
             task,
             dep_sizes,
-            rep.get(agent.agent_id, task.type),
+            rep.get(agent.agent_id, key),
+            (agent_names or {}).get(agent.agent_id),
         )
         for agent in config.AGENTS
     ]
@@ -311,7 +317,7 @@ async def _run_auction(
         raw, usage = result
         tokens, quality, pitch = clamp_bid(raw)
         price = predicted_cost(agent.model, estimated_input, tokens)
-        reputation = rep.get(agent.agent_id, task.type)
+        reputation = rep.get(agent.agent_id, key)
         score = score_bid(quality, reputation, price, price_weight)
         confidences[agent.agent_id] = clamp_confidence(raw)
         bid = ScoredBid(

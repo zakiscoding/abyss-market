@@ -5,7 +5,7 @@ import time
 from dataclasses import asdict
 from typing import Awaitable, Callable
 
-from . import config
+from . import config, scenarios
 from .contract import validate_event
 from .reputation import ReputationStore
 
@@ -32,6 +32,10 @@ class EventStream:
                     "rep_init": config.REP_INIT,
                     "rep_alpha": config.REP_ALPHA,
                     "task_types": config.ALL_TASK_TYPES,
+                    "rep_keys": config.REP_KEYS,
+                    "domains": config.DOMAINS,
+                    "specialists": config.specialists(),
+                    "scenarios": scenarios.catalog(),
                     "real_models": config.real_models(),
                     "fake_llm": config.fake_llm(),
                     "orchestrator_model": config.ORCHESTRATOR_MODEL,

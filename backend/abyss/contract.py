@@ -6,7 +6,15 @@ import sys
 from pathlib import Path
 from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, StrictBool, model_validator
+from pydantic import (
+    AfterValidator,
+    BaseModel,
+    ConfigDict,
+    Field,
+    StrictBool,
+    StrictInt,
+    model_validator,
+)
 
 
 AgentId = Literal["haiku", "sonnet", "opus"]
@@ -24,7 +32,37 @@ IncidentState = Literal[
     "restored",
     "failed",
 ]
-ActionName = Literal["set_db_pool_size", "restart_service", "rollback_config"]
+ActionName = Literal[
+    "set_db_pool_size",
+    "restart_service",
+    "rollback_config",
+    "restart_db",
+    "failover_db",
+    "route_traffic",
+    "apply_rate_limit",
+    "block_ips",
+]
+# The single parameter each action takes (None = no parameter).
+ACTION_PARAMS: dict[str, str | None] = {
+    "set_db_pool_size": "value",
+    "restart_service": None,
+    "rollback_config": None,
+    "restart_db": "region",
+    "failover_db": "region",
+    "route_traffic": "region",
+    "apply_rate_limit": "value",
+    "block_ips": "ips",
+}
+VALUE_RANGES = {"set_db_pool_size": (1, 100), "apply_rate_limit": (1, 10000)}
+Domain = Literal["database", "networking", "security", "payments", "generalist"]
+DOMAINS = ["database", "networking", "security", "payments", "generalist"]
+ScenarioId = Literal["payments_pool", "ams_db_outage", "auth_attack", "network_partition"]
+SCENARIO_IDS = ["payments_pool", "ams_db_outage", "auth_attack", "network_partition"]
+Region = Literal["ams", "fra", "iad", "sin"]
+Severity = Literal["SEV-1", "SEV-2", "SEV-3"]
+REP_KEYS = ["research", "writing", "checking"] + [
+    f"{domain}.{task_type}" for domain in DOMAINS for task_type in ("diagnose", "remediate", "verify")
+]
 Probability = Annotated[float, Field(ge=0, le=1)]
 Purpose = Literal["split", "bid", "work", "review"]
 JobId = Annotated[str, Field(pattern=r"^j_[0-9a-f]{8}$")]
@@ -52,13 +90,13 @@ class Agent(ContractModel):
     color: Annotated[str, Field(pattern=r"^#[0-9a-fA-F]{6}$")]
 
 
-class TaskReputation(ContractModel):
-    research: float
-    writing: float
-    checking: float
-    diagnose: float
-    remediate: float
-    verify: float
+def _check_rep_keys(values: dict[str, float]) -> dict[str, float]:
+    if list(values) != REP_KEYS:
+        raise ValueError("reputation keys must be REP_KEYS in order")
+    return values
+
+
+TaskReputation = Annotated[dict[str, float], AfterValidator(_check_rep_keys)]
 
 
 class Reputation(ContractModel):
@@ -67,11 +105,37 @@ class Reputation(ContractModel):
     opus: TaskReputation
 
 
+class ScenarioInfo(ContractModel):
+    scenario_id: ScenarioId
+    name: str
+    service: str
+    region: Region
+    source_system: str
+    alert: str
+
+
+class SpecialistInfo(ContractModel):
+    specialist_id: str
+    domain: Domain
+    agent_id: AgentId
+    label: str
+
+    @model_validator(mode="after")
+    def validate_id(self) -> "SpecialistInfo":
+        if self.specialist_id != f"{self.domain}.{self.agent_id}":
+            raise ValueError("specialist_id must be domain.agent_id")
+        return self
+
+
 class HelloConfig(ContractModel):
     price_weight: float
     rep_init: float
     rep_alpha: float
     task_types: list[TaskType]
+    rep_keys: list[str]
+    domains: list[Domain]
+    specialists: Annotated[list[SpecialistInfo], Field(min_length=1)]
+    scenarios: Annotated[list[ScenarioInfo], Field(min_length=1)]
     real_models: StrictBool
     fake_llm: StrictBool
     orchestrator_model: str
@@ -89,6 +153,10 @@ class HelloData(ContractModel):
             raise ValueError("agents must be in frozen stall order")
         if self.config.task_types != ALL_TASK_TYPES:
             raise ValueError("task_types must contain the frozen task types in order")
+        if self.config.rep_keys != REP_KEYS or self.config.domains != DOMAINS:
+            raise ValueError("rep_keys and domains must match the frozen lists")
+        if [s.scenario_id for s in self.config.scenarios] != SCENARIO_IDS:
+            raise ValueError("scenarios must list every scenario id in order")
         return self
 
 
@@ -116,6 +184,13 @@ class TaskPostedData(ContractModel):
     index: NonNegativeInt
     total: Annotated[int, Field(gt=0)]
     est_input_tokens: NonNegativeInt
+    domain: Domain | None
+
+    @model_validator(mode="after")
+    def validate_domain(self) -> "TaskPostedData":
+        if (self.type in {"diagnose", "remediate", "verify"}) != (self.domain is not None):
+            raise ValueError("incident tasks carry a domain; job tasks do not")
+        return self
 
 
 class BidData(ContractModel):
@@ -205,13 +280,24 @@ class GradedData(ContractModel):
     usage: Usage
 
 
+def _check_rep_key(rep_key: str, task_type: str) -> None:
+    if rep_key not in REP_KEYS or rep_key.split(".")[-1] != task_type:
+        raise ValueError("rep_key must be a REP_KEYS entry for task_type")
+
+
 class RepUpdateData(ContractModel):
     task_id: TaskId
     agent_id: AgentId
     task_type: TaskType
+    rep_key: str
     old: float
     new: float
     ratio: float
+
+    @model_validator(mode="after")
+    def validate_rep_key(self) -> "RepUpdateData":
+        _check_rep_key(self.rep_key, self.task_type)
+        return self
 
 
 class PurposeStats(ContractModel):
@@ -280,15 +366,21 @@ class ErrorData(ContractModel):
     fatal: StrictBool
 
 
-class Telemetry(ContractModel):
-    db_pool_size: Annotated[int, Field(ge=1)]
-    db_connections_in_use: NonNegativeInt
-    p95_latency_ms: NonNegativeInt
-    error_rate: Probability
-    payment_success_rate: Probability
-    requests_per_min: NonNegativeInt
-    timeouts_per_min: NonNegativeInt
-    failed_payments_per_min: NonNegativeInt
+class Metric(ContractModel):
+    key: str
+    label: str
+    value: float
+    unit: Literal["ratio", "ms", "per_min", "count", "s"]
+    ok: StrictBool
+
+    @model_validator(mode="after")
+    def validate_ratio(self) -> "Metric":
+        if self.unit == "ratio" and not 0 <= self.value <= 1:
+            raise ValueError("ratio metrics must be between 0 and 1")
+        return self
+
+
+Telemetry = Annotated[list[Metric], Field(min_length=1)]
 
 
 class ConfigChange(ContractModel):
@@ -302,8 +394,10 @@ class ConfigChange(ContractModel):
 
 class IncidentStatusData(ContractModel):
     status: IncidentState
+    scenario_id: ScenarioId
     service: str
-    severity: Literal["SEV-1", "SEV-2", "SEV-3"] | None
+    region: Region
+    severity: Severity | None
     summary: str
     telemetry: Telemetry
     logs: list[str]
@@ -335,29 +429,43 @@ class RespondersSelectedData(ContractModel):
     briefings: Briefings
 
 
+IPv4 = Annotated[str, Field(pattern=r"^(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}$")]
+
+
 class RemediationAction(ContractModel):
     action: ActionName
-    value: Annotated[int, Field(ge=1, le=100)] | None
+    value: StrictInt | None
+    region: Region | None
+    ips: Annotated[list[IPv4], Field(min_length=1, max_length=16)] | None
 
     @model_validator(mode="after")
-    def validate_value(self) -> "RemediationAction":
-        if (self.action == "set_db_pool_size") != (self.value is not None):
-            raise ValueError("only set_db_pool_size takes a value")
+    def validate_params(self) -> "RemediationAction":
+        param = ACTION_PARAMS[self.action]
+        for key in ("value", "region", "ips"):
+            if (getattr(self, key) is not None) != (key == param):
+                raise ValueError(f"{self.action} takes {param or 'no parameter'}")
+        if param == "value":
+            low, high = VALUE_RANGES[self.action]
+            if not low <= self.value <= high:
+                raise ValueError(f"{self.action} value must be {low}-{high}")
         return self
+
+
+PlanSteps = Annotated[list[RemediationAction], Field(min_length=1, max_length=4)]
 
 
 class RemediationProposedData(ContractModel):
     task_id: TaskId
     agent_id: AgentId
     attempt: Annotated[int, Field(ge=1)]
-    action: RemediationAction | None
+    steps: Annotated[list[RemediationAction], Field(max_length=4)]
     accepted: StrictBool
     reason: Annotated[str, Field(max_length=200)]
 
     @model_validator(mode="after")
     def validate_accepted(self) -> "RemediationProposedData":
-        if self.accepted != (self.action is not None):
-            raise ValueError("accepted proposals carry an action; rejected ones do not")
+        if self.accepted != bool(self.steps):
+            raise ValueError("accepted proposals carry steps; rejected ones do not")
         return self
 
 
@@ -371,7 +479,7 @@ class SandboxResultData(ContractModel):
     task_id: TaskId
     agent_id: AgentId
     attempt: Annotated[int, Field(ge=1)]
-    action: RemediationAction | None
+    steps: Annotated[list[RemediationAction], Field(max_length=4)]
     passed: StrictBool
     checks: Annotated[list[Check], Field(min_length=1)]
     telemetry: Telemetry
@@ -380,8 +488,137 @@ class SandboxResultData(ContractModel):
     def validate_passed(self) -> "SandboxResultData":
         if self.passed != all(check.passed for check in self.checks):
             raise ValueError("passed must equal every check passing")
-        if self.passed and self.action is None:
-            raise ValueError("a passing sandbox run requires an action")
+        if self.passed and not self.steps:
+            raise ValueError("a passing sandbox run requires steps")
+        return self
+
+
+class IncidentPackage(ContractModel):
+    service: str
+    region: Region
+    source_system: str
+    alert: str
+    breached: list[Metric]
+    log_excerpt: Annotated[list[str], Field(max_length=4)]
+    recent_changes: list[ConfigChange]
+
+
+class IncidentReceivedData(ContractModel):
+    scenario_id: ScenarioId
+    name: str
+    service: str
+    region: Region
+    source_system: str
+    alert: str
+    package: IncidentPackage
+    package_tokens_est: NonNegativeInt
+    full_context_tokens_est: NonNegativeInt
+
+
+class CommanderClassifiedData(ContractModel):
+    scenario_id: ScenarioId
+    domain: Domain
+    secondary_domains: list[Domain]
+    severity: Severity
+    required_specialties: Annotated[list[str], Field(min_length=1)]
+    rationale: Annotated[str, Field(max_length=300)]
+    source: Literal["model", "rules"]
+    fallback_reason: str | None
+    usage: Usage | None
+
+    @model_validator(mode="after")
+    def validate_source(self) -> "CommanderClassifiedData":
+        if (self.source == "rules") != (self.fallback_reason is not None):
+            raise ValueError("rules classifications carry a fallback_reason; model ones do not")
+        if self.source == "model" and self.usage is None:
+            raise ValueError("model classifications carry usage")
+        if self.domain in self.secondary_domains:
+            raise ValueError("the primary domain cannot also be secondary")
+        return self
+
+
+class DispatchedSpecialist(SpecialistInfo):
+    dispatched: StrictBool
+
+
+class SpecialistsDispatchedData(ContractModel):
+    domain: Domain
+    registered: Annotated[int, Field(ge=1)]
+    eligible: Annotated[int, Field(ge=1)]
+    specialists: Annotated[list[DispatchedSpecialist], Field(min_length=1)]
+    reason: str
+
+    @model_validator(mode="after")
+    def validate_counts(self) -> "SpecialistsDispatchedData":
+        dispatched = [s for s in self.specialists if s.dispatched]
+        if self.registered != len(self.specialists) or self.eligible != len(dispatched):
+            raise ValueError("registered and eligible must count the specialist list")
+        if any(s.domain != self.domain for s in dispatched):
+            raise ValueError("only specialists of the classified domain may be dispatched")
+        if sorted(s.agent_id for s in dispatched) != sorted({s.agent_id for s in dispatched}):
+            raise ValueError("each model may be dispatched once")
+        return self
+
+
+class PlanStep(ContractModel):
+    index: NonNegativeInt
+    action: RemediationAction
+    description: str
+    owner_domain: Domain
+
+
+class RemediationPlanData(ContractModel):
+    task_id: TaskId
+    agent_id: AgentId
+    attempt: Annotated[int, Field(ge=1)]
+    steps: Annotated[list[PlanStep], Field(min_length=1, max_length=4)]
+    summary: str
+    confidence: Probability
+
+    @model_validator(mode="after")
+    def validate_indices(self) -> "RemediationPlanData":
+        if [step.index for step in self.steps] != list(range(len(self.steps))):
+            raise ValueError("plan step indices must be 0..n-1")
+        return self
+
+
+class Assignment(ContractModel):
+    assignment_id: Annotated[str, Field(pattern=r"^a[1-9][0-9]*$")]
+    step_index: NonNegativeInt | None
+    action: RemediationAction | None
+    description: str
+    responder_id: str
+    name: str
+    role: str
+    reason: str
+    approval_required: StrictBool
+    status: Literal["pending", "notify"]
+
+    @model_validator(mode="after")
+    def validate_fields(self) -> "Assignment":
+        if (self.step_index is None) != (self.action is None):
+            raise ValueError("step assignments carry both step_index and action")
+        if self.approval_required != (self.status == "pending"):
+            raise ValueError("approval assignments start pending; others are notify")
+        return self
+
+
+class HumanAssignmentsData(ContractModel):
+    task_id: TaskId
+    assignments: Annotated[list[Assignment], Field(min_length=1)]
+    required_approvers: Annotated[list[str], Field(min_length=1)]
+
+    @model_validator(mode="after")
+    def validate_approvers(self) -> "HumanAssignmentsData":
+        names: list[str] = []
+        for item in self.assignments:
+            if item.approval_required and item.name not in names:
+                names.append(item.name)
+        if names != self.required_approvers:
+            raise ValueError("required_approvers must list approval assignees in order")
+        ids = [item.assignment_id for item in self.assignments]
+        if ids != [f"a{i}" for i in range(1, len(ids) + 1)]:
+            raise ValueError("assignment ids must be a1..aN")
         return self
 
 
@@ -389,26 +626,73 @@ class ApprovalRequiredData(ContractModel):
     task_id: TaskId
     agent_id: AgentId
     attempt: Annotated[int, Field(ge=1)]
-    action: RemediationAction
+    steps: PlanSteps
     summary: str
     approvers: Annotated[list[str], Field(min_length=1)]
+
+
+class ApprovalGrantedData(ContractModel):
+    task_id: TaskId
+    approved: Annotated[list[str], Field(min_length=1)]
+    approved_by: Annotated[list[str], Field(min_length=1)]
+
+
+class IncidentEscalatedData(ContractModel):
+    reason: Annotated[str, Field(max_length=200)]
+    attempts: NonNegativeInt
+    escalated_to: Annotated[list[str], Field(min_length=1)]
+
+
+class RoutingStatsData(ContractModel):
+    domain: Domain
+    registered_specialists: Annotated[int, Field(ge=1)]
+    eligible_specialists: Annotated[int, Field(ge=1)]
+    auctions: NonNegativeInt
+    models_contacted: NonNegativeInt
+    models_skipped: NonNegativeInt
+    actual_input_tokens: NonNegativeInt
+    actual_output_tokens: NonNegativeInt
+    actual_cost_usd: NonNegativeFloat
+    actual_calls: NonNegativeInt
+    commander_package_tokens_est: NonNegativeInt
+    full_context_tokens_est: NonNegativeInt
+    avoided_input_tokens_est: NonNegativeInt
+    avoided_cost_usd_est: NonNegativeFloat
+    method: str
+
+    @model_validator(mode="after")
+    def validate_counts(self) -> "RoutingStatsData":
+        if self.models_contacted != self.eligible_specialists * self.auctions:
+            raise ValueError("models_contacted must be eligible_specialists x auctions")
+        skipped = (self.registered_specialists - self.eligible_specialists) * self.auctions
+        if self.models_skipped != skipped:
+            raise ValueError("models_skipped must be (registered - eligible) x auctions")
+        return self
 
 
 class RepChange(ContractModel):
     agent_id: AgentId
     task_type: TaskType
+    rep_key: str
     old: float
     new: float
 
+    @model_validator(mode="after")
+    def validate_rep_key(self) -> "RepChange":
+        _check_rep_key(self.rep_key, self.task_type)
+        return self
+
 
 class ServiceRestoredData(ContractModel):
+    scenario_id: ScenarioId
+    domain: Domain
     mttr_ms: NonNegativeInt
     total_cost_usd: NonNegativeFloat
     repair_attempts: Annotated[int, Field(ge=1)]
     failed_attempts: NonNegativeInt
-    action: RemediationAction
+    steps: PlanSteps
     confidence: Probability
-    approved_by: str
+    approved_by: Annotated[list[str], Field(min_length=1)]
     verification: Annotated[list[Check], Field(min_length=1)]
     grades: list["FinalTask"]
     rep_changes: list[RepChange]
@@ -443,13 +727,34 @@ DATA_MODELS: dict[str, type[ContractModel]] = {
     "sandbox_result": SandboxResultData,
     "approval_required": ApprovalRequiredData,
     "service_restored": ServiceRestoredData,
+    "incident_received": IncidentReceivedData,
+    "commander_classified": CommanderClassifiedData,
+    "specialists_dispatched": SpecialistsDispatchedData,
+    "remediation_plan_created": RemediationPlanData,
+    "human_assignments_created": HumanAssignmentsData,
+    "approval_granted": ApprovalGrantedData,
+    "incident_escalated": IncidentEscalatedData,
+    "routing_stats": RoutingStatsData,
 }
 
+# Events that must open an incident, in this order.
+INCIDENT_PREAMBLE = [
+    "incident_received",
+    "incident_status",
+    "commander_classified",
+    "specialists_dispatched",
+    "responders_selected",
+]
 INCIDENT_LEVEL_EVENTS = {
     "incident_status",
     "responders_selected",
     "approval_required",
     "service_restored",
+    "remediation_plan_created",
+    "human_assignments_created",
+    "approval_granted",
+    "incident_escalated",
+    "routing_stats",
 }
 REPAIR_EVENTS = {"remediation_proposed", "sandbox_result"}
 STATUS_NEXT: dict[str, set[str]] = {
@@ -584,6 +889,10 @@ def _validate_task_segment(segment: list[dict], task: dict, index: int, total: i
         rep_update = non_errors[cursor]["data"]
         if rep_update["agent_id"] != winner or rep_update["task_type"] != task["type"]:
             raise ValueError(f"task {task_id} rep_update does not match its winner and type")
+        domain = task.get("domain")
+        expected_key = f"{domain}.{task['type']}" if domain else task["type"]
+        if rep_update["rep_key"] != expected_key:
+            raise ValueError(f"task {task_id} rep_update must use rep_key {expected_key!r}")
         cursor += 1
 
     if cursor == len(non_errors) or non_errors[cursor]["type"] != "stats":
@@ -608,7 +917,7 @@ def _validate_repair_events(segment: list[dict], task_id: str, completed: bool) 
     if types[done_at + 1 : done_at + 3] != ["remediation_proposed", "sandbox_result"]:
         raise ValueError(f"task {task_id} repair events must follow done")
     proposed, sandbox = repairs[0]["data"], repairs[1]["data"]
-    for key in ("task_id", "agent_id", "attempt", "action"):
+    for key in ("task_id", "agent_id", "attempt", "steps"):
         if proposed[key] != sandbox[key]:
             raise ValueError(f"task {task_id} sandbox_result {key} differs from the proposal")
     return sandbox
@@ -616,61 +925,132 @@ def _validate_repair_events(segment: list[dict], task_id: str, completed: bool) 
 
 def _validate_incident(job_id: str, events: list[dict]) -> None:
     non_errors = [ev for ev in events if ev["type"] != "error"]
-    first = non_errors[0]
-    if first["type"] != "incident_status" or first["data"]["status"] != "outage":
-        raise ValueError(f"incident {job_id} must start with incident_status outage")
     if non_errors[-1]["type"] != "final":
         raise ValueError(f"final must be the last event for incident {job_id}")
+    preamble = non_errors[: len(INCIDENT_PREAMBLE)]
+    if [ev["type"] for ev in preamble] != INCIDENT_PREAMBLE:
+        raise ValueError(f"incident {job_id} must open with {', '.join(INCIDENT_PREAMBLE)}")
+    received, outage, classified, dispatched, _ = preamble
+    if outage["data"]["status"] != "outage":
+        raise ValueError(f"incident {job_id} must start with incident_status outage")
+    scenario = received["data"]["scenario_id"]
+    if outage["data"]["scenario_id"] != scenario or classified["data"]["scenario_id"] != scenario:
+        raise ValueError("incident events must share one scenario_id")
+    domain = classified["data"]["domain"]
+    if dispatched["data"]["domain"] != domain:
+        raise ValueError("specialists_dispatched must use the classified domain")
+    dispatched_agents = sorted(s["agent_id"] for s in dispatched["data"]["specialists"] if s["dispatched"])
+    if dispatched_agents != ["haiku", "opus", "sonnet"]:
+        raise ValueError("each incident auction needs one dispatched specialist per model")
 
     status = "outage"
-    responders_seen = False
     task_types: list[str] = []
     passed_sandbox: dict | None = None
+    plan: dict | None = None
+    assignments: dict | None = None
     approval: dict | None = None
+    granted: dict | None = None
     restored_event: dict | None = None
+    escalated = False
+    routing: dict | None = None
+    once_only = {"incident_received", "commander_classified", "specialists_dispatched", "responders_selected"}
+    body = events[events.index(preamble[-1]) + 1 : events.index(non_errors[-1])]
     index = 0
-    body = events[: events.index(non_errors[-1])]
     while index < len(body):
         ev = body[index]
         kind = ev["type"]
-        if ev is first:
-            pass
-        elif kind == "incident_status":
-            new_status = ev["data"]["status"]
+        data = ev["data"]
+        if routing is not None and kind != "error":
+            raise ValueError("routing_stats must be the last event before final")
+        if escalated and status != "failed" and kind not in {"incident_status", "error"}:
+            raise ValueError("incident_escalated must be followed by incident_status failed")
+        if kind in once_only:
+            raise ValueError(f"{kind} may only appear once, at the start of the incident")
+        if kind == "incident_status":
+            new_status = data["status"]
+            if data["scenario_id"] != scenario:
+                raise ValueError("incident events must share one scenario_id")
             if new_status not in STATUS_NEXT.get(status, set()):
                 raise ValueError(f"incident status cannot go from {status} to {new_status}")
-            if new_status == "recovering" and approval is None:
-                raise ValueError("recovering requires approval_required first")
+            if new_status == "awaiting_approval" and assignments is None:
+                raise ValueError("awaiting_approval requires human_assignments_created")
+            if new_status == "recovering" and granted is None:
+                raise ValueError("recovering requires approval_granted")
+            if new_status == "failed" and not escalated:
+                raise ValueError("failed requires incident_escalated first")
             status = new_status
-        elif kind == "responders_selected":
-            if responders_seen or task_types:
-                raise ValueError("responders_selected must appear once, before any task")
-            responders_seen = True
+        elif kind == "remediation_plan_created":
+            if status != "repairing" or passed_sandbox is None or plan is not None:
+                raise ValueError("remediation_plan_created must follow a passing sandbox run")
+            same_run = all(data[key] == passed_sandbox[key] for key in ("task_id", "agent_id", "attempt"))
+            if not same_run or [step["action"] for step in data["steps"]] != passed_sandbox["steps"]:
+                raise ValueError("remediation_plan_created must describe the passing repair")
+            plan = data
+        elif kind == "human_assignments_created":
+            if plan is None or assignments is not None or status != "repairing":
+                raise ValueError("human_assignments_created must follow remediation_plan_created")
+            if data["task_id"] != plan["task_id"]:
+                raise ValueError("human_assignments_created must reference the plan")
+            step_items = [item for item in data["assignments"] if item["step_index"] is not None]
+            if [(item["step_index"], item["action"]) for item in step_items] != [
+                (step["index"], step["action"]) for step in plan["steps"]
+            ]:
+                raise ValueError("every plan step needs exactly one assignment, in order")
+            if not all(item["approval_required"] for item in step_items):
+                raise ValueError("every plan step requires human approval")
+            assignments = data
         elif kind == "approval_required":
-            if status != "awaiting_approval" or approval is not None or passed_sandbox is None:
+            if status != "awaiting_approval" or approval is not None or assignments is None:
                 raise ValueError("approval_required must follow a passing sandbox run")
-            if ev["data"]["task_id"] != passed_sandbox["task_id"] or ev["data"]["action"] != passed_sandbox["action"]:
+            if data["task_id"] != passed_sandbox["task_id"] or data["steps"] != passed_sandbox["steps"]:
                 raise ValueError("approval_required must reference the passing repair")
-            approval = ev["data"]
+            if data["approvers"] != assignments["required_approvers"]:
+                raise ValueError("approval_required approvers must match the assignments")
+            approval = data
+        elif kind == "approval_granted":
+            if approval is None or granted is not None or status != "awaiting_approval":
+                raise ValueError("approval_granted must follow approval_required")
+            required = [item["assignment_id"] for item in assignments["assignments"] if item["approval_required"]]
+            if data["task_id"] != approval["task_id"] or data["approved"] != required:
+                raise ValueError("approval_granted must approve every required assignment")
+            if data["approved_by"] != assignments["required_approvers"]:
+                raise ValueError("approval_granted approved_by must match the required approvers")
+            granted = data
         elif kind == "service_restored":
             if status != "restored" or restored_event is not None:
                 raise ValueError("service_restored must follow incident_status restored")
+            if data["steps"] != passed_sandbox["steps"] or data["scenario_id"] != scenario or data["domain"] != domain:
+                raise ValueError("service_restored must describe the approved repair")
+            if data["approved_by"] != granted["approved_by"]:
+                raise ValueError("service_restored approved_by must match approval_granted")
             restored_event = ev
+        elif kind == "incident_escalated":
+            if escalated or status in {"restored", "failed"}:
+                raise ValueError("incident_escalated may appear once, before failure")
+            escalated = True
+        elif kind == "routing_stats":
+            if status not in {"restored", "failed"} or (status == "restored" and restored_event is None):
+                raise ValueError("routing_stats must follow the incident outcome")
+            if data["domain"] != domain or data["auctions"] != len(task_types):
+                raise ValueError("routing_stats must match the domain and number of auctions")
+            routing = data
         elif kind == "task_posted":
             end = index + 1
             while end < len(body) and body[end]["type"] not in INCIDENT_LEVEL_EVENTS | {"task_posted"}:
                 end += 1
             segment = body[index:end]
-            posted = ev["data"]
+            posted = data
             task_id, task_type = posted["task_id"], posted["type"]
             if task_id != f"t{len(task_types) + 1}":
                 raise ValueError("incident task_ids must be t1..tN in execution order")
             if TASK_PHASE.get(task_type) != status:
                 raise ValueError(f"{task_type} task {task_id} posted while incident is {status}")
-            if not responders_seen:
-                raise ValueError("responders_selected must precede the first task")
+            if posted["domain"] != domain:
+                raise ValueError(f"task {task_id} must be posted to the {domain} market")
             if not task_types and task_type != "diagnose":
                 raise ValueError("the first incident task must be diagnose")
+            if task_type == "remediate" and plan is not None:
+                raise ValueError("no repair may be auctioned after a plan passed")
             core = [candidate for candidate in segment if candidate["type"] not in REPAIR_EVENTS]
             failed = _validate_task_segment(core, posted, posted["index"], posted["total"])
             if task_type == "remediate":
@@ -686,6 +1066,8 @@ def _validate_incident(job_id: str, events: list[dict]) -> None:
             raise ValueError(f"unexpected {kind} outside an incident task")
         index += 1
 
+    if routing is None:
+        raise ValueError("routing_stats must precede final")
     final_status = non_errors[-1]["data"]["status"]
     if status == "restored":
         if restored_event is None or "verify" not in task_types:
@@ -701,7 +1083,7 @@ def _validate_job(job_id: str, events: list[dict]) -> None:
         raise ValueError(f"final must be the last event for job {job_id}")
 
     non_errors = [ev for ev in events if ev["type"] != "error"]
-    if non_errors and non_errors[0]["type"] == "incident_status":
+    if non_errors and non_errors[0]["type"] == "incident_received":
         _validate_incident(job_id, events)
         return
     split_events = [ev for ev in non_errors if ev["type"] == "job_split"]

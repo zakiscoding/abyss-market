@@ -4,7 +4,7 @@ import json
 import os
 from pathlib import Path
 
-from .config import AGENTS, ALL_TASK_TYPES, REP_ALPHA, REP_INIT, REP_MAX, REP_MIN
+from .config import AGENTS, REP_ALPHA, REP_INIT, REP_KEYS, REP_MAX, REP_MIN
 
 
 class ReputationStore:
@@ -13,11 +13,11 @@ class ReputationStore:
         self._values = self._initial_values()
         if path is not None and path.exists():
             loaded = json.loads(path.read_text(encoding="utf-8"))
-            # Files written before a task type existed start that type at REP_INIT.
+            # Keys missing from older files start at REP_INIT; retired keys are dropped.
             self._values = {
                 agent.agent_id: {
-                    task_type: float(loaded.get(agent.agent_id, {}).get(task_type, REP_INIT))
-                    for task_type in ALL_TASK_TYPES
+                    key: float(loaded.get(agent.agent_id, {}).get(key, REP_INIT))
+                    for key in REP_KEYS
                 }
                 for agent in AGENTS
             }
@@ -54,7 +54,7 @@ class ReputationStore:
     @staticmethod
     def _initial_values() -> dict[str, dict[str, float]]:
         return {
-            agent.agent_id: {task_type: REP_INIT for task_type in ALL_TASK_TYPES}
+            agent.agent_id: {key: REP_INIT for key in REP_KEYS}
             for agent in AGENTS
         }
 

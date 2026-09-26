@@ -1,67 +1,119 @@
-"""Deterministic Payments API simulator.
+"""Deterministic incident simulation core.
 
-No AI output is ever executed here. A remediation is parsed into one of three
-allowlisted actions and applied as plain data to an in-memory model whose
-telemetry is derived from the database connection pool size.
+No AI output is ever executed here. A remediation is parsed into a short plan of
+typed actions, each validated against the active scenario's allowlist, and
+applied as plain data to an in-memory model of the service. Telemetry, logs and
+health checks are derived from that model, so every run is reproducible.
 """
 from __future__ import annotations
 
 import copy
+import ipaddress
 import json
 import re
-from dataclasses import dataclass, field
 
-SERVICE = "payments-api"
-HEALTHY_POOL_SIZE = 20
-BROKEN_POOL_SIZE = 2
-PEAK_CONNECTIONS = 18
-REQUESTS_PER_MIN = 1200
-PAYMENT_SHARE = 0.5
-BASE_P95_MS = 120
-SATURATION_P95_MS = 4800
-BASE_ERROR_RATE = 0.002
-SATURATION_ERROR_RATE = 0.6
-MAX_ERROR_RATE = 0.01
-MAX_P95_MS = 300
-MIN_PAYMENT_SUCCESS = 0.99
+REGIONS = ("ams", "fra", "iad", "sin")
+MAX_PLAN_STEPS = 4
+MAX_BLOCKED_IPS = 16
 
-ALLOWED_ACTIONS = ("set_db_pool_size", "restart_service", "rollback_config")
-POOL_KEY = "db.pool.max_size"
-BAD_CHANGE = {
-    "change_id": "cfg-2291",
-    "key": POOL_KEY,
-    "old": str(HEALTHY_POOL_SIZE),
-    "new": str(BROKEN_POOL_SIZE),
-    "author": "deploy-bot",
-    "minutes_ago": 4,
+# Each action takes exactly one kind of parameter, or none.
+ACTION_PARAMS: dict[str, str | None] = {
+    "set_db_pool_size": "value",
+    "restart_service": None,
+    "rollback_config": None,
+    "restart_db": "region",
+    "failover_db": "region",
+    "route_traffic": "region",
+    "apply_rate_limit": "value",
+    "block_ips": "ips",
 }
+VALUE_RANGES = {"set_db_pool_size": (1, 100), "apply_rate_limit": (1, 10000)}
+ACTION_SIGNATURES = {
+    "set_db_pool_size": '{"action": "set_db_pool_size", "value": <integer 1-100>}',
+    "restart_service": '{"action": "restart_service"}',
+    "rollback_config": '{"action": "rollback_config"}',
+    "restart_db": '{"action": "restart_db", "region": "<region>"}',
+    "failover_db": '{"action": "failover_db", "region": "<region>"}',
+    "route_traffic": '{"action": "route_traffic", "region": "<region>"}',
+    "apply_rate_limit": '{"action": "apply_rate_limit", "value": <logins per IP per minute, 1-10000>}',
+    "block_ips": '{"action": "block_ips", "ips": ["<IPv4>", ...]}',
+}
+PARAM_KEYS = ("value", "region", "ips")
 
 
 class ActionRejected(ValueError):
     pass
 
 
-def parse_action(raw: str | dict) -> dict:
-    """Return {"action", "value"} for an allowlisted action or raise ActionRejected."""
-    obj = _json_object(raw) if isinstance(raw, str) else raw
-    if not isinstance(obj, dict):
+def action(name: str, *, value: int | None = None, region: str | None = None,
+           ips: list[str] | None = None) -> dict:
+    return {"action": name, "value": value, "region": region, "ips": ips}
+
+
+def parse_action(raw: object, allowed: tuple[str, ...] | list[str]) -> dict:
+    """Return a normalized action dict or raise ActionRejected."""
+    if not isinstance(raw, dict):
+        raise ActionRejected("each step must be a JSON object")
+    name = raw.get("action")
+    if name not in ACTION_PARAMS:
+        raise ActionRejected(f"action {name!r} is not a known action")
+    if name not in allowed:
+        raise ActionRejected(f"{name} is not allowed for this incident")
+    extra = set(raw) - {"action", *PARAM_KEYS}
+    if extra:
+        raise ActionRejected(f"{name} has unexpected keys: {', '.join(sorted(extra))}")
+    param = ACTION_PARAMS[name]
+    for key in PARAM_KEYS:
+        if key != param and raw.get(key) is not None:
+            raise ActionRejected(f"{name} does not take {key}")
+    if param is None:
+        return action(name)
+    value = raw.get(param)
+    if value is None:
+        raise ActionRejected(f"{name} requires {param}")
+    if param == "value":
+        low, high = VALUE_RANGES[name]
+        if isinstance(value, bool) or not isinstance(value, int) or not low <= value <= high:
+            raise ActionRejected(f"{name} value must be an integer from {low} to {high}")
+        return action(name, value=value)
+    if param == "region":
+        if value not in REGIONS:
+            raise ActionRejected(f"region must be one of {', '.join(REGIONS)}")
+        return action(name, region=value)
+    if not isinstance(value, list) or not 1 <= len(value) <= MAX_BLOCKED_IPS:
+        raise ActionRejected(f"ips must be a list of 1 to {MAX_BLOCKED_IPS} IPv4 addresses")
+    for ip in value:
+        if not isinstance(ip, str):
+            raise ActionRejected("ips must be IPv4 address strings")
+        try:
+            ipaddress.IPv4Address(ip)
+        except ValueError:
+            raise ActionRejected(f"{ip!r} is not an IPv4 address") from None
+    if len(set(value)) != len(value):
+        raise ActionRejected("ips must not repeat")
+    return action(name, ips=list(value))
+
+
+def parse_plan(raw: str | dict | list, allowed: tuple[str, ...] | list[str]) -> list[dict]:
+    """Parse model output into 1..MAX_PLAN_STEPS allowlisted actions."""
+    obj = _json_value(raw) if isinstance(raw, str) else raw
+    if isinstance(obj, dict) and "steps" in obj:
+        if set(obj) != {"steps"}:
+            raise ActionRejected("a plan object may only contain steps")
+        steps = obj["steps"]
+    elif isinstance(obj, dict):
+        steps = [obj]
+    else:
         raise ActionRejected("remediation must be a JSON object")
-    action = obj.get("action")
-    if action not in ALLOWED_ACTIONS:
-        raise ActionRejected(f"action {action!r} is not on the allowlist")
-    if action == "set_db_pool_size":
-        if set(obj) != {"action", "value"}:
-            raise ActionRejected("set_db_pool_size takes exactly one integer value")
-        value = obj["value"]
-        if isinstance(value, bool) or not isinstance(value, int) or not 1 <= value <= 100:
-            raise ActionRejected("value must be an integer from 1 to 100")
-        return {"action": action, "value": value}
-    if set(obj) != {"action"}:
-        raise ActionRejected(f"{action} takes no parameters")
-    return {"action": action, "value": None}
+    if not isinstance(steps, list) or not 1 <= len(steps) <= MAX_PLAN_STEPS:
+        raise ActionRejected(f"a plan needs 1 to {MAX_PLAN_STEPS} steps")
+    parsed = [parse_action(step, allowed) for step in steps]
+    if len({json.dumps(step, sort_keys=True) for step in parsed}) != len(parsed):
+        raise ActionRejected("a plan must not repeat a step")
+    return parsed
 
 
-def _json_object(text: str) -> object:
+def _json_value(text: str) -> object:
     stripped = text.strip()
     fenced = re.fullmatch(r"```(?:json)?\s*(.*?)\s*```", stripped, re.DOTALL)
     if fenced:
@@ -78,109 +130,109 @@ def _json_object(text: str) -> object:
             raise ActionRejected("remediation is not JSON") from None
 
 
-def describe_action(action: dict) -> str:
-    if action["action"] == "set_db_pool_size":
-        return f"set_db_pool_size({action['value']})"
-    return action["action"]
+def describe_action(step: dict) -> str:
+    name = step["action"]
+    if step.get("value") is not None:
+        return f"{name}({step['value']})"
+    if step.get("region") is not None:
+        return f"{name}({step['region']})"
+    if step.get("ips"):
+        extra = f", +{len(step['ips']) - 1}" if len(step["ips"]) > 1 else ""
+        return f"{name}({step['ips'][0]}{extra})"
+    return name
 
 
-@dataclass
-class PaymentsSimulator:
-    pool_size: int = HEALTHY_POOL_SIZE
-    restarts: int = 0
-    changes: list[dict] = field(default_factory=list)
+def describe_plan(steps: list[dict]) -> str:
+    return " + ".join(describe_action(step) for step in steps)
+
+
+def metric(key: str, label: str, value: float, unit: str, ok: bool) -> dict:
+    return {"key": key, "label": label, "value": value, "unit": unit, "ok": ok}
+
+
+def check(name: str, passed: bool, detail: str) -> dict:
+    return {"name": name, "passed": passed, "detail": detail}
+
+
+class Scenario:
+    """One simulated incident. Subclasses hold plain state and derive everything else."""
+
+    scenario_id: str = ""
+    name: str = ""
+    service: str = ""
+    region: str = ""
+    source_system: str = ""
+    alert: str = ""
+    allowed_actions: tuple[str, ...] = ()
+    # Fake-LLM scripts: a plausible wrong first plan, then the fix.
+    decoy_plan: list[dict] = []
+    fix_plan: list[dict] = []
+    fake_diagnosis: str = ""
+
+    def __init__(self) -> None:
+        self.reset()
 
     def reset(self) -> None:
-        self.pool_size = HEALTHY_POOL_SIZE
-        self.restarts = 0
-        self.changes = []
+        self.changes: list[dict] = []
+        self.broken = False
+        self._reset_state()
 
     def break_production(self) -> None:
-        self.pool_size = BROKEN_POOL_SIZE
-        self.changes.append(dict(BAD_CHANGE))
+        self.broken = True
+        self._break()
 
-    def telemetry(self) -> dict:
-        in_use = min(self.pool_size, PEAK_CONNECTIONS)
-        shortfall = 1 - in_use / PEAK_CONNECTIONS
-        error_rate = round(BASE_ERROR_RATE + shortfall * SATURATION_ERROR_RATE, 4)
-        return {
-            "db_pool_size": self.pool_size,
-            "db_connections_in_use": in_use,
-            "p95_latency_ms": round(BASE_P95_MS + shortfall * SATURATION_P95_MS),
-            "error_rate": error_rate,
-            "payment_success_rate": round(1 - error_rate, 4),
-            "requests_per_min": REQUESTS_PER_MIN,
-            "timeouts_per_min": round(REQUESTS_PER_MIN * shortfall * SATURATION_ERROR_RATE),
-            "failed_payments_per_min": round(REQUESTS_PER_MIN * PAYMENT_SHARE * error_rate),
-        }
+    def telemetry(self) -> list[dict]:
+        raise NotImplementedError
 
     def health_checks(self) -> list[dict]:
-        t = self.telemetry()
-        return [
-            _check("error rate", t["error_rate"] <= MAX_ERROR_RATE,
-                   f"{t['error_rate']:.1%} (limit {MAX_ERROR_RATE:.0%})"),
-            _check("p95 latency", t["p95_latency_ms"] <= MAX_P95_MS,
-                   f"{t['p95_latency_ms']} ms (limit {MAX_P95_MS} ms)"),
-            _check("payment success", t["payment_success_rate"] >= MIN_PAYMENT_SUCCESS,
-                   f"{t['payment_success_rate']:.1%} (min {MIN_PAYMENT_SUCCESS:.0%})"),
-            _check("connection timeouts", t["timeouts_per_min"] == 0,
-                   f"{t['timeouts_per_min']}/min"),
-        ]
-
-    def healthy(self) -> bool:
-        return all(check["passed"] for check in self.health_checks())
-
-    def apply(self, action: dict) -> None:
-        action = parse_action({k: v for k, v in action.items() if not (k == "value" and v is None)})
-        if action["action"] == "set_db_pool_size":
-            self.changes.append({
-                "change_id": f"cfg-{2292 + len(self.changes)}",
-                "key": POOL_KEY,
-                "old": str(self.pool_size),
-                "new": str(action["value"]),
-                "author": "mayday",
-                "minutes_ago": 0,
-            })
-            self.pool_size = action["value"]
-        elif action["action"] == "restart_service":
-            # A restart re-reads the same config, so a bad pool size survives it.
-            self.restarts += 1
-        elif action["action"] == "rollback_config" and self.changes:
-            last = self.changes.pop()
-            if last["key"] == POOL_KEY:
-                self.pool_size = int(last["old"])
-
-    def sandbox(self, action: dict) -> tuple[bool, list[dict], dict]:
-        """Try an action on a copy of the service; production is untouched."""
-        clone = copy.deepcopy(self)
-        clone.apply(action)
-        checks = [_check("allowlisted action", True, describe_action(action))]
-        checks += clone.health_checks()
-        return all(check["passed"] for check in checks), checks, clone.telemetry()
+        raise NotImplementedError
 
     def logs(self) -> list[str]:
-        t = self.telemetry()
-        if self.healthy():
-            return [
-                f"INFO  {SERVICE} p95={t['p95_latency_ms']}ms errors={t['error_rate']:.1%} "
-                f"pool={t['db_connections_in_use']}/{t['db_pool_size']}",
-                f"INFO  payments processed {round(REQUESTS_PER_MIN * PAYMENT_SHARE)}/min",
-            ]
-        lines = [
-            f"ERROR {SERVICE} HTTP 500 POST /v1/payments: "
-            f"TimeoutError acquiring DB connection after 5000ms",
-            f"WARN  db pool exhausted: {t['db_connections_in_use']}/{t['db_pool_size']} "
-            f"in use, {PEAK_CONNECTIONS - t['db_connections_in_use']} requests waiting",
-            f"ERROR {t['failed_payments_per_min']} payments failed in the last minute",
-            f"WARN  p95 latency {t['p95_latency_ms']}ms (SLO {MAX_P95_MS}ms)",
-        ]
-        for change in self.changes:
-            lines.append(
-                f"INFO  config {change['change_id']} by {change['author']}: "
-                f"{change['key']} {change['old']} -> {change['new']}"
-            )
-        return lines
+        raise NotImplementedError
 
+    def briefings(self, severity: str, team: str) -> dict:
+        raise NotImplementedError
 
-def _check(name: str, passed: bool, detail: str) -> dict:
-    return {"name": name, "passed": passed, "detail": detail}
+    def healthy(self) -> bool:
+        return all(item["passed"] for item in self.health_checks())
+
+    def apply(self, steps: list[dict]) -> None:
+        for step in steps:
+            self._apply_step(parse_action(step, self.allowed_actions))
+
+    def sandbox(self, steps: list[dict]) -> tuple[bool, list[dict], list[dict]]:
+        """Try a plan on a copy of the service; production is untouched."""
+        clone = copy.deepcopy(self)
+        clone.apply(steps)
+        checks = [check("allowlisted plan", True, describe_plan(steps))]
+        checks += clone.health_checks()
+        return all(item["passed"] for item in checks), checks, clone.telemetry()
+
+    def catalog(self) -> dict:
+        return {
+            "scenario_id": self.scenario_id,
+            "name": self.name,
+            "service": self.service,
+            "region": self.region,
+            "source_system": self.source_system,
+            "alert": self.alert,
+        }
+
+    def _record_change(self, key: str, old: str, new: str) -> None:
+        self.changes.append({
+            "change_id": f"chg-{len(self.changes) + 1}",
+            "key": key,
+            "old": old,
+            "new": new,
+            "author": "mayday",
+            "minutes_ago": 0,
+        })
+
+    def _reset_state(self) -> None:
+        raise NotImplementedError
+
+    def _break(self) -> None:
+        raise NotImplementedError
+
+    def _apply_step(self, step: dict) -> None:
+        raise NotImplementedError

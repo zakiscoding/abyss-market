@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from abyss.config import AGENTS, ALL_TASK_TYPES
+import json
+
+from abyss.config import AGENTS, REP_KEYS
 from abyss.reputation import ReputationStore
 
 
@@ -38,6 +40,15 @@ def test_persistence_round_trip_and_reset(tmp_path) -> None:
     loaded.reset()
     reset = ReputationStore(path)
     assert reset.snapshot() == {
-        agent.agent_id: {task_type: 1.0 for task_type in ALL_TASK_TYPES}
+        agent.agent_id: {key: 1.0 for key in REP_KEYS}
         for agent in AGENTS
     }
+
+
+def test_old_files_gain_domain_keys_and_drop_retired_ones(tmp_path) -> None:
+    path = tmp_path / "reputation.json"
+    path.write_text(json.dumps({"haiku": {"research": 0.5, "remediate": 0.2}}), encoding="utf-8")
+    store = ReputationStore(path)
+    assert store.get("haiku", "research") == 0.5
+    assert store.get("haiku", "database.remediate") == 1.0
+    assert list(store.snapshot()["haiku"]) == REP_KEYS
