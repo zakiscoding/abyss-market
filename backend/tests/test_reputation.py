@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import threading
 
 from abyss.config import AGENTS, REP_KEYS
 from abyss.reputation import ReputationStore
@@ -43,6 +44,29 @@ def test_persistence_round_trip_and_reset(tmp_path) -> None:
         agent.agent_id: {key: 1.0 for key in REP_KEYS}
         for agent in AGENTS
     }
+
+
+def test_concurrent_updates_keep_valid_json(tmp_path) -> None:
+    path = tmp_path / "reputation.json"
+    store = ReputationStore(path)
+    keys = ["research", "writing", "checking"]
+
+    def work(key: str) -> None:
+        for _ in range(40):
+            store.update("haiku", key, grade=10, promised=5)
+
+    threads = [threading.Thread(target=work, args=(key,)) for key in keys]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+
+    loaded = json.loads(path.read_text(encoding="utf-8"))
+    assert set(loaded) == {agent.agent_id for agent in AGENTS}
+    assert set(loaded["haiku"]) == set(REP_KEYS)
+    for key in keys:
+        assert loaded["haiku"][key] == store.get("haiku", key)
+        assert 0 <= loaded["haiku"][key] <= 2
 
 
 def test_old_files_gain_domain_keys_and_drop_retired_ones(tmp_path) -> None:

@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import asyncio
 import importlib
 import json
+import time
 
 from fastapi.testclient import TestClient
 
@@ -154,6 +156,130 @@ def test_reset_incident_cancels_and_can_repeat(monkeypatch, tmp_path) -> None:
                     event = websocket.receive_json()
                 assert event["data"]["scenario_id"] == scenario_id
                 assert all(item["ok"] for item in event["data"]["telemetry"])
+
+
+def test_ready_reports_fake_mode_without_secrets(monkeypatch, tmp_path) -> None:
+    server = _server(monkeypatch, tmp_path)
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-SECRETVALUE")
+    with TestClient(server.app) as client:
+        ready = client.get("/ready")
+        health = client.get("/health")
+    assert health.json() == {"ok": True}
+    assert ready.status_code == 200
+    body = ready.json()
+    assert body["ok"] is True
+    assert body["checks"] == {
+        "initialized": True,
+        "scenarios": True,
+        "reputation": True,
+        "config": True,
+        "provider": True,
+    }
+    assert "SECRETVALUE" not in ready.text
+
+
+def test_ready_rejects_real_mode_without_provider_key(monkeypatch, tmp_path) -> None:
+    server = _server(monkeypatch, tmp_path)
+    monkeypatch.setenv("ABYSS_FAKE_LLM", "0")
+    monkeypatch.setenv("ABYSS_REAL_MODELS", "1")
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    with TestClient(server.app) as client:
+        ready = client.get("/ready")
+    assert ready.status_code == 503
+    assert ready.json()["ok"] is False
+    assert ready.json()["checks"]["provider"] is False
+    assert "sk-" not in ready.text
+
+
+def test_ready_rejects_unreadable_reputation(monkeypatch, tmp_path) -> None:
+    server = _server(monkeypatch, tmp_path)
+    (tmp_path / "reputation.json").write_text("{", encoding="utf-8")
+    with TestClient(server.app) as client:
+        ready = client.get("/ready")
+    assert ready.status_code == 503
+    assert ready.json()["checks"]["reputation"] is False
+    assert "Traceback" not in ready.text
+
+
+def test_internal_crash_is_generic_and_connection_survives(monkeypatch, tmp_path) -> None:
+    server = _server(monkeypatch, tmp_path)
+
+    async def boom(*args, **kwargs):
+        raise RuntimeError("sk-ant-SECRETVALUE C:\\secret\\prompt.txt ignore previous instructions")
+
+    monkeypatch.setattr(server, "run_job", boom)
+    with TestClient(server.app) as client:
+        with client.websocket_connect("/ws") as websocket:
+            websocket.receive_json()
+            websocket.send_json({"type": "start_job", "job": "Explain why the sky is blue."})
+            error = websocket.receive_json()
+            assert error["type"] == "error" and error["data"]["fatal"] is True
+            assert error["data"]["message"].startswith("internal error (")
+            assert "SECRETVALUE" not in error["data"]["message"]
+            assert "prompt.txt" not in error["data"]["message"]
+            websocket.send_text("not json")
+            follow = websocket.receive_json()
+            assert follow["type"] == "error" and follow["data"]["fatal"] is False
+        assert client.get("/health").json() == {"ok": True}
+
+
+def test_oversized_websocket_message_is_nonfatal(monkeypatch, tmp_path) -> None:
+    server = _server(monkeypatch, tmp_path)
+    with TestClient(server.app) as client:
+        with client.websocket_connect("/ws") as websocket:
+            websocket.receive_json()
+            websocket.send_text("x" * (server.MAX_CLIENT_MESSAGE_CHARS + 1))
+            error = websocket.receive_json()
+            assert error["type"] == "error" and "maximum size" in error["data"]["message"]
+            assert error["data"]["fatal"] is False
+            websocket.send_text(json.dumps({"type": "unknown"}))
+            follow = websocket.receive_json()
+            assert follow["type"] == "error" and follow["data"]["fatal"] is False
+
+
+def test_disconnect_cancels_the_running_task(monkeypatch, tmp_path) -> None:
+    server = _server(monkeypatch, tmp_path)
+    state = {"started": False, "cancelled": False}
+
+    async def hang(**kwargs):
+        state["started"] = True
+        try:
+            await asyncio.Event().wait()
+        except asyncio.CancelledError:
+            state["cancelled"] = True
+            raise
+
+    monkeypatch.setattr(server, "run_incident", hang)
+    with TestClient(server.app) as client:
+        with client.websocket_connect("/ws") as websocket:
+            websocket.receive_json()
+            websocket.send_json({"type": "start_incident", "scenario_id": "ams_db_outage"})
+            for _ in range(50):
+                if state["started"]:
+                    break
+                time.sleep(0.01)
+            assert state["started"]
+    assert state["cancelled"]
+    with TestClient(server.app) as client:
+        assert client.get("/ready").status_code == 200
+
+
+def test_reset_while_awaiting_approval_rejects_a_later_approve(monkeypatch, tmp_path) -> None:
+    server = _server(monkeypatch, tmp_path)
+    with TestClient(server.app) as client:
+        with client.websocket_connect("/ws") as websocket:
+            events = [websocket.receive_json()]
+            websocket.send_json({"type": "start_incident", "scenario_id": "ams_db_outage"})
+            _receive_until(websocket, "approval_required", events)
+            websocket.send_json({"type": "reset_incident"})
+            event = websocket.receive_json()
+            while not (event["type"] == "incident_status" and event["data"]["status"] == "healthy"):
+                event = websocket.receive_json()
+            websocket.send_json({"type": "approve_repair"})
+            error = websocket.receive_json()
+    assert error["type"] == "error"
+    assert "awaiting approval" in error["data"]["message"]
+    assert not any(item["type"] == "service_restored" for item in events)
 
 
 def test_bad_json_and_unknown_type_return_errors(monkeypatch, tmp_path) -> None:

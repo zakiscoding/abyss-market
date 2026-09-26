@@ -4,7 +4,7 @@ import asyncio
 import time
 from dataclasses import asdict, dataclass
 
-from . import config
+from . import config, safety
 from .agents import build_work_prompt, do_work, est_input_tokens, request_bid
 from .events import EventStream, new_job_id
 from .ledger import Ledger
@@ -51,8 +51,10 @@ async def run_job(
     try:
         task_specs, split_usage = await _get_tasks(llm, ledger, job_text, tasks)
     except LLMError as exc:
+        correlation = safety.log_internal(exc, label="job split failed")
         await stream.emit(
-            "error", {"message": str(exc), "task_id": None, "fatal": True}
+            "error",
+            {"message": safety.client_internal_error(correlation), "task_id": None, "fatal": True},
         )
         final = _final_data(
             status="error",
@@ -157,7 +159,8 @@ async def run_job(
             )
         except LLMError as exc:
             task_failed = True
-            await _task_error(stream, ledger, tasks_won, task.task_id, str(exc))
+            safety.log_internal(exc, label="task failed")
+            await _task_error(stream, ledger, tasks_won, task.task_id, safety.client_model_error())
             final_tasks.append(
                 _final_task(
                     task, winner.agent_id, None, promised_quality, ledger
@@ -185,7 +188,8 @@ async def run_job(
             )
         except LLMError as exc:
             task_failed = True
-            await _task_error(stream, ledger, tasks_won, task.task_id, str(exc))
+            safety.log_internal(exc, label="task failed")
+            await _task_error(stream, ledger, tasks_won, task.task_id, safety.client_model_error())
             final_tasks.append(
                 _final_task(
                     task, winner.agent_id, None, promised_quality, ledger
@@ -293,13 +297,14 @@ async def _run_auction(
 
     for agent, result in zip(config.AGENTS, results):
         if isinstance(result, BaseException):
+            safety.log_internal(result, label="bid failed")
             await stream.emit(
                 "bid",
                 {
                     "task_id": task.task_id,
                     "agent_id": agent.agent_id,
                     "ok": False,
-                    "error": str(result),
+                    "error": safety.client_model_error(),
                     "predicted_output_tokens": None,
                     "est_input_tokens": None,
                     "predicted_cost_usd": None,

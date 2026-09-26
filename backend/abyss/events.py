@@ -73,8 +73,9 @@ class EventStream:
             "data": data,
         }
         validate_event(event)
-        await self.sink(event)
+        # Advance before the sink await so a concurrent emit cannot reuse this seq.
         self.seq += 1
+        await self.sink(event)
 
 
 def new_job_id() -> str:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import threading
 
 from abyss.ledger import Ledger, cost_usd
 
@@ -78,3 +79,76 @@ def test_record_appends_one_jsonl_line(tmp_path) -> None:
     assert [json.loads(line)["id"] for line in lines] == ["c_0001", "c_0002"]
     assert [first.id, second.id] == ["c_0001", "c_0002"]
     assert len(ledger.entries()) == 2
+
+
+def _fields() -> dict:
+    return {
+        "task_id": "t1",
+        "agent_id": "haiku",
+        "purpose": "work",
+        "model": "claude-haiku-4-5",
+        "input_tokens": 10,
+        "output_tokens": 20,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0,
+        "cost_usd": 0.0001,
+        "ok": False,
+        "stop_reason": None,
+        "error": "provider said sk-ant-SECRETVALUE Authorization: Bearer abcdefghijklmnop",
+        "duration_ms": 5,
+    }
+
+
+def test_ledger_does_not_store_secrets(tmp_path) -> None:
+    path = tmp_path / "ledger.jsonl"
+    Ledger("j_00000000", path).record(**_fields())
+    text = path.read_text(encoding="utf-8")
+    assert "SECRETVALUE" not in text
+    assert "abcdefghijklmnop" not in text
+    assert json.loads(text)["error"]
+
+
+def test_concurrent_appends_keep_complete_json_lines(tmp_path) -> None:
+    path = tmp_path / "ledger.jsonl"
+    ledger = Ledger("j_abc12345", path)
+    fields = _fields()
+
+    def work() -> None:
+        for _ in range(25):
+            ledger.record(**fields)
+
+    threads = [threading.Thread(target=work) for _ in range(4)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+
+    lines = path.read_text(encoding="utf-8").splitlines()
+    assert len(lines) == 100
+    assert len(ledger.entries()) == 100
+    ids = [json.loads(line)["id"] for line in lines]
+    assert len(set(ids)) == 100
+    assert "SECRETVALUE" not in path.read_text(encoding="utf-8")
+
+
+def test_separate_ledgers_do_not_interleave_one_file(tmp_path) -> None:
+    path = tmp_path / "ledger.jsonl"
+    fields = _fields()
+
+    def work(index: int) -> None:
+        ledger = Ledger(f"j_{index:08d}", path)
+        for _ in range(20):
+            ledger.record(**fields)
+
+    threads = [threading.Thread(target=work, args=(index,)) for index in range(5)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+
+    lines = path.read_text(encoding="utf-8").splitlines()
+    assert len(lines) == 100
+    for line in lines:
+        parsed = json.loads(line)
+        assert parsed["ok"] is False
+        assert "SECRETVALUE" not in line

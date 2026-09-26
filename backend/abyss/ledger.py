@@ -1,12 +1,28 @@
 from __future__ import annotations
 
 import json
+import threading
 import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Literal
 
 from .config import AGENTS, PRICES
+from .safety import redact_text
+
+# In-process only. Two OS processes writing the same ledger file can still interleave.
+_PATH_LOCKS: dict[str, threading.Lock] = {}
+_PATH_LOCKS_GUARD = threading.Lock()
+
+
+def _path_lock(path: Path) -> threading.Lock:
+    key = str(path.resolve())
+    with _PATH_LOCKS_GUARD:
+        lock = _PATH_LOCKS.get(key)
+        if lock is None:
+            lock = threading.Lock()
+            _PATH_LOCKS[key] = lock
+        return lock
 
 
 Purpose = Literal["split", "bid", "work", "review"]
@@ -55,19 +71,29 @@ class Ledger:
         self.job_id = job_id
         self.path = path
         self._entries: list[LedgerEntry] = []
+        self._lock = threading.Lock()
 
     def record(self, **fields: object) -> LedgerEntry:
-        entry = LedgerEntry(
-            id=f"c_{len(self._entries) + 1:04d}",
-            ts=time.time(),
-            job_id=self.job_id,
-            **fields,
-        )
-        self._entries.append(entry)
-        if self.path is not None:
-            self.path.parent.mkdir(parents=True, exist_ok=True)
-            with self.path.open("a", encoding="utf-8") as handle:
-                handle.write(json.dumps(asdict(entry), separators=(",", ":")) + "\n")
+        error = fields.get("error")
+        if isinstance(error, str):
+            fields["error"] = redact_text(error, limit=200) or "model request failed"
+        with self._lock:
+            entry = LedgerEntry(
+                id=f"c_{len(self._entries) + 1:04d}",
+                ts=time.time(),
+                job_id=self.job_id,
+                **fields,  # type: ignore[arg-type]
+            )
+            self._entries.append(entry)
+            line = json.dumps(asdict(entry), separators=(",", ":")) + "\n"
+            path = self.path
+        if path is not None:
+            # The file lock is not held across model calls; record() runs after the call returns.
+            with _path_lock(path):
+                path.parent.mkdir(parents=True, exist_ok=True)
+                with path.open("a", encoding="utf-8") as handle:
+                    handle.write(line)
+                    handle.flush()
         return entry
 
     def entries(self) -> list[LedgerEntry]:
