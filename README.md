@@ -9,6 +9,27 @@ diagnoses, then proposes an allowlisted remediation plan. A sandbox copy of
 the service tests the plan. Humans who own each step must approve it before
 anything reaches production.
 
+The command center is the seaside harbor in `web/public/art/seaside-market.jpg`.
+The painting is the scene, not a backdrop behind a dashboard.
+
+| Place in the painting | What it shows |
+|---|---|
+| Boat | The incident that just arrived |
+| Left stall | Haiku specialist |
+| Center stall | Sonnet specialist |
+| Right stall | Opus specialist |
+| Main dock | Commander classification and the remediation pipeline |
+| Water beside the dock | Sandbox. It flashes red on a rejected plan and green when the plan passes |
+| Left glass panel | Incident inbox. Triggering an incident updates this same harbor |
+| Right glass panel | Telemetry, human responders, approval, cost, and the investigation log |
+
+Stall signs follow the Commander's domain: `Database Specialist · Haiku`, then
+`Security Specialist`, `Networking Specialist`, or `Payments Specialist` for
+the other markets. Inbox and detail panels collapse into drawers on narrower
+windows so the stalls, boat, and dock stay readable. The earlier market
+painting remains at `web/public/art/market.png` for the original `?app=market`
+view.
+
 ![MAYDAY awaiting human approval](docs/mayday-approval.png)
 
 ## Demo sequence
@@ -145,6 +166,6 @@ are unchanged. MAYDAY adds:
 - `backend/abyss/incident.py` — typed allowlist, sandbox, scenario interface
 - `backend/abyss/responders.py` — paging and step ownership
 - `backend/abyss/mayday.py` — Commander → market → sandbox → humans → verify
-- `web/src/ui/mayday/` — command-center dashboard
+- `web/src/ui/mayday/` — seaside command center. `SeasideScene` places live state on the harbor painting; the glass drawers read the same events
 
 The contract is in [SPEC.md](SPEC.md) (§11).

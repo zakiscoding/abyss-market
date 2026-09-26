@@ -6,6 +6,8 @@ import net from "../../../public/fixtures/incident_network_partition.json";
 import pool from "../../../public/fixtures/incident_payments_pool.json";
 import type { AbyssEvent } from "../../contract";
 import { harborModel } from "../../scene/harbor/model";
+import { coverFrame } from "./SeasideScene";
+import { seasidePicture, specialtySign } from "./seaside";
 import { FixtureSource } from "../../sources/fixture";
 import { initialState, reduce, type MarketState } from "../../state/reducer";
 import { outcome, pipeline, terminal } from "./derive";
@@ -94,6 +96,63 @@ describe("MAYDAY selectors", () => {
     expect(humans.find((b) => b.id === "sam")?.berth).toBe("dock");
     expect(harborModel(play(events)).mood).toBe("restored");
     expect(harborModel(state).service).toBe("ORDERS API");
+  });
+});
+
+describe("seaside harbor", () => {
+  it("renames the three stalls when the Commander classifies the domain", () => {
+    const classified = upTo(events, (e) => e.type === "commander_classified");
+    const picture = seasidePicture(classified);
+    expect(picture.classification).toBe("database · SEV-1");
+    expect(picture.boat).toBe("active");
+    expect(picture.stalls.map((stall) => stall.sign)).toEqual([
+      "Database Specialist · Haiku",
+      "Database Specialist · Sonnet",
+      "Database Specialist · Opus",
+    ]);
+    expect(picture.stalls.map((stall) => stall.agentId)).toEqual(["haiku", "sonnet", "opus"]);
+  });
+
+  it("lights bids, rejects in the sandbox, then opens the gate for the paged crew", () => {
+    const bidding = upTo(events, (e) => e.type === "bid" && e.data.agent_id === "opus" && e.data.ok);
+    const lit = seasidePicture(bidding).stalls.filter((stall) => stall.lit).map((stall) => stall.agentId);
+    expect(lit.length).toBeGreaterThan(0);
+
+    const failed = seasidePicture(upTo(events, (e) => e.type === "sandbox_result"));
+    expect(failed.sandbox).toBe("fail");
+    expect(failed.remedyText).toContain("restart_db");
+    expect(failed.gate).toBe("idle");
+
+    const approval = seasidePicture(upTo(events, (e) => e.type === "approval_required"));
+    expect(approval.gate).toBe("closed");
+    expect(approval.responders.map((person) => person.name)).toEqual(["Zak", "Maya", "Riley", "Jordan"]);
+    expect(approval.responders.filter((person) => person.needsApproval).map((person) => person.name)).toEqual(["Zak", "Maya", "Riley"]);
+
+    const restored = seasidePicture(play(events));
+    expect(restored.boat).toBe("restored");
+    expect(restored.gate).toBe("open");
+    expect(restored.sandbox).toBe("pass");
+  });
+
+  it("uses each domain's specialist title", () => {
+    expect(seasidePicture(play(auth as AbyssEvent[])).stalls[0].sign).toBe("Security Specialist · Haiku");
+    expect(seasidePicture(play(net as AbyssEvent[])).stalls[1].sign).toBe("Networking Specialist · Sonnet");
+    expect(seasidePicture(play(pool as AbyssEvent[])).stalls[2].sign).toBe("Database Specialist · Opus");
+    expect(specialtySign("payments", "opus")).toBe("Payments Specialist · Opus");
+  });
+
+  it("keeps the stalls and boat inside a desktop cover frame", () => {
+    const frame = coverFrame(1600, 820);
+    const x = (fraction: number) => frame.left + fraction * frame.width;
+    const y = (fraction: number) => frame.top + fraction * frame.height;
+    for (const fraction of [0.28, 0.56, 0.79]) {
+      expect(x(fraction)).toBeGreaterThan(0);
+      expect(x(fraction)).toBeLessThan(1600);
+    }
+    expect(y(0.27)).toBeGreaterThan(0);
+    expect(y(0.76)).toBeGreaterThan(0);
+    expect(y(0.76)).toBeLessThan(820);
+    expect(frame.width / frame.height).toBeCloseTo(1024 / 576, 2);
   });
 });
 
