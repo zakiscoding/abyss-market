@@ -12,7 +12,14 @@ from .llm import LLM, LLMError
 from .orchestrator import TaskSpec, split_job
 from .reputation import ReputationStore
 from .reviewer import review
-from .scoring import ScoredBid, clamp_bid, pick_winner, predicted_cost, score_bid
+from .scoring import (
+    ScoredBid,
+    clamp_bid,
+    pick_winner,
+    predicted_cost,
+    predicted_eta_ms,
+    score_bid,
+)
 
 
 @dataclass
@@ -288,6 +295,7 @@ async def _run_auction(
                     "predicted_output_tokens": None,
                     "est_input_tokens": None,
                     "predicted_cost_usd": None,
+                    "eta_ms": None,
                     "promised_quality": None,
                     "pitch": None,
                     "reputation": None,
@@ -322,6 +330,7 @@ async def _run_auction(
                 "predicted_output_tokens": tokens,
                 "est_input_tokens": estimated_input,
                 "predicted_cost_usd": price,
+                "eta_ms": predicted_eta_ms(agent.model, tokens),
                 "promised_quality": quality,
                 "pitch": pitch,
                 "reputation": reputation,

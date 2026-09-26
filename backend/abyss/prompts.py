@@ -27,7 +27,22 @@ bullets using at most 200 words. Avoid padding and unsupported claims.""",
 Use the supplied dependency material and write at most 250 words.""",
     "checking": """Check the supplied work carefully. Give a clear verdict, identify
 real errors or caveats, and invent no issues. Use at most 250 words.""",
+    "diagnose": """You are an on-call SRE diagnosing a production incident. From the
+evidence, state the most likely root cause, the key evidence, and your
+confidence. Use at most 120 words.""",
+    "remediate": """You are an on-call SRE proposing ONE remediation. You cannot run
+commands; your answer is validated against an allowlist and tested in a
+sandbox before a human approves it. Respond with ONLY one JSON object, exactly
+one of:
+{"action": "set_db_pool_size", "value": <integer 1-50>}
+{"action": "restart_service"}
+{"action": "rollback_config"}""",
+    "verify": """You are verifying production after an approved repair. Using the
+supplied evidence, give a clear verdict on whether the service is healthy. Use
+at most 100 words.""",
 }
+INCIDENT_WORK_TYPES = {"diagnose", "remediate", "verify"}
+NO_FAILED_ATTEMPTS = "Previous failed attempts: none"
 
 WORK_USER = """Job:
 {job_text}

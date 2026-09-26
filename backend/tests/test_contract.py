@@ -11,6 +11,7 @@ FAILED_BID_FIELDS = (
     "predicted_output_tokens",
     "est_input_tokens",
     "predicted_cost_usd",
+    "eta_ms",
     "promised_quality",
     "pitch",
     "reputation",
@@ -260,3 +261,97 @@ def test_won_before_last_bid_fails(fixture_events: list[dict]) -> None:
 
     with pytest.raises(Exception):
         validate_stream(changed)
+
+
+# ---------------------------------------------------------------- MAYDAY incident stream
+
+import json as _json
+from pathlib import Path as _Path
+
+_MAYDAY = _Path(__file__).parents[2] / "fixtures" / "mayday_run.json"
+
+
+@pytest.fixture
+def mayday_events() -> list[dict]:
+    return _json.loads(_MAYDAY.read_text(encoding="utf-8"))
+
+
+def _first(events: list[dict], type_: str, **match) -> dict:
+    return next(
+        e for e in events
+        if e["type"] == type_ and all(e["data"].get(k) == v for k, v in match.items())
+    )
+
+
+def test_mayday_fixture_is_valid(mayday_events: list[dict]) -> None:
+    validate_stream(mayday_events)
+    statuses = [e["data"]["status"] for e in mayday_events if e["type"] == "incident_status"]
+    assert statuses == ["healthy", "outage", "investigating", "repairing",
+                        "awaiting_approval", "recovering", "restored"]
+    assert [e["data"]["passed"] for e in mayday_events if e["type"] == "sandbox_result"] == [False, True]
+
+
+def test_disallowed_action_is_rejected_by_the_contract(mayday_events: list[dict]) -> None:
+    proposal = _first(mayday_events, "remediation_proposed")
+    proposal["data"]["action"] = {"action": "exec", "value": None}
+    with pytest.raises(ValueError):
+        validate_stream(mayday_events)
+
+
+def test_sandbox_pass_requires_every_check(mayday_events: list[dict]) -> None:
+    sandbox = _first(mayday_events, "sandbox_result", passed=False)
+    sandbox["data"]["passed"] = True
+    with pytest.raises(ValueError, match="every check"):
+        validate_stream(mayday_events)
+
+
+def test_rejected_proposal_cannot_pass_sandbox(mayday_events: list[dict]) -> None:
+    proposal = _first(mayday_events, "remediation_proposed", task_id="t3")
+    proposal["data"].update(valid=False, action=None, rejection="not allowlisted")
+    sandbox = _first(mayday_events, "sandbox_result", task_id="t3")
+    sandbox["data"]["action"] = None
+    with pytest.raises(ValueError, match="rejected proposal"):
+        validate_stream(mayday_events)
+
+
+def test_approval_requires_a_passing_sandbox(mayday_events: list[dict]) -> None:
+    approval = _first(mayday_events, "approval_required")
+    mayday_events.remove(approval)
+    index = mayday_events.index(_first(mayday_events, "sandbox_result", task_id="t3"))
+    mayday_events.insert(index, approval)
+    _renumber(mayday_events)
+    with pytest.raises(ValueError, match="passing sandbox_result"):
+        validate_stream(mayday_events)
+
+
+def test_verify_requires_approval(mayday_events: list[dict]) -> None:
+    mayday_events.remove(_first(mayday_events, "approval_required"))
+    _renumber(mayday_events)
+    with pytest.raises(ValueError, match="approval_required"):
+        validate_stream(mayday_events)
+
+
+def test_cannot_skip_incident_states(mayday_events: list[dict]) -> None:
+    mayday_events.remove(_first(mayday_events, "incident_status", status="recovering"))
+    _renumber(mayday_events)
+    with pytest.raises(ValueError, match="cannot go from"):
+        validate_stream(mayday_events)
+
+
+def test_restored_requires_service_restored(mayday_events: list[dict]) -> None:
+    mayday_events.remove(_first(mayday_events, "service_restored"))
+    _renumber(mayday_events)
+    with pytest.raises(ValueError, match="service_restored"):
+        validate_stream(mayday_events)
+
+
+def test_healthy_status_must_be_outside_a_job(mayday_events: list[dict]) -> None:
+    _first(mayday_events, "incident_status", status="healthy")["job_id"] = "j_4d41c0de"
+    with pytest.raises(ValueError, match="healthy"):
+        validate_stream(mayday_events)
+
+
+def test_normal_jobs_cannot_use_incident_types(fixture_events: list[dict]) -> None:
+    fixture_events[1]["data"]["tasks"][0]["type"] = "remediate"
+    with pytest.raises(ValueError):
+        validate_stream(fixture_events)

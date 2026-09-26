@@ -13,9 +13,12 @@ class ReputationStore:
         self._values = self._initial_values()
         if path is not None and path.exists():
             loaded = json.loads(path.read_text(encoding="utf-8"))
+            # Files written before a task type existed start that type at REP_INIT.
             self._values = {
                 agent.agent_id: {
-                    task_type: float(loaded[agent.agent_id][task_type])
+                    task_type: float(
+                        loaded.get(agent.agent_id, {}).get(task_type, REP_INIT)
+                    )
                     for task_type in TASK_TYPES
                 }
                 for agent in AGENTS

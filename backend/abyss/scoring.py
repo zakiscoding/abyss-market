@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from .config import AGENTS
+from .config import AGENTS, TOKENS_PER_SECOND
 from .ledger import cost_usd
 
 
@@ -24,6 +24,10 @@ def predicted_cost(
     nominal_model: str, est_input_tokens: int, predicted_output_tokens: int
 ) -> float:
     return cost_usd(nominal_model, est_input_tokens, predicted_output_tokens)
+
+
+def predicted_eta_ms(nominal_model: str, predicted_output_tokens: int) -> int:
+    return round(predicted_output_tokens / TOKENS_PER_SECOND[nominal_model] * 1000)
 
 
 def score_bid(

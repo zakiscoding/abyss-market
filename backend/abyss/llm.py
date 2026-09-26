@@ -276,7 +276,7 @@ class LLM:
         digest = hashlib.sha256(
             (purpose + nominal_model + user).encode("utf-8")
         ).digest()
-        text, data = _fake_output(purpose, user, digest)
+        text, data = _fake_output(purpose, user, digest, system)
         if schema is None:
             data = None
         input_tokens = len(system + user) // 4
@@ -417,7 +417,13 @@ def _parse_json_object(text: str) -> dict:
     return parsed
 
 
-def _fake_output(purpose: Purpose, user: str, digest: bytes) -> tuple[str, dict | None]:
+def _fake_output(
+    purpose: Purpose, user: str, digest: bytes, system: str = ""
+) -> tuple[str, dict | None]:
+    if purpose == "work":
+        incident = _fake_incident_work(system, user)
+        if incident is not None:
+            return incident, None
     if purpose == "split":
         data = {
             "tasks": [
@@ -466,6 +472,30 @@ def _fake_output(purpose: Purpose, user: str, digest: bytes) -> tuple[str, dict 
         "The response is concise, useful, and follows the requested task constraints."
     )
     return text, None
+
+
+def _fake_incident_work(system: str, user: str) -> str | None:
+    """Scripted incident answers so the demo is deterministic: the first repair
+    is a plausible-but-wrong restart, the retry fixes the pool size."""
+    from . import prompts
+
+    if system == prompts.WORK_SYSTEM["diagnose"]:
+        return (
+            "Root cause: the latest config change shrank the database connection "
+            "pool, so payment requests queue for a connection and time out. "
+            "Evidence: pool exhaustion warnings and connection timeouts start right "
+            "after the change. Confidence: high."
+        )
+    if system == prompts.WORK_SYSTEM["remediate"]:
+        if prompts.NO_FAILED_ATTEMPTS in user:
+            return json.dumps({"action": "restart_service"})
+        return json.dumps({"action": "set_db_pool_size", "value": 20})
+    if system == prompts.WORK_SYSTEM["verify"]:
+        return (
+            "Verified: every production health check passes after the approved "
+            "repair. Payments succeed and latency is back to baseline."
+        )
+    return None
 
 
 async def _smoke() -> int:

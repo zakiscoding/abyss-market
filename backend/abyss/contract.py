@@ -10,7 +10,19 @@ from pydantic import BaseModel, ConfigDict, Field, StrictBool, model_validator
 
 
 AgentId = Literal["haiku", "sonnet", "opus"]
-TaskType = Literal["research", "writing", "checking"]
+TaskType = Literal["research", "writing", "checking", "diagnose", "remediate", "verify"]
+TASK_TYPE_ORDER = ["research", "writing", "checking", "diagnose", "remediate", "verify"]
+IncidentState = Literal[
+    "healthy",
+    "outage",
+    "investigating",
+    "repairing",
+    "awaiting_approval",
+    "recovering",
+    "restored",
+    "failed",
+]
+ActionName = Literal["set_db_pool_size", "restart_service", "rollback_config"]
 Purpose = Literal["split", "bid", "work", "review"]
 JobId = Annotated[str, Field(pattern=r"^j_[0-9a-f]{8}$")]
 TaskId = Annotated[str, Field(pattern=r"^t[1-9][0-9]*$")]
@@ -41,6 +53,9 @@ class TaskReputation(ContractModel):
     research: float
     writing: float
     checking: float
+    diagnose: float
+    remediate: float
+    verify: float
 
 
 class Reputation(ContractModel):
@@ -69,7 +84,7 @@ class HelloData(ContractModel):
     def validate_agent_order(self) -> "HelloData":
         if [agent.agent_id for agent in self.agents] != ["haiku", "sonnet", "opus"]:
             raise ValueError("agents must be in frozen stall order")
-        if self.config.task_types != ["research", "writing", "checking"]:
+        if self.config.task_types != TASK_TYPE_ORDER:
             raise ValueError("task_types must contain the frozen task types in order")
         return self
 
@@ -108,6 +123,7 @@ class BidData(ContractModel):
     predicted_output_tokens: NonNegativeInt | None
     est_input_tokens: NonNegativeInt | None
     predicted_cost_usd: NonNegativeFloat | None
+    eta_ms: NonNegativeInt | None
     promised_quality: Annotated[int, Field(ge=1, le=10)] | None
     pitch: Annotated[str, Field(max_length=80)] | None
     reputation: float | None
@@ -120,6 +136,7 @@ class BidData(ContractModel):
             self.predicted_output_tokens,
             self.est_input_tokens,
             self.predicted_cost_usd,
+            self.eta_ms,
             self.promised_quality,
             self.pitch,
             self.reputation,
@@ -258,6 +275,162 @@ class ErrorData(ContractModel):
     fatal: StrictBool
 
 
+# ---------------------------------------------------------------- MAYDAY (v1.1)
+
+Fraction = Annotated[float, Field(ge=0, le=1)]
+AttemptNo = Annotated[int, Field(ge=1)]
+
+
+class Telemetry(ContractModel):
+    db_pool_size: NonNegativeInt
+    db_pool_in_use: NonNegativeInt
+    db_waiting: NonNegativeInt
+    p95_latency_ms: NonNegativeInt
+    error_rate: Fraction
+    payment_success_rate: Fraction
+    requests_per_min: NonNegativeInt
+    timeouts_per_min: NonNegativeInt
+
+
+class LogLine(ContractModel):
+    level: Literal["INFO", "WARN", "ERROR"]
+    source: str
+    message: str
+
+
+class ConfigChange(ContractModel):
+    key: str
+    old: str
+    new: str
+    author: str
+    minutes_ago: NonNegativeInt
+
+
+class IncidentStatusData(ContractModel):
+    status: IncidentState
+    service: str
+    severity: Literal["SEV-1", "SEV-2", "SEV-3"] | None
+    headline: str
+    telemetry: Telemetry
+    logs: list[LogLine]
+    config_changes: list[ConfigChange]
+
+
+class Responder(ContractModel):
+    responder_id: str
+    name: str
+    role: str
+    skills: list[str]
+    available: StrictBool
+    workload: NonNegativeInt
+    score: float
+    selected: StrictBool
+    reason: str
+
+
+class Briefings(ContractModel):
+    engineering: str
+    support: str
+    commander: str
+    leadership: str
+
+
+class RespondersSelectedData(ContractModel):
+    severity: Literal["SEV-1", "SEV-2", "SEV-3"]
+    required_skills: list[str]
+    responders: list[Responder]
+    briefings: Briefings
+
+
+class RemediationAction(ContractModel):
+    action: ActionName
+    value: Annotated[int, Field(ge=1, le=50)] | None
+
+    @model_validator(mode="after")
+    def validate_value(self) -> "RemediationAction":
+        if (self.action == "set_db_pool_size") != (self.value is not None):
+            raise ValueError("only set_db_pool_size takes a value, and it requires one")
+        return self
+
+
+class RemediationProposedData(ContractModel):
+    task_id: TaskId
+    agent_id: AgentId
+    attempt: AttemptNo
+    raw: Annotated[str, Field(max_length=300)]
+    valid: StrictBool
+    action: RemediationAction | None
+    rejection: str | None
+
+    @model_validator(mode="after")
+    def validate_verdict(self) -> "RemediationProposedData":
+        if self.valid != (self.action is not None) or self.valid == (self.rejection is not None):
+            raise ValueError("valid proposals need an action; invalid ones need a rejection")
+        return self
+
+
+class Check(ContractModel):
+    name: str
+    passed: StrictBool
+    detail: str
+
+
+class SandboxResultData(ContractModel):
+    task_id: TaskId
+    agent_id: AgentId
+    attempt: AttemptNo
+    action: RemediationAction | None
+    passed: StrictBool
+    checks: list[Check]
+    telemetry: Telemetry
+
+    @model_validator(mode="after")
+    def validate_passed(self) -> "SandboxResultData":
+        if self.passed != (bool(self.checks) and all(check.passed for check in self.checks)):
+            raise ValueError("passed must equal every check passing")
+        return self
+
+
+class ApprovalRequiredData(ContractModel):
+    task_id: TaskId
+    agent_id: AgentId
+    attempt: AttemptNo
+    action: RemediationAction
+    summary: str
+    approvers: list[str]
+
+
+class GradeSummary(ContractModel):
+    task_id: TaskId
+    type: TaskType
+    agent_id: AgentId
+    grade: Annotated[int, Field(ge=1, le=10)]
+    promised_quality: Annotated[int, Field(ge=1, le=10)] | None
+
+
+class RepChange(ContractModel):
+    task_id: TaskId
+    agent_id: AgentId
+    task_type: TaskType
+    old: float
+    new: float
+
+
+class ServiceRestoredData(ContractModel):
+    mttr_ms: NonNegativeInt
+    total_cost_usd: NonNegativeFloat
+    repair_attempts: AttemptNo
+    failed_attempts: NonNegativeInt
+    confidence: Fraction
+    mean_grade: Annotated[float, Field(ge=1, le=10)]
+    approved_by: str
+    action: RemediationAction
+    grades: list[GradeSummary]
+    rep_changes: list[RepChange]
+    verification: list[Check]
+    telemetry: Telemetry
+
+
 class Envelope(ContractModel):
     v: Literal[1]
     seq: NonNegativeInt
@@ -280,6 +453,30 @@ DATA_MODELS: dict[str, type[ContractModel]] = {
     "stats": StatsData,
     "final": FinalData,
     "error": ErrorData,
+    "incident_status": IncidentStatusData,
+    "responders_selected": RespondersSelectedData,
+    "remediation_proposed": RemediationProposedData,
+    "sandbox_result": SandboxResultData,
+    "approval_required": ApprovalRequiredData,
+    "service_restored": ServiceRestoredData,
+}
+INCIDENT_EVENTS = {
+    "incident_status",
+    "responders_selected",
+    "remediation_proposed",
+    "sandbox_result",
+    "approval_required",
+    "service_restored",
+}
+# Allowed incident_status transitions within one incident job.
+INCIDENT_TRANSITIONS: dict[str, set[str]] = {
+    "outage": {"investigating", "failed"},
+    "investigating": {"repairing", "failed"},
+    "repairing": {"awaiting_approval", "failed"},
+    "awaiting_approval": {"recovering", "failed"},
+    "recovering": {"restored", "failed"},
+    "restored": set(),
+    "failed": set(),
 }
 
 
@@ -293,8 +490,13 @@ def validate_event(ev: dict) -> None:
     if envelope.type == "hello":
         if envelope.job_id is not None or envelope.t != 0:
             raise ValueError("hello requires job_id=null and t=0")
+    elif envelope.type == "incident_status" and envelope.job_id is None:
+        if envelope.data["status"] != "healthy":
+            raise ValueError("only a healthy incident_status may have job_id=null")
     elif envelope.type != "error" and envelope.job_id is None:
         raise ValueError(f"{envelope.type} requires a job_id")
+    elif envelope.type == "incident_status" and envelope.data["status"] == "healthy":
+        raise ValueError("a healthy incident_status must have job_id=null")
 
 
 def _task_id(ev: dict) -> str | None:
@@ -415,6 +617,13 @@ def _validate_task_segment(segment: list[dict], task: dict, index: int, total: i
 def _validate_job(job_id: str, events: list[dict]) -> None:
     if events[-1]["type"] != "final":
         raise ValueError(f"final must be the last event for job {job_id}")
+    if any(ev["type"] in INCIDENT_EVENTS for ev in events):
+        raise ValueError(f"job {job_id} mixes incident events into a normal job")
+    for ev in events:
+        if ev["type"] == "job_split" and any(
+            task["type"] in INCIDENT_TASK_TYPES for task in ev["data"]["tasks"]
+        ):
+            raise ValueError("job_split may only use research, writing and checking")
 
     non_errors = [ev for ev in events if ev["type"] != "error"]
     split_events = [ev for ev in non_errors if ev["type"] == "job_split"]
@@ -475,6 +684,114 @@ def _validate_job(job_id: str, events: list[dict]) -> None:
         )
 
 
+INCIDENT_TASK_TYPES = {"diagnose", "remediate", "verify"}
+
+
+def _position(events: list[dict], event: dict) -> int:
+    return next(index for index, candidate in enumerate(events) if candidate is event)
+
+
+def _validate_incident(job_id: str, events: list[dict]) -> None:
+    """An incident job: outage -> diagnose -> remediate+ (sandboxed) -> approval
+    -> verify -> restored. Each task reuses the normal task-segment grammar;
+    incident events are checked for order around it."""
+    if events[-1]["type"] != "final":
+        raise ValueError(f"final must be the last event for incident {job_id}")
+    statuses = [ev for ev in events if ev["type"] == "incident_status"]
+    if statuses[0]["data"]["status"] != "outage":
+        raise ValueError("an incident must start with incident_status 'outage'")
+    for previous, current in zip(statuses, statuses[1:]):
+        if current["data"]["status"] not in INCIDENT_TRANSITIONS[previous["data"]["status"]]:
+            raise ValueError(
+                f"incident_status cannot go from {previous['data']['status']!r} "
+                f"to {current['data']['status']!r}"
+            )
+
+    body = events[:-1]
+    posted_positions = [i for i, ev in enumerate(body) if ev["type"] == "task_posted"]
+    before_tasks = body[: posted_positions[0]] if posted_positions else body
+    if any(ev["type"] not in {"incident_status", "responders_selected", "error"} for ev in before_tasks):
+        raise ValueError("only incident_status and responders_selected may precede the first task")
+
+    task_failed = False
+    types: list[str] = []
+    for n, start in enumerate(posted_positions):
+        end = posted_positions[n + 1] if n + 1 < len(posted_positions) else len(body)
+        segment = body[start:end]
+        posted = segment[0]["data"]
+        if posted["type"] not in INCIDENT_TASK_TYPES:
+            raise ValueError(f"incident task {posted['task_id']} has non-incident type")
+        if posted["task_id"] != f"t{n + 1}" or posted["index"] != n:
+            raise ValueError("incident task ids must be t1..tN in order")
+        types.append(posted["type"])
+        core = [ev for ev in segment if ev["type"] not in INCIDENT_EVENTS]
+        task_failed |= _validate_task_segment(core, posted, posted["index"], posted["total"])
+        _validate_incident_task(segment, posted)
+
+    if types:
+        remediations = types[1 : len(types) - (types[-1] == "verify")]
+        if types[0] != "diagnose" or any(t != "remediate" for t in remediations):
+            raise ValueError("incident tasks must be diagnose, remediate..., then verify")
+
+    approvals = [ev for ev in body if ev["type"] == "approval_required"]
+    if len(approvals) > 1:
+        raise ValueError("an incident has at most one approval_required")
+    passed = [ev for ev in body if ev["type"] == "sandbox_result" and ev["data"]["passed"]]
+    if approvals:
+        approval = approvals[0]
+        match = [ev for ev in passed if ev["data"]["task_id"] == approval["data"]["task_id"]]
+        if not match or _position(body, match[0]) > _position(body, approval):
+            raise ValueError("approval_required needs an earlier passing sandbox_result")
+    if types and types[-1] == "verify":
+        verify_at = posted_positions[-1]
+        recovering = [ev for ev in statuses if ev["data"]["status"] == "recovering"]
+        if not approvals or _position(body, approvals[0]) > verify_at:
+            raise ValueError("verify may only run after approval_required")
+        if not recovering or _position(body, recovering[0]) > verify_at:
+            raise ValueError("verify may only run while recovering")
+
+    restored = [ev for ev in body if ev["type"] == "service_restored"]
+    status = events[-1]["data"]["status"]
+    if restored:
+        if len(restored) != 1 or not types or types[-1] != "verify":
+            raise ValueError("service_restored requires exactly one verify task")
+        after = body[_position(body, restored[0]) + 1 :]
+        if [ev["data"]["status"] for ev in after if ev["type"] == "incident_status"] != ["restored"]:
+            raise ValueError("service_restored must be followed by incident_status 'restored'")
+        if status != "ok" or task_failed:
+            raise ValueError("a restored incident requires final.status='ok'")
+    else:
+        if statuses[-1]["data"]["status"] == "restored":
+            raise ValueError("an incident cannot be restored without service_restored")
+        if status == "ok":
+            raise ValueError("an unrestored incident cannot have final.status='ok'")
+
+
+def _validate_incident_task(segment: list[dict], posted: dict) -> None:
+    task_id = posted["task_id"]
+    kinds = [ev["type"] for ev in segment]
+    for ev in segment:
+        if ev["type"] in {"remediation_proposed", "sandbox_result", "approval_required"}:
+            if ev["data"]["task_id"] != task_id:
+                raise ValueError(f"{ev['type']} for another task appears in {task_id}")
+    if posted["type"] != "remediate":
+        if "remediation_proposed" in kinds or "sandbox_result" in kinds:
+            raise ValueError(f"{posted['type']} task {task_id} cannot propose repairs")
+        return
+    if "graded" not in kinds:
+        return
+    order = [kinds.index(kind) if kind in kinds else -1 for kind in
+             ("done", "remediation_proposed", "sandbox_result", "graded")]
+    if -1 in order or order != sorted(order):
+        raise ValueError(f"remediate task {task_id} must be done -> proposed -> sandbox -> graded")
+    proposal = segment[order[1]]["data"]
+    sandbox = segment[order[2]]["data"]
+    if sandbox["passed"] and not proposal["valid"]:
+        raise ValueError(f"task {task_id} passed the sandbox with a rejected proposal")
+    if sandbox["action"] != proposal["action"] or sandbox["attempt"] != proposal["attempt"]:
+        raise ValueError(f"task {task_id} sandbox_result does not match its proposal")
+
+
 def validate_stream(events: list[dict]) -> None:
     if not events:
         raise ValueError("event stream is empty")
@@ -499,7 +816,10 @@ def validate_stream(events: list[dict]) -> None:
     if not jobs:
         raise ValueError("stream contains no job")
     for job_id, job_events in jobs.items():
-        _validate_job(job_id, job_events)
+        if job_events[0]["type"] == "incident_status":
+            _validate_incident(job_id, job_events)
+        else:
+            _validate_job(job_id, job_events)
 
 
 def _first_error(exc: Exception) -> str:

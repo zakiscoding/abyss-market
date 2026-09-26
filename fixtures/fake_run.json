@@ -30,17 +30,26 @@
         "haiku": {
           "research": 1.0,
           "writing": 1.0,
-          "checking": 1.0
+          "checking": 1.0,
+          "diagnose": 1.0,
+          "remediate": 1.0,
+          "verify": 1.0
         },
         "sonnet": {
           "research": 1.0,
           "writing": 1.0,
-          "checking": 1.0
+          "checking": 1.0,
+          "diagnose": 1.0,
+          "remediate": 1.0,
+          "verify": 1.0
         },
         "opus": {
           "research": 1.0,
           "writing": 1.0,
-          "checking": 1.0
+          "checking": 1.0,
+          "diagnose": 1.0,
+          "remediate": 1.0,
+          "verify": 1.0
         }
       },
       "config": {
@@ -50,7 +59,10 @@
         "task_types": [
           "research",
           "writing",
-          "checking"
+          "checking",
+          "diagnose",
+          "remediate",
+          "verify"
         ],
         "real_models": true,
         "fake_llm": false,
@@ -189,6 +201,7 @@
       "predicted_output_tokens": 400,
       "est_input_tokens": 180,
       "predicted_cost_usd": 0.00218,
+      "eta_ms": 2222,
       "promised_quality": 8,
       "pitch": "Fast, cheap, and I know my tides.",
       "reputation": 1.0,
@@ -216,6 +229,7 @@
       "predicted_output_tokens": 500,
       "est_input_tokens": 180,
       "predicted_cost_usd": 0.00536,
+      "eta_ms": 5556,
       "promised_quality": 8,
       "pitch": "Balanced research, sources in mind.",
       "reputation": 1.0,
@@ -243,6 +257,7 @@
       "predicted_output_tokens": 600,
       "est_input_tokens": 180,
       "predicted_cost_usd": 0.0159,
+      "eta_ms": 10909,
       "promised_quality": 9,
       "pitch": "Deep, precise physics. No hand-waving.",
       "reputation": 1.0,
@@ -486,6 +501,7 @@
       "predicted_output_tokens": 250,
       "est_input_tokens": 420,
       "predicted_cost_usd": 0.00167,
+      "eta_ms": 1389,
       "promised_quality": 8,
       "pitch": "Tight 150 words, lowest price on the pier.",
       "reputation": 1.0,
@@ -513,6 +529,7 @@
       "predicted_output_tokens": 300,
       "est_input_tokens": 420,
       "predicted_cost_usd": 0.00384,
+      "eta_ms": 3333,
       "promised_quality": 9,
       "pitch": "Clear prose that actually uses the research.",
       "reputation": 1.0,
@@ -540,6 +557,7 @@
       "predicted_output_tokens": 350,
       "est_input_tokens": 420,
       "predicted_cost_usd": 0.01085,
+      "eta_ms": 6364,
       "promised_quality": 9,
       "pitch": "Polished. Every sentence earns its place.",
       "reputation": 1.0,
@@ -783,6 +801,7 @@
       "predicted_output_tokens": 200,
       "est_input_tokens": 380,
       "predicted_cost_usd": 0.00138,
+      "eta_ms": 1111,
       "promised_quality": 9,
       "pitch": "I'll check every number, quick.",
       "reputation": 1.0,
@@ -810,6 +829,7 @@
       "predicted_output_tokens": 250,
       "est_input_tokens": 380,
       "predicted_cost_usd": 0.00326,
+      "eta_ms": 2778,
       "promised_quality": 9,
       "pitch": "Careful line-by-line fact-check.",
       "reputation": 1.0,
@@ -837,6 +857,7 @@
       "predicted_output_tokens": 300,
       "est_input_tokens": 380,
       "predicted_cost_usd": 0.0094,
+      "eta_ms": 5455,
       "promised_quality": 10,
       "pitch": "Rigorous check against known physics.",
       "reputation": 1.0,

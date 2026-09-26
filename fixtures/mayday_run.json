@@ -1,0 +1,2091 @@
+[
+  {
+    "v": 1,
+    "seq": 0,
+    "t": 0,
+    "job_id": null,
+    "type": "hello",
+    "data": {
+      "agents": [
+        {
+          "agent_id": "haiku",
+          "display_name": "Haiku 4.5",
+          "model": "claude-haiku-4-5",
+          "color": "#4fb3a9"
+        },
+        {
+          "agent_id": "sonnet",
+          "display_name": "Sonnet 5",
+          "model": "claude-sonnet-5",
+          "color": "#e8a33d"
+        },
+        {
+          "agent_id": "opus",
+          "display_name": "Opus 5",
+          "model": "claude-opus-5",
+          "color": "#8e6cc9"
+        }
+      ],
+      "reputation": {
+        "haiku": {
+          "research": 1.0,
+          "writing": 1.0,
+          "checking": 1.0,
+          "diagnose": 1.0,
+          "remediate": 1.0,
+          "verify": 1.0
+        },
+        "sonnet": {
+          "research": 1.0,
+          "writing": 1.0,
+          "checking": 1.0,
+          "diagnose": 1.0,
+          "remediate": 1.0,
+          "verify": 1.0
+        },
+        "opus": {
+          "research": 1.0,
+          "writing": 1.0,
+          "checking": 1.0,
+          "diagnose": 1.0,
+          "remediate": 1.0,
+          "verify": 1.0
+        }
+      },
+      "config": {
+        "price_weight": 1.0,
+        "rep_init": 1.0,
+        "rep_alpha": 0.3,
+        "task_types": [
+          "research",
+          "writing",
+          "checking",
+          "diagnose",
+          "remediate",
+          "verify"
+        ],
+        "real_models": true,
+        "fake_llm": false,
+        "orchestrator_model": "claude-sonnet-5",
+        "reviewer_model": "claude-sonnet-5"
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 1,
+    "t": 0,
+    "job_id": null,
+    "type": "incident_status",
+    "data": {
+      "status": "healthy",
+      "service": "payments-api",
+      "severity": null,
+      "headline": "Payments API operating normally",
+      "telemetry": {
+        "db_pool_size": 20,
+        "db_pool_in_use": 14,
+        "db_waiting": 0,
+        "p95_latency_ms": 146,
+        "error_rate": 0.002,
+        "payment_success_rate": 0.998,
+        "requests_per_min": 1200,
+        "timeouts_per_min": 0
+      },
+      "logs": [
+        {
+          "level": "INFO",
+          "source": "payments-api",
+          "message": "POST /v1/payments 200 p95=146ms"
+        },
+        {
+          "level": "INFO",
+          "source": "db-pool",
+          "message": "14/20 connections in use"
+        },
+        {
+          "level": "INFO",
+          "source": "checkout",
+          "message": "99.8% payments succeeding"
+        }
+      ],
+      "config_changes": []
+    }
+  },
+  {
+    "v": 1,
+    "seq": 2,
+    "t": 0,
+    "job_id": "j_4d41c0de",
+    "type": "incident_status",
+    "data": {
+      "status": "outage",
+      "service": "payments-api",
+      "severity": "SEV-1",
+      "headline": "SEV-1: Payments API failing 86% of requests",
+      "telemetry": {
+        "db_pool_size": 2,
+        "db_pool_in_use": 2,
+        "db_waiting": 12,
+        "p95_latency_ms": 3118,
+        "error_rate": 0.8571,
+        "payment_success_rate": 0.1429,
+        "requests_per_min": 1200,
+        "timeouts_per_min": 1029
+      },
+      "logs": [
+        {
+          "level": "INFO",
+          "source": "config-service",
+          "message": "applied db.pool.max_size 20 -> 2 by deploy-bot (PR #4812)"
+        },
+        {
+          "level": "WARN",
+          "source": "db-pool",
+          "message": "pool exhausted: 2/2 in use, 12 waiting"
+        },
+        {
+          "level": "ERROR",
+          "source": "payments-api",
+          "message": "POST /v1/payments 500 connection not available after 3000ms"
+        },
+        {
+          "level": "ERROR",
+          "source": "payments-api",
+          "message": "1029 connection timeouts in the last minute"
+        },
+        {
+          "level": "ERROR",
+          "source": "checkout",
+          "message": "1029 payments/min failing (85.7%)"
+        }
+      ],
+      "config_changes": [
+        {
+          "key": "db.pool.max_size",
+          "old": "20",
+          "new": "2",
+          "author": "deploy-bot (PR #4812)",
+          "minutes_ago": 3
+        }
+      ]
+    }
+  },
+  {
+    "v": 1,
+    "seq": 3,
+    "t": 1500,
+    "job_id": "j_4d41c0de",
+    "type": "responders_selected",
+    "data": {
+      "severity": "SEV-1",
+      "required_skills": [
+        "incident-command",
+        "database",
+        "connection-pooling",
+        "payments-api",
+        "customer-comms"
+      ],
+      "responders": [
+        {
+          "responder_id": "zak",
+          "name": "Zak",
+          "role": "Incident Commander",
+          "skills": [
+            "incident-command",
+            "communication"
+          ],
+          "available": true,
+          "workload": 1,
+          "score": 13.0,
+          "selected": true,
+          "reason": "Matches incident-command; current workload 1."
+        },
+        {
+          "responder_id": "maya",
+          "name": "Maya",
+          "role": "Database Engineer",
+          "skills": [
+            "database",
+            "connection-pooling",
+            "postgres"
+          ],
+          "available": true,
+          "workload": 1,
+          "score": 18.0,
+          "selected": true,
+          "reason": "Matches database, connection-pooling; current workload 1."
+        },
+        {
+          "responder_id": "alex",
+          "name": "Alex",
+          "role": "Backend Engineer",
+          "skills": [
+            "payments-api",
+            "backend",
+            "deploys"
+          ],
+          "available": true,
+          "workload": 2,
+          "score": 6.0,
+          "selected": true,
+          "reason": "Matches payments-api; current workload 2."
+        },
+        {
+          "responder_id": "sam",
+          "name": "Sam",
+          "role": "Security Engineer",
+          "skills": [
+            "security",
+            "auth",
+            "secrets"
+          ],
+          "available": true,
+          "workload": 0,
+          "score": 0.0,
+          "selected": false,
+          "reason": "No security, auth signals in the evidence; stays on standby."
+        },
+        {
+          "responder_id": "jordan",
+          "name": "Jordan",
+          "role": "Customer Support",
+          "skills": [
+            "customer-comms",
+            "status-page"
+          ],
+          "available": true,
+          "workload": 1,
+          "score": 8.0,
+          "selected": true,
+          "reason": "Matches customer-comms; current workload 1."
+        }
+      ],
+      "briefings": {
+        "engineering": "payments-api: pool 2/2 in use, 12 waiting (needs 14); p95 3118ms; 1029 timeouts/min. Evidence: db.pool.max_size changed 20 -> 2 by deploy-bot (PR #4812) 3 min before the alert.",
+        "support": "Card payments are failing for about 86% of customers (1029/min). Post a status-page notice; no customer action is needed.",
+        "commander": "SEV-1 declared. AI diagnosis, then sandboxed repair; you approve before anything touches production. Suspect: db.pool.max_size changed 20 -> 2 by deploy-bot (PR #4812) 3 min before the alert.",
+        "leadership": "Checkout is down for 86% of payments (1029 failed payments/min). Team engaged; fix will be tested before release."
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 4,
+    "t": 3000,
+    "job_id": "j_4d41c0de",
+    "type": "incident_status",
+    "data": {
+      "status": "investigating",
+      "service": "payments-api",
+      "severity": "SEV-1",
+      "headline": "AI market diagnosing the outage",
+      "telemetry": {
+        "db_pool_size": 2,
+        "db_pool_in_use": 2,
+        "db_waiting": 12,
+        "p95_latency_ms": 3118,
+        "error_rate": 0.8571,
+        "payment_success_rate": 0.1429,
+        "requests_per_min": 1200,
+        "timeouts_per_min": 1029
+      },
+      "logs": [
+        {
+          "level": "INFO",
+          "source": "config-service",
+          "message": "applied db.pool.max_size 20 -> 2 by deploy-bot (PR #4812)"
+        },
+        {
+          "level": "WARN",
+          "source": "db-pool",
+          "message": "pool exhausted: 2/2 in use, 12 waiting"
+        },
+        {
+          "level": "ERROR",
+          "source": "payments-api",
+          "message": "POST /v1/payments 500 connection not available after 3000ms"
+        },
+        {
+          "level": "ERROR",
+          "source": "payments-api",
+          "message": "1029 connection timeouts in the last minute"
+        },
+        {
+          "level": "ERROR",
+          "source": "checkout",
+          "message": "1029 payments/min failing (85.7%)"
+        }
+      ],
+      "config_changes": [
+        {
+          "key": "db.pool.max_size",
+          "old": "20",
+          "new": "2",
+          "author": "deploy-bot (PR #4812)",
+          "minutes_ago": 3
+        }
+      ]
+    }
+  },
+  {
+    "v": 1,
+    "seq": 5,
+    "t": 3500,
+    "job_id": "j_4d41c0de",
+    "type": "task_posted",
+    "data": {
+      "task_id": "t1",
+      "type": "diagnose",
+      "title": "Diagnose the Payments API outage",
+      "brief": "Find the root cause of the failing payments from the metrics, logs and config changes.",
+      "depends_on": [],
+      "index": 0,
+      "total": 3,
+      "est_input_tokens": 900
+    }
+  },
+  {
+    "v": 1,
+    "seq": 6,
+    "t": 4400,
+    "job_id": "j_4d41c0de",
+    "type": "bid",
+    "data": {
+      "task_id": "t1",
+      "agent_id": "haiku",
+      "ok": true,
+      "error": null,
+      "predicted_output_tokens": 200,
+      "est_input_tokens": 900,
+      "predicted_cost_usd": 0.0019,
+      "eta_ms": 1111,
+      "promised_quality": 8,
+      "pitch": "Quick triage: logs point at the DB layer.",
+      "reputation": 1.0,
+      "score": 7.81,
+      "usage": {
+        "model": "claude-haiku-4-5",
+        "input_tokens": 420,
+        "output_tokens": 50,
+        "cost_usd": 0.00067,
+        "duration_ms": 900
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 7,
+    "t": 5000,
+    "job_id": "j_4d41c0de",
+    "type": "bid",
+    "data": {
+      "task_id": "t1",
+      "agent_id": "sonnet",
+      "ok": true,
+      "error": null,
+      "predicted_output_tokens": 250,
+      "est_input_tokens": 900,
+      "predicted_cost_usd": 0.0043,
+      "eta_ms": 2778,
+      "promised_quality": 9,
+      "pitch": "Correlate the config change with the errors.",
+      "reputation": 1.0,
+      "score": 8.57,
+      "usage": {
+        "model": "claude-sonnet-5",
+        "input_tokens": 420,
+        "output_tokens": 120,
+        "cost_usd": 0.00204,
+        "duration_ms": 1500
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 8,
+    "t": 5600,
+    "job_id": "j_4d41c0de",
+    "type": "bid",
+    "data": {
+      "task_id": "t1",
+      "agent_id": "opus",
+      "ok": true,
+      "error": null,
+      "predicted_output_tokens": 300,
+      "est_input_tokens": 900,
+      "predicted_cost_usd": 0.012,
+      "eta_ms": 5455,
+      "promised_quality": 10,
+      "pitch": "Full root-cause analysis with evidence.",
+      "reputation": 1.0,
+      "score": 8.8,
+      "usage": {
+        "model": "claude-opus-5",
+        "input_tokens": 420,
+        "output_tokens": 160,
+        "cost_usd": 0.0061,
+        "duration_ms": 2100
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 9,
+    "t": 5650,
+    "job_id": "j_4d41c0de",
+    "type": "won",
+    "data": {
+      "task_id": "t1",
+      "agent_id": "opus",
+      "mode": "auction",
+      "score": 8.8,
+      "runner_up_agent_id": "sonnet",
+      "runner_up_score": 8.57,
+      "scores": {
+        "haiku": 7.81,
+        "sonnet": 8.57,
+        "opus": 8.8
+      },
+      "price_weight": 1.0
+    }
+  },
+  {
+    "v": 1,
+    "seq": 10,
+    "t": 5660,
+    "job_id": "j_4d41c0de",
+    "type": "stats",
+    "data": {
+      "total_cost_usd": 0.00881,
+      "input_tokens": 1260,
+      "output_tokens": 330,
+      "calls": 3,
+      "by_purpose": {
+        "split": {
+          "cost_usd": 0.0,
+          "calls": 0
+        },
+        "bid": {
+          "cost_usd": 0.00881,
+          "calls": 3
+        },
+        "work": {
+          "cost_usd": 0.0,
+          "calls": 0
+        },
+        "review": {
+          "cost_usd": 0.0,
+          "calls": 0
+        }
+      },
+      "by_agent": {
+        "haiku": {
+          "cost_usd": 0.00067,
+          "input_tokens": 420,
+          "output_tokens": 50,
+          "calls": 1,
+          "tasks_won": 0
+        },
+        "sonnet": {
+          "cost_usd": 0.00204,
+          "input_tokens": 420,
+          "output_tokens": 120,
+          "calls": 1,
+          "tasks_won": 0
+        },
+        "opus": {
+          "cost_usd": 0.0061,
+          "input_tokens": 420,
+          "output_tokens": 160,
+          "calls": 1,
+          "tasks_won": 1
+        }
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 11,
+    "t": 5700,
+    "job_id": "j_4d41c0de",
+    "type": "working",
+    "data": {
+      "task_id": "t1",
+      "agent_id": "opus"
+    }
+  },
+  {
+    "v": 1,
+    "seq": 12,
+    "t": 10900,
+    "job_id": "j_4d41c0de",
+    "type": "done",
+    "data": {
+      "task_id": "t1",
+      "agent_id": "opus",
+      "output": "Root cause: config change db.pool.max_size 20 -> 2 (deploy-bot, PR #4812) starved the Payments API of database connections. Evidence: pool exhaustion warnings and 3000ms connection-acquire timeouts begin right after the change; the database itself is healthy. Confidence: high.",
+      "predicted_output_tokens": 300,
+      "predicted_cost_usd": 0.012,
+      "usage": {
+        "model": "claude-opus-5",
+        "input_tokens": 980,
+        "output_tokens": 340,
+        "cost_usd": 0.0134,
+        "duration_ms": 5200
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 13,
+    "t": 12700,
+    "job_id": "j_4d41c0de",
+    "type": "graded",
+    "data": {
+      "task_id": "t1",
+      "agent_id": "opus",
+      "grade": 9,
+      "promised_quality": 10,
+      "rationale": "Correct root cause tied to the config change and backed by the pool and timeout evidence.",
+      "usage": {
+        "model": "claude-sonnet-5",
+        "input_tokens": 1100,
+        "output_tokens": 90,
+        "cost_usd": 0.0031,
+        "duration_ms": 1800
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 14,
+    "t": 12710,
+    "job_id": "j_4d41c0de",
+    "type": "rep_update",
+    "data": {
+      "task_id": "t1",
+      "agent_id": "opus",
+      "task_type": "diagnose",
+      "old": 1.0,
+      "new": 0.97,
+      "ratio": 0.9
+    }
+  },
+  {
+    "v": 1,
+    "seq": 15,
+    "t": 12720,
+    "job_id": "j_4d41c0de",
+    "type": "stats",
+    "data": {
+      "total_cost_usd": 0.02531,
+      "input_tokens": 3340,
+      "output_tokens": 760,
+      "calls": 5,
+      "by_purpose": {
+        "split": {
+          "cost_usd": 0.0,
+          "calls": 0
+        },
+        "bid": {
+          "cost_usd": 0.00881,
+          "calls": 3
+        },
+        "work": {
+          "cost_usd": 0.0134,
+          "calls": 1
+        },
+        "review": {
+          "cost_usd": 0.0031,
+          "calls": 1
+        }
+      },
+      "by_agent": {
+        "haiku": {
+          "cost_usd": 0.00067,
+          "input_tokens": 420,
+          "output_tokens": 50,
+          "calls": 1,
+          "tasks_won": 0
+        },
+        "sonnet": {
+          "cost_usd": 0.00204,
+          "input_tokens": 420,
+          "output_tokens": 120,
+          "calls": 1,
+          "tasks_won": 0
+        },
+        "opus": {
+          "cost_usd": 0.0195,
+          "input_tokens": 1400,
+          "output_tokens": 500,
+          "calls": 2,
+          "tasks_won": 1
+        }
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 16,
+    "t": 12800,
+    "job_id": "j_4d41c0de",
+    "type": "incident_status",
+    "data": {
+      "status": "repairing",
+      "service": "payments-api",
+      "severity": "SEV-1",
+      "headline": "Remediation bids open; repairs run in a sandbox first",
+      "telemetry": {
+        "db_pool_size": 2,
+        "db_pool_in_use": 2,
+        "db_waiting": 12,
+        "p95_latency_ms": 3118,
+        "error_rate": 0.8571,
+        "payment_success_rate": 0.1429,
+        "requests_per_min": 1200,
+        "timeouts_per_min": 1029
+      },
+      "logs": [
+        {
+          "level": "INFO",
+          "source": "config-service",
+          "message": "applied db.pool.max_size 20 -> 2 by deploy-bot (PR #4812)"
+        },
+        {
+          "level": "WARN",
+          "source": "db-pool",
+          "message": "pool exhausted: 2/2 in use, 12 waiting"
+        },
+        {
+          "level": "ERROR",
+          "source": "payments-api",
+          "message": "POST /v1/payments 500 connection not available after 3000ms"
+        },
+        {
+          "level": "ERROR",
+          "source": "payments-api",
+          "message": "1029 connection timeouts in the last minute"
+        },
+        {
+          "level": "ERROR",
+          "source": "checkout",
+          "message": "1029 payments/min failing (85.7%)"
+        }
+      ],
+      "config_changes": [
+        {
+          "key": "db.pool.max_size",
+          "old": "20",
+          "new": "2",
+          "author": "deploy-bot (PR #4812)",
+          "minutes_ago": 3
+        }
+      ]
+    }
+  },
+  {
+    "v": 1,
+    "seq": 17,
+    "t": 13300,
+    "job_id": "j_4d41c0de",
+    "type": "task_posted",
+    "data": {
+      "task_id": "t2",
+      "type": "remediate",
+      "title": "Repair attempt 1",
+      "brief": "Propose one allowlisted remediation for the diagnosed root cause. Previous failed attempts: none",
+      "depends_on": [
+        "t1"
+      ],
+      "index": 1,
+      "total": 3,
+      "est_input_tokens": 1000
+    }
+  },
+  {
+    "v": 1,
+    "seq": 18,
+    "t": 14100,
+    "job_id": "j_4d41c0de",
+    "type": "bid",
+    "data": {
+      "task_id": "t2",
+      "agent_id": "haiku",
+      "ok": true,
+      "error": null,
+      "predicted_output_tokens": 60,
+      "est_input_tokens": 1000,
+      "predicted_cost_usd": 0.0013,
+      "eta_ms": 333,
+      "promised_quality": 9,
+      "pitch": "Restart clears stuck connections. Cheapest fix.",
+      "reputation": 1.0,
+      "score": 8.87,
+      "usage": {
+        "model": "claude-haiku-4-5",
+        "input_tokens": 450,
+        "output_tokens": 45,
+        "cost_usd": 0.000675,
+        "duration_ms": 800
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 19,
+    "t": 14700,
+    "job_id": "j_4d41c0de",
+    "type": "bid",
+    "data": {
+      "task_id": "t2",
+      "agent_id": "sonnet",
+      "ok": true,
+      "error": null,
+      "predicted_output_tokens": 80,
+      "est_input_tokens": 1000,
+      "predicted_cost_usd": 0.0028,
+      "eta_ms": 889,
+      "promised_quality": 9,
+      "pitch": "Targeted config fix for the pool.",
+      "reputation": 1.0,
+      "score": 8.72,
+      "usage": {
+        "model": "claude-sonnet-5",
+        "input_tokens": 450,
+        "output_tokens": 110,
+        "cost_usd": 0.002,
+        "duration_ms": 1400
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 20,
+    "t": 15300,
+    "job_id": "j_4d41c0de",
+    "type": "bid",
+    "data": {
+      "task_id": "t2",
+      "agent_id": "opus",
+      "ok": true,
+      "error": null,
+      "predicted_output_tokens": 80,
+      "est_input_tokens": 1000,
+      "predicted_cost_usd": 0.007,
+      "eta_ms": 1455,
+      "promised_quality": 9,
+      "pitch": "Minimal, reversible pool correction.",
+      "reputation": 1.0,
+      "score": 8.3,
+      "usage": {
+        "model": "claude-opus-5",
+        "input_tokens": 450,
+        "output_tokens": 150,
+        "cost_usd": 0.006,
+        "duration_ms": 2000
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 21,
+    "t": 15350,
+    "job_id": "j_4d41c0de",
+    "type": "won",
+    "data": {
+      "task_id": "t2",
+      "agent_id": "haiku",
+      "mode": "auction",
+      "score": 8.87,
+      "runner_up_agent_id": "sonnet",
+      "runner_up_score": 8.72,
+      "scores": {
+        "haiku": 8.87,
+        "sonnet": 8.72,
+        "opus": 8.3
+      },
+      "price_weight": 1.0
+    }
+  },
+  {
+    "v": 1,
+    "seq": 22,
+    "t": 15360,
+    "job_id": "j_4d41c0de",
+    "type": "stats",
+    "data": {
+      "total_cost_usd": 0.033985,
+      "input_tokens": 4690,
+      "output_tokens": 1065,
+      "calls": 8,
+      "by_purpose": {
+        "split": {
+          "cost_usd": 0.0,
+          "calls": 0
+        },
+        "bid": {
+          "cost_usd": 0.017485,
+          "calls": 6
+        },
+        "work": {
+          "cost_usd": 0.0134,
+          "calls": 1
+        },
+        "review": {
+          "cost_usd": 0.0031,
+          "calls": 1
+        }
+      },
+      "by_agent": {
+        "haiku": {
+          "cost_usd": 0.001345,
+          "input_tokens": 870,
+          "output_tokens": 95,
+          "calls": 2,
+          "tasks_won": 1
+        },
+        "sonnet": {
+          "cost_usd": 0.00404,
+          "input_tokens": 870,
+          "output_tokens": 230,
+          "calls": 2,
+          "tasks_won": 0
+        },
+        "opus": {
+          "cost_usd": 0.0255,
+          "input_tokens": 1850,
+          "output_tokens": 650,
+          "calls": 3,
+          "tasks_won": 1
+        }
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 23,
+    "t": 15400,
+    "job_id": "j_4d41c0de",
+    "type": "working",
+    "data": {
+      "task_id": "t2",
+      "agent_id": "haiku"
+    }
+  },
+  {
+    "v": 1,
+    "seq": 24,
+    "t": 16900,
+    "job_id": "j_4d41c0de",
+    "type": "done",
+    "data": {
+      "task_id": "t2",
+      "agent_id": "haiku",
+      "output": "{\"action\": \"restart_service\"}",
+      "predicted_output_tokens": 60,
+      "predicted_cost_usd": 0.0013,
+      "usage": {
+        "model": "claude-haiku-4-5",
+        "input_tokens": 1060,
+        "output_tokens": 90,
+        "cost_usd": 0.00151,
+        "duration_ms": 1500
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 25,
+    "t": 17100,
+    "job_id": "j_4d41c0de",
+    "type": "remediation_proposed",
+    "data": {
+      "task_id": "t2",
+      "agent_id": "haiku",
+      "attempt": 1,
+      "raw": "{\"action\": \"restart_service\"}",
+      "valid": true,
+      "action": {
+        "action": "restart_service",
+        "value": null
+      },
+      "rejection": null
+    }
+  },
+  {
+    "v": 1,
+    "seq": 26,
+    "t": 19300,
+    "job_id": "j_4d41c0de",
+    "type": "sandbox_result",
+    "data": {
+      "task_id": "t2",
+      "agent_id": "haiku",
+      "attempt": 1,
+      "action": {
+        "action": "restart_service",
+        "value": null
+      },
+      "passed": false,
+      "checks": [
+        {
+          "name": "db_pool_capacity",
+          "passed": false,
+          "detail": "2 connections for 14 concurrent requests"
+        },
+        {
+          "name": "p95_latency",
+          "passed": false,
+          "detail": "p95 3118ms (limit 300ms)"
+        },
+        {
+          "name": "error_rate",
+          "passed": false,
+          "detail": "85.7% errors (limit 1%)"
+        },
+        {
+          "name": "payment_success",
+          "passed": false,
+          "detail": "14.3% payments succeed (floor 99%)"
+        },
+        {
+          "name": "connection_timeouts",
+          "passed": false,
+          "detail": "1029 timeouts/min"
+        }
+      ],
+      "telemetry": {
+        "db_pool_size": 2,
+        "db_pool_in_use": 2,
+        "db_waiting": 12,
+        "p95_latency_ms": 3118,
+        "error_rate": 0.8571,
+        "payment_success_rate": 0.1429,
+        "requests_per_min": 1200,
+        "timeouts_per_min": 1029
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 27,
+    "t": 19500,
+    "job_id": "j_4d41c0de",
+    "type": "graded",
+    "data": {
+      "task_id": "t2",
+      "agent_id": "haiku",
+      "grade": 1,
+      "promised_quality": 9,
+      "rationale": "Sandbox: 0/5 checks passed",
+      "usage": {
+        "model": "deterministic-checks",
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cost_usd": 0.0,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 28,
+    "t": 19510,
+    "job_id": "j_4d41c0de",
+    "type": "rep_update",
+    "data": {
+      "task_id": "t2",
+      "agent_id": "haiku",
+      "task_type": "remediate",
+      "old": 1.0,
+      "new": 0.7333,
+      "ratio": 0.1111
+    }
+  },
+  {
+    "v": 1,
+    "seq": 29,
+    "t": 19520,
+    "job_id": "j_4d41c0de",
+    "type": "stats",
+    "data": {
+      "total_cost_usd": 0.035495,
+      "input_tokens": 5750,
+      "output_tokens": 1155,
+      "calls": 9,
+      "by_purpose": {
+        "split": {
+          "cost_usd": 0.0,
+          "calls": 0
+        },
+        "bid": {
+          "cost_usd": 0.017485,
+          "calls": 6
+        },
+        "work": {
+          "cost_usd": 0.01491,
+          "calls": 2
+        },
+        "review": {
+          "cost_usd": 0.0031,
+          "calls": 1
+        }
+      },
+      "by_agent": {
+        "haiku": {
+          "cost_usd": 0.002855,
+          "input_tokens": 1930,
+          "output_tokens": 185,
+          "calls": 3,
+          "tasks_won": 1
+        },
+        "sonnet": {
+          "cost_usd": 0.00404,
+          "input_tokens": 870,
+          "output_tokens": 230,
+          "calls": 2,
+          "tasks_won": 0
+        },
+        "opus": {
+          "cost_usd": 0.0255,
+          "input_tokens": 1850,
+          "output_tokens": 650,
+          "calls": 3,
+          "tasks_won": 1
+        }
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 30,
+    "t": 19600,
+    "job_id": "j_4d41c0de",
+    "type": "task_posted",
+    "data": {
+      "task_id": "t3",
+      "type": "remediate",
+      "title": "Repair attempt 2",
+      "brief": "Propose one allowlisted remediation for the diagnosed root cause. Previous failed attempts: restart_service (sandbox failed: db_pool_capacity, p95_latency, error_rate, payment_success, connection_timeouts)",
+      "depends_on": [
+        "t1"
+      ],
+      "index": 2,
+      "total": 4,
+      "est_input_tokens": 1100
+    }
+  },
+  {
+    "v": 1,
+    "seq": 31,
+    "t": 20400,
+    "job_id": "j_4d41c0de",
+    "type": "bid",
+    "data": {
+      "task_id": "t3",
+      "agent_id": "haiku",
+      "ok": true,
+      "error": null,
+      "predicted_output_tokens": 60,
+      "est_input_tokens": 1100,
+      "predicted_cost_usd": 0.0014,
+      "eta_ms": 333,
+      "promised_quality": 9,
+      "pitch": "Try again: restart plus warm-up.",
+      "reputation": 0.7333,
+      "score": 6.46,
+      "usage": {
+        "model": "claude-haiku-4-5",
+        "input_tokens": 470,
+        "output_tokens": 45,
+        "cost_usd": 0.000695,
+        "duration_ms": 800
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 32,
+    "t": 21000,
+    "job_id": "j_4d41c0de",
+    "type": "bid",
+    "data": {
+      "task_id": "t3",
+      "agent_id": "sonnet",
+      "ok": true,
+      "error": null,
+      "predicted_output_tokens": 80,
+      "est_input_tokens": 1100,
+      "predicted_cost_usd": 0.003,
+      "eta_ms": 889,
+      "promised_quality": 9,
+      "pitch": "Restore the pool size the service needs.",
+      "reputation": 1.0,
+      "score": 8.7,
+      "usage": {
+        "model": "claude-sonnet-5",
+        "input_tokens": 470,
+        "output_tokens": 110,
+        "cost_usd": 0.00204,
+        "duration_ms": 1400
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 33,
+    "t": 21600,
+    "job_id": "j_4d41c0de",
+    "type": "bid",
+    "data": {
+      "task_id": "t3",
+      "agent_id": "opus",
+      "ok": true,
+      "error": null,
+      "predicted_output_tokens": 90,
+      "est_input_tokens": 1100,
+      "predicted_cost_usd": 0.00775,
+      "eta_ms": 1636,
+      "promised_quality": 9,
+      "pitch": "Set the pool back to its known-good size.",
+      "reputation": 1.0,
+      "score": 8.225,
+      "usage": {
+        "model": "claude-opus-5",
+        "input_tokens": 470,
+        "output_tokens": 150,
+        "cost_usd": 0.0061,
+        "duration_ms": 2000
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 34,
+    "t": 21650,
+    "job_id": "j_4d41c0de",
+    "type": "won",
+    "data": {
+      "task_id": "t3",
+      "agent_id": "sonnet",
+      "mode": "auction",
+      "score": 8.7,
+      "runner_up_agent_id": "opus",
+      "runner_up_score": 8.225,
+      "scores": {
+        "haiku": 6.46,
+        "sonnet": 8.7,
+        "opus": 8.225
+      },
+      "price_weight": 1.0
+    }
+  },
+  {
+    "v": 1,
+    "seq": 35,
+    "t": 21660,
+    "job_id": "j_4d41c0de",
+    "type": "stats",
+    "data": {
+      "total_cost_usd": 0.04433,
+      "input_tokens": 7160,
+      "output_tokens": 1460,
+      "calls": 12,
+      "by_purpose": {
+        "split": {
+          "cost_usd": 0.0,
+          "calls": 0
+        },
+        "bid": {
+          "cost_usd": 0.02632,
+          "calls": 9
+        },
+        "work": {
+          "cost_usd": 0.01491,
+          "calls": 2
+        },
+        "review": {
+          "cost_usd": 0.0031,
+          "calls": 1
+        }
+      },
+      "by_agent": {
+        "haiku": {
+          "cost_usd": 0.00355,
+          "input_tokens": 2400,
+          "output_tokens": 230,
+          "calls": 4,
+          "tasks_won": 1
+        },
+        "sonnet": {
+          "cost_usd": 0.00608,
+          "input_tokens": 1340,
+          "output_tokens": 340,
+          "calls": 3,
+          "tasks_won": 1
+        },
+        "opus": {
+          "cost_usd": 0.0316,
+          "input_tokens": 2320,
+          "output_tokens": 800,
+          "calls": 4,
+          "tasks_won": 1
+        }
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 36,
+    "t": 21700,
+    "job_id": "j_4d41c0de",
+    "type": "working",
+    "data": {
+      "task_id": "t3",
+      "agent_id": "sonnet"
+    }
+  },
+  {
+    "v": 1,
+    "seq": 37,
+    "t": 23600,
+    "job_id": "j_4d41c0de",
+    "type": "done",
+    "data": {
+      "task_id": "t3",
+      "agent_id": "sonnet",
+      "output": "{\"action\": \"set_db_pool_size\", \"value\": 20}",
+      "predicted_output_tokens": 80,
+      "predicted_cost_usd": 0.003,
+      "usage": {
+        "model": "claude-sonnet-5",
+        "input_tokens": 1160,
+        "output_tokens": 110,
+        "cost_usd": 0.00342,
+        "duration_ms": 1900
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 38,
+    "t": 23800,
+    "job_id": "j_4d41c0de",
+    "type": "remediation_proposed",
+    "data": {
+      "task_id": "t3",
+      "agent_id": "sonnet",
+      "attempt": 2,
+      "raw": "{\"action\": \"set_db_pool_size\", \"value\": 20}",
+      "valid": true,
+      "action": {
+        "action": "set_db_pool_size",
+        "value": 20
+      },
+      "rejection": null
+    }
+  },
+  {
+    "v": 1,
+    "seq": 39,
+    "t": 26000,
+    "job_id": "j_4d41c0de",
+    "type": "sandbox_result",
+    "data": {
+      "task_id": "t3",
+      "agent_id": "sonnet",
+      "attempt": 2,
+      "action": {
+        "action": "set_db_pool_size",
+        "value": 20
+      },
+      "passed": true,
+      "checks": [
+        {
+          "name": "db_pool_capacity",
+          "passed": true,
+          "detail": "20 connections for 14 concurrent requests"
+        },
+        {
+          "name": "p95_latency",
+          "passed": true,
+          "detail": "p95 146ms (limit 300ms)"
+        },
+        {
+          "name": "error_rate",
+          "passed": true,
+          "detail": "0.2% errors (limit 1%)"
+        },
+        {
+          "name": "payment_success",
+          "passed": true,
+          "detail": "99.8% payments succeed (floor 99%)"
+        },
+        {
+          "name": "connection_timeouts",
+          "passed": true,
+          "detail": "0 timeouts/min"
+        }
+      ],
+      "telemetry": {
+        "db_pool_size": 20,
+        "db_pool_in_use": 14,
+        "db_waiting": 0,
+        "p95_latency_ms": 146,
+        "error_rate": 0.002,
+        "payment_success_rate": 0.998,
+        "requests_per_min": 1200,
+        "timeouts_per_min": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 40,
+    "t": 26200,
+    "job_id": "j_4d41c0de",
+    "type": "graded",
+    "data": {
+      "task_id": "t3",
+      "agent_id": "sonnet",
+      "grade": 10,
+      "promised_quality": 9,
+      "rationale": "Sandbox: 5/5 checks passed",
+      "usage": {
+        "model": "deterministic-checks",
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cost_usd": 0.0,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 41,
+    "t": 26210,
+    "job_id": "j_4d41c0de",
+    "type": "rep_update",
+    "data": {
+      "task_id": "t3",
+      "agent_id": "sonnet",
+      "task_type": "remediate",
+      "old": 1.0,
+      "new": 1.0333,
+      "ratio": 1.1111
+    }
+  },
+  {
+    "v": 1,
+    "seq": 42,
+    "t": 26220,
+    "job_id": "j_4d41c0de",
+    "type": "stats",
+    "data": {
+      "total_cost_usd": 0.04775,
+      "input_tokens": 8320,
+      "output_tokens": 1570,
+      "calls": 13,
+      "by_purpose": {
+        "split": {
+          "cost_usd": 0.0,
+          "calls": 0
+        },
+        "bid": {
+          "cost_usd": 0.02632,
+          "calls": 9
+        },
+        "work": {
+          "cost_usd": 0.01833,
+          "calls": 3
+        },
+        "review": {
+          "cost_usd": 0.0031,
+          "calls": 1
+        }
+      },
+      "by_agent": {
+        "haiku": {
+          "cost_usd": 0.00355,
+          "input_tokens": 2400,
+          "output_tokens": 230,
+          "calls": 4,
+          "tasks_won": 1
+        },
+        "sonnet": {
+          "cost_usd": 0.0095,
+          "input_tokens": 2500,
+          "output_tokens": 450,
+          "calls": 4,
+          "tasks_won": 1
+        },
+        "opus": {
+          "cost_usd": 0.0316,
+          "input_tokens": 2320,
+          "output_tokens": 800,
+          "calls": 4,
+          "tasks_won": 1
+        }
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 43,
+    "t": 26300,
+    "job_id": "j_4d41c0de",
+    "type": "incident_status",
+    "data": {
+      "status": "awaiting_approval",
+      "service": "payments-api",
+      "severity": "SEV-1",
+      "headline": "set_db_pool_size(20) passed the sandbox; awaiting human approval",
+      "telemetry": {
+        "db_pool_size": 2,
+        "db_pool_in_use": 2,
+        "db_waiting": 12,
+        "p95_latency_ms": 3118,
+        "error_rate": 0.8571,
+        "payment_success_rate": 0.1429,
+        "requests_per_min": 1200,
+        "timeouts_per_min": 1029
+      },
+      "logs": [
+        {
+          "level": "INFO",
+          "source": "config-service",
+          "message": "applied db.pool.max_size 20 -> 2 by deploy-bot (PR #4812)"
+        },
+        {
+          "level": "WARN",
+          "source": "db-pool",
+          "message": "pool exhausted: 2/2 in use, 12 waiting"
+        },
+        {
+          "level": "ERROR",
+          "source": "payments-api",
+          "message": "POST /v1/payments 500 connection not available after 3000ms"
+        },
+        {
+          "level": "ERROR",
+          "source": "payments-api",
+          "message": "1029 connection timeouts in the last minute"
+        },
+        {
+          "level": "ERROR",
+          "source": "checkout",
+          "message": "1029 payments/min failing (85.7%)"
+        }
+      ],
+      "config_changes": [
+        {
+          "key": "db.pool.max_size",
+          "old": "20",
+          "new": "2",
+          "author": "deploy-bot (PR #4812)",
+          "minutes_ago": 3
+        }
+      ]
+    }
+  },
+  {
+    "v": 1,
+    "seq": 44,
+    "t": 26310,
+    "job_id": "j_4d41c0de",
+    "type": "approval_required",
+    "data": {
+      "task_id": "t3",
+      "agent_id": "sonnet",
+      "attempt": 2,
+      "action": {
+        "action": "set_db_pool_size",
+        "value": 20
+      },
+      "summary": "set_db_pool_size(20) passed all sandbox checks after 1 rejected attempt. Deploy to production?",
+      "approvers": [
+        "Zak"
+      ]
+    }
+  },
+  {
+    "v": 1,
+    "seq": 45,
+    "t": 32300,
+    "job_id": "j_4d41c0de",
+    "type": "incident_status",
+    "data": {
+      "status": "recovering",
+      "service": "payments-api",
+      "severity": "SEV-1",
+      "headline": "Zak approved set_db_pool_size(20); verifying production",
+      "telemetry": {
+        "db_pool_size": 20,
+        "db_pool_in_use": 14,
+        "db_waiting": 0,
+        "p95_latency_ms": 146,
+        "error_rate": 0.002,
+        "payment_success_rate": 0.998,
+        "requests_per_min": 1200,
+        "timeouts_per_min": 0
+      },
+      "logs": [
+        {
+          "level": "INFO",
+          "source": "payments-api",
+          "message": "POST /v1/payments 200 p95=146ms"
+        },
+        {
+          "level": "INFO",
+          "source": "db-pool",
+          "message": "14/20 connections in use"
+        },
+        {
+          "level": "INFO",
+          "source": "checkout",
+          "message": "99.8% payments succeeding"
+        }
+      ],
+      "config_changes": [
+        {
+          "key": "db.pool.max_size",
+          "old": "20",
+          "new": "2",
+          "author": "deploy-bot (PR #4812)",
+          "minutes_ago": 3
+        },
+        {
+          "key": "db.pool.max_size",
+          "old": "2",
+          "new": "20",
+          "author": "mayday-remediation",
+          "minutes_ago": 0
+        }
+      ]
+    }
+  },
+  {
+    "v": 1,
+    "seq": 46,
+    "t": 32800,
+    "job_id": "j_4d41c0de",
+    "type": "task_posted",
+    "data": {
+      "task_id": "t4",
+      "type": "verify",
+      "title": "Verify production recovery",
+      "brief": "Confirm the Payments API is healthy after the approved repair.",
+      "depends_on": [
+        "t3"
+      ],
+      "index": 3,
+      "total": 4,
+      "est_input_tokens": 700
+    }
+  },
+  {
+    "v": 1,
+    "seq": 47,
+    "t": 33600,
+    "job_id": "j_4d41c0de",
+    "type": "bid",
+    "data": {
+      "task_id": "t4",
+      "agent_id": "haiku",
+      "ok": true,
+      "error": null,
+      "predicted_output_tokens": 120,
+      "est_input_tokens": 700,
+      "predicted_cost_usd": 0.0013,
+      "eta_ms": 667,
+      "promised_quality": 9,
+      "pitch": "Fast post-deploy health sweep.",
+      "reputation": 1.0,
+      "score": 8.87,
+      "usage": {
+        "model": "claude-haiku-4-5",
+        "input_tokens": 400,
+        "output_tokens": 45,
+        "cost_usd": 0.000625,
+        "duration_ms": 800
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 48,
+    "t": 34200,
+    "job_id": "j_4d41c0de",
+    "type": "bid",
+    "data": {
+      "task_id": "t4",
+      "agent_id": "sonnet",
+      "ok": true,
+      "error": null,
+      "predicted_output_tokens": 150,
+      "est_input_tokens": 700,
+      "predicted_cost_usd": 0.0029,
+      "eta_ms": 1667,
+      "promised_quality": 9,
+      "pitch": "Checks every SLO before sign-off.",
+      "reputation": 1.0,
+      "score": 8.71,
+      "usage": {
+        "model": "claude-sonnet-5",
+        "input_tokens": 400,
+        "output_tokens": 110,
+        "cost_usd": 0.0019,
+        "duration_ms": 1400
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 49,
+    "t": 34800,
+    "job_id": "j_4d41c0de",
+    "type": "bid",
+    "data": {
+      "task_id": "t4",
+      "agent_id": "opus",
+      "ok": true,
+      "error": null,
+      "predicted_output_tokens": 150,
+      "est_input_tokens": 700,
+      "predicted_cost_usd": 0.00725,
+      "eta_ms": 2727,
+      "promised_quality": 9,
+      "pitch": "Thorough verification of recovery.",
+      "reputation": 1.0,
+      "score": 8.275,
+      "usage": {
+        "model": "claude-opus-5",
+        "input_tokens": 400,
+        "output_tokens": 150,
+        "cost_usd": 0.00575,
+        "duration_ms": 2000
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 50,
+    "t": 34850,
+    "job_id": "j_4d41c0de",
+    "type": "won",
+    "data": {
+      "task_id": "t4",
+      "agent_id": "haiku",
+      "mode": "auction",
+      "score": 8.87,
+      "runner_up_agent_id": "sonnet",
+      "runner_up_score": 8.71,
+      "scores": {
+        "haiku": 8.87,
+        "sonnet": 8.71,
+        "opus": 8.275
+      },
+      "price_weight": 1.0
+    }
+  },
+  {
+    "v": 1,
+    "seq": 51,
+    "t": 34860,
+    "job_id": "j_4d41c0de",
+    "type": "stats",
+    "data": {
+      "total_cost_usd": 0.056025,
+      "input_tokens": 9520,
+      "output_tokens": 1875,
+      "calls": 16,
+      "by_purpose": {
+        "split": {
+          "cost_usd": 0.0,
+          "calls": 0
+        },
+        "bid": {
+          "cost_usd": 0.034595,
+          "calls": 12
+        },
+        "work": {
+          "cost_usd": 0.01833,
+          "calls": 3
+        },
+        "review": {
+          "cost_usd": 0.0031,
+          "calls": 1
+        }
+      },
+      "by_agent": {
+        "haiku": {
+          "cost_usd": 0.004175,
+          "input_tokens": 2800,
+          "output_tokens": 275,
+          "calls": 5,
+          "tasks_won": 2
+        },
+        "sonnet": {
+          "cost_usd": 0.0114,
+          "input_tokens": 2900,
+          "output_tokens": 560,
+          "calls": 5,
+          "tasks_won": 1
+        },
+        "opus": {
+          "cost_usd": 0.03735,
+          "input_tokens": 2720,
+          "output_tokens": 950,
+          "calls": 5,
+          "tasks_won": 1
+        }
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 52,
+    "t": 34900,
+    "job_id": "j_4d41c0de",
+    "type": "working",
+    "data": {
+      "task_id": "t4",
+      "agent_id": "haiku"
+    }
+  },
+  {
+    "v": 1,
+    "seq": 53,
+    "t": 37500,
+    "job_id": "j_4d41c0de",
+    "type": "done",
+    "data": {
+      "task_id": "t4",
+      "agent_id": "haiku",
+      "output": "Verified: all production health checks pass after the approved repair. Payments succeed and p95 latency is back to baseline.",
+      "predicted_output_tokens": 120,
+      "predicted_cost_usd": 0.0013,
+      "usage": {
+        "model": "claude-haiku-4-5",
+        "input_tokens": 760,
+        "output_tokens": 260,
+        "cost_usd": 0.00206,
+        "duration_ms": 2600
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 54,
+    "t": 38300,
+    "job_id": "j_4d41c0de",
+    "type": "graded",
+    "data": {
+      "task_id": "t4",
+      "agent_id": "haiku",
+      "grade": 10,
+      "promised_quality": 9,
+      "rationale": "Production: 5/5 health checks passed",
+      "usage": {
+        "model": "deterministic-checks",
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cost_usd": 0.0,
+        "duration_ms": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 55,
+    "t": 38310,
+    "job_id": "j_4d41c0de",
+    "type": "rep_update",
+    "data": {
+      "task_id": "t4",
+      "agent_id": "haiku",
+      "task_type": "verify",
+      "old": 1.0,
+      "new": 1.0333,
+      "ratio": 1.1111
+    }
+  },
+  {
+    "v": 1,
+    "seq": 56,
+    "t": 38320,
+    "job_id": "j_4d41c0de",
+    "type": "stats",
+    "data": {
+      "total_cost_usd": 0.058085,
+      "input_tokens": 10280,
+      "output_tokens": 2135,
+      "calls": 17,
+      "by_purpose": {
+        "split": {
+          "cost_usd": 0.0,
+          "calls": 0
+        },
+        "bid": {
+          "cost_usd": 0.034595,
+          "calls": 12
+        },
+        "work": {
+          "cost_usd": 0.02039,
+          "calls": 4
+        },
+        "review": {
+          "cost_usd": 0.0031,
+          "calls": 1
+        }
+      },
+      "by_agent": {
+        "haiku": {
+          "cost_usd": 0.006235,
+          "input_tokens": 3560,
+          "output_tokens": 535,
+          "calls": 6,
+          "tasks_won": 2
+        },
+        "sonnet": {
+          "cost_usd": 0.0114,
+          "input_tokens": 2900,
+          "output_tokens": 560,
+          "calls": 5,
+          "tasks_won": 1
+        },
+        "opus": {
+          "cost_usd": 0.03735,
+          "input_tokens": 2720,
+          "output_tokens": 950,
+          "calls": 5,
+          "tasks_won": 1
+        }
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 57,
+    "t": 38400,
+    "job_id": "j_4d41c0de",
+    "type": "service_restored",
+    "data": {
+      "mttr_ms": 38400,
+      "total_cost_usd": 0.058085,
+      "repair_attempts": 2,
+      "failed_attempts": 1,
+      "confidence": 0.9,
+      "mean_grade": 7.5,
+      "approved_by": "Zak",
+      "action": {
+        "action": "set_db_pool_size",
+        "value": 20
+      },
+      "grades": [
+        {
+          "task_id": "t1",
+          "type": "diagnose",
+          "agent_id": "opus",
+          "grade": 9,
+          "promised_quality": 10
+        },
+        {
+          "task_id": "t2",
+          "type": "remediate",
+          "agent_id": "haiku",
+          "grade": 1,
+          "promised_quality": 9
+        },
+        {
+          "task_id": "t3",
+          "type": "remediate",
+          "agent_id": "sonnet",
+          "grade": 10,
+          "promised_quality": 9
+        },
+        {
+          "task_id": "t4",
+          "type": "verify",
+          "agent_id": "haiku",
+          "grade": 10,
+          "promised_quality": 9
+        }
+      ],
+      "rep_changes": [
+        {
+          "task_id": "t1",
+          "agent_id": "opus",
+          "task_type": "diagnose",
+          "old": 1.0,
+          "new": 0.97
+        },
+        {
+          "task_id": "t2",
+          "agent_id": "haiku",
+          "task_type": "remediate",
+          "old": 1.0,
+          "new": 0.7333
+        },
+        {
+          "task_id": "t3",
+          "agent_id": "sonnet",
+          "task_type": "remediate",
+          "old": 1.0,
+          "new": 1.0333
+        },
+        {
+          "task_id": "t4",
+          "agent_id": "haiku",
+          "task_type": "verify",
+          "old": 1.0,
+          "new": 1.0333
+        }
+      ],
+      "verification": [
+        {
+          "name": "db_pool_capacity",
+          "passed": true,
+          "detail": "20 connections for 14 concurrent requests"
+        },
+        {
+          "name": "p95_latency",
+          "passed": true,
+          "detail": "p95 146ms (limit 300ms)"
+        },
+        {
+          "name": "error_rate",
+          "passed": true,
+          "detail": "0.2% errors (limit 1%)"
+        },
+        {
+          "name": "payment_success",
+          "passed": true,
+          "detail": "99.8% payments succeed (floor 99%)"
+        },
+        {
+          "name": "connection_timeouts",
+          "passed": true,
+          "detail": "0 timeouts/min"
+        }
+      ],
+      "telemetry": {
+        "db_pool_size": 20,
+        "db_pool_in_use": 14,
+        "db_waiting": 0,
+        "p95_latency_ms": 146,
+        "error_rate": 0.002,
+        "payment_success_rate": 0.998,
+        "requests_per_min": 1200,
+        "timeouts_per_min": 0
+      }
+    }
+  },
+  {
+    "v": 1,
+    "seq": 58,
+    "t": 38700,
+    "job_id": "j_4d41c0de",
+    "type": "incident_status",
+    "data": {
+      "status": "restored",
+      "service": "payments-api",
+      "severity": null,
+      "headline": "Payments API restored",
+      "telemetry": {
+        "db_pool_size": 20,
+        "db_pool_in_use": 14,
+        "db_waiting": 0,
+        "p95_latency_ms": 146,
+        "error_rate": 0.002,
+        "payment_success_rate": 0.998,
+        "requests_per_min": 1200,
+        "timeouts_per_min": 0
+      },
+      "logs": [
+        {
+          "level": "INFO",
+          "source": "payments-api",
+          "message": "POST /v1/payments 200 p95=146ms"
+        },
+        {
+          "level": "INFO",
+          "source": "db-pool",
+          "message": "14/20 connections in use"
+        },
+        {
+          "level": "INFO",
+          "source": "checkout",
+          "message": "99.8% payments succeeding"
+        }
+      ],
+      "config_changes": [
+        {
+          "key": "db.pool.max_size",
+          "old": "20",
+          "new": "2",
+          "author": "deploy-bot (PR #4812)",
+          "minutes_ago": 3
+        },
+        {
+          "key": "db.pool.max_size",
+          "old": "2",
+          "new": "20",
+          "author": "mayday-remediation",
+          "minutes_ago": 0
+        }
+      ]
+    }
+  },
+  {
+    "v": 1,
+    "seq": 59,
+    "t": 38900,
+    "job_id": "j_4d41c0de",
+    "type": "final",
+    "data": {
+      "status": "ok",
+      "deliverable_task_id": "t4",
+      "deliverable": "Verified: all production health checks pass after the approved repair. Payments succeed and p95 latency is back to baseline.",
+      "tasks": [
+        {
+          "task_id": "t1",
+          "type": "diagnose",
+          "agent_id": "opus",
+          "grade": 9,
+          "promised_quality": 10,
+          "cost_usd": 0.02531
+        },
+        {
+          "task_id": "t2",
+          "type": "remediate",
+          "agent_id": "haiku",
+          "grade": 1,
+          "promised_quality": 9,
+          "cost_usd": 0.010185
+        },
+        {
+          "task_id": "t3",
+          "type": "remediate",
+          "agent_id": "sonnet",
+          "grade": 10,
+          "promised_quality": 9,
+          "cost_usd": 0.012255
+        },
+        {
+          "task_id": "t4",
+          "type": "verify",
+          "agent_id": "haiku",
+          "grade": 10,
+          "promised_quality": 9,
+          "cost_usd": 0.010335
+        }
+      ],
+      "total_cost_usd": 0.058085,
+      "mean_grade": 7.5,
+      "duration_ms": 38900
+    }
+  }
+]

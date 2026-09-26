@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from .config import MAX_TASKS, ORCHESTRATOR_MODEL, SPLIT_EFFORT, TASK_TYPES
+from .config import JOB_TASK_TYPES as TASK_TYPES
+from .config import MAX_TASKS, ORCHESTRATOR_MODEL, SPLIT_EFFORT
 from .ledger import Ledger
 from .llm import LLM, LLMError
 from . import prompts

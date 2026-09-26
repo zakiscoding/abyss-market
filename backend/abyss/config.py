@@ -25,7 +25,16 @@ PRICES: dict[str, tuple[float, float]] = {
     "claude-opus-5": (5.0, 25.0),
 }
 SUPPORTS_EFFORT: set[str] = {"claude-sonnet-5", "claude-opus-5"}
-TASK_TYPES: list[str] = ["research", "writing", "checking"]
+JOB_TASK_TYPES: list[str] = ["research", "writing", "checking"]
+INCIDENT_TASK_TYPES: list[str] = ["diagnose", "remediate", "verify"]
+TASK_TYPES: list[str] = JOB_TASK_TYPES + INCIDENT_TASK_TYPES
+# Output tokens per second, used to turn a bid's token estimate into an ETA.
+TOKENS_PER_SECOND: dict[str, float] = {
+    "claude-haiku-4-5": 180.0,
+    "claude-sonnet-5": 90.0,
+    "claude-opus-5": 55.0,
+}
+MAX_REPAIR_ATTEMPTS = 3
 
 PRICE_WEIGHT = float(os.getenv("ABYSS_PRICE_WEIGHT", "1.0"))
 REP_INIT = 1.0

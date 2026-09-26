@@ -86,6 +86,56 @@ def test_reset_sends_fresh_hello(monkeypatch, tmp_path) -> None:
     )
 
 
+def _receive_until(websocket, events: list[dict], event_type: str) -> dict:
+    while True:
+        event = websocket.receive_json()
+        events.append(event)
+        if event["type"] == event_type:
+            return event
+
+
+def test_incident_flow_over_websocket(monkeypatch, tmp_path) -> None:
+    server = _server(monkeypatch, tmp_path)
+    with TestClient(server.app) as client:
+        with client.websocket_connect("/ws") as websocket:
+            events = [websocket.receive_json()]
+            websocket.send_json({"type": "reset_incident"})
+            healthy = _receive_until(websocket, events, "incident_status")
+            assert healthy["data"]["status"] == "healthy" and healthy["job_id"] is None
+
+            websocket.send_json({"type": "approve_repair"})
+            error = _receive_until(websocket, events, "error")
+            assert "awaiting approval" in error["data"]["message"]
+            events.remove(error)
+
+            websocket.send_json({"type": "start_incident"})
+            _receive_until(websocket, events, "approval_required")
+            websocket.send_json({"type": "approve_repair"})
+            _receive_until(websocket, events, "final")
+
+            websocket.send_json({"type": "reset_incident"})
+            again = websocket.receive_json()
+
+    validate_stream(events)
+    assert events[-1]["data"]["status"] == "ok"
+    assert again["type"] == "incident_status" and again["data"]["status"] == "healthy"
+
+
+def test_reset_incident_cancels_a_waiting_incident(monkeypatch, tmp_path) -> None:
+    server = _server(monkeypatch, tmp_path)
+    with TestClient(server.app) as client:
+        with client.websocket_connect("/ws") as websocket:
+            websocket.receive_json()
+            websocket.send_json({"type": "start_incident"})
+            _receive_until(websocket, [], "approval_required")
+            websocket.send_json({"type": "reset_incident"})
+            healthy = websocket.receive_json()
+            assert healthy["data"]["status"] == "healthy"
+            websocket.send_json({"type": "start_incident"})
+            outage = websocket.receive_json()
+            assert outage["data"]["status"] == "outage"
+
+
 def test_bad_json_and_unknown_type_return_errors(monkeypatch, tmp_path) -> None:
     server = _server(monkeypatch, tmp_path)
     with TestClient(server.app) as client:

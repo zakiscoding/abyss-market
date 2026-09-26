@@ -11,6 +11,7 @@ from . import config
 from .events import EventStream
 from .llm import LLM
 from .market import run_job
+from .mayday import IncidentSession, emit_healthy, run_incident
 from .reputation import ReputationStore
 
 
@@ -30,6 +31,7 @@ async def websocket_endpoint(ws: WebSocket) -> None:
     await ws.accept()
     stream = EventStream(ws.send_json)
     running: asyncio.Task | None = None
+    session = IncidentSession()
     await stream.hello(reputation)
 
     try:
@@ -66,6 +68,25 @@ async def websocket_endpoint(ws: WebSocket) -> None:
                     continue
                 reputation.reset()
                 await stream.hello(reputation)
+            elif message_type == "start_incident":
+                if running is not None and not running.done():
+                    await _connection_error(stream, "a job is already running")
+                    continue
+                session.sim.reset()
+                running = asyncio.create_task(_run_incident_safely(stream, session))
+            elif message_type == "approve_repair":
+                if not session.awaiting_approval:
+                    await _connection_error(stream, "no repair is awaiting approval")
+                    continue
+                session.approval.set()
+            elif message_type == "reset_incident":
+                if running is not None and not running.done():
+                    running.cancel()
+                    with contextlib.suppress(asyncio.CancelledError):
+                        await running
+                session.sim.reset()
+                stream.job_id = None
+                await emit_healthy(stream, session.sim)
             else:
                 await _connection_error(stream, "unknown message type")
     except WebSocketDisconnect:
@@ -83,6 +104,19 @@ async def _run_job_safely(stream: EventStream, job: str, price_weight: float) ->
         await run_job(job, stream=stream, llm=llm, rep=reputation, price_weight=price_weight)
     except Exception as exc:
         logger.exception("job crashed")
+        with contextlib.suppress(Exception):
+            await stream.emit(
+                "error", {"message": f"internal error: {exc}", "task_id": None, "fatal": True}, job_id=None
+            )
+
+
+async def _run_incident_safely(stream: EventStream, session: IncidentSession) -> None:
+    try:
+        await run_incident(stream=stream, llm=llm, rep=reputation, session=session)
+    except asyncio.CancelledError:
+        raise
+    except Exception as exc:
+        logger.exception("incident crashed")
         with contextlib.suppress(Exception):
             await stream.emit(
                 "error", {"message": f"internal error: {exc}", "task_id": None, "fatal": True}, job_id=None
