@@ -102,7 +102,7 @@ def test_incident_over_websocket_waits_for_approval(monkeypatch, tmp_path) -> No
             assert events[-1]["data"]["status"] == "healthy"
             assert events[-1]["job_id"] is None
 
-            websocket.send_json({"type": "start_incident"})
+            websocket.send_json({"type": "start_incident", "scenario_id": "ams_db_outage"})
             _receive_until(websocket, "approval_required", events)
             assert not any(e["type"] == "service_restored" for e in events)
             websocket.send_json({"type": "approve_repair"})
@@ -111,7 +111,22 @@ def test_incident_over_websocket_waits_for_approval(monkeypatch, tmp_path) -> No
     validate_stream(events)
     sandbox = [e["data"]["passed"] for e in events if e["type"] == "sandbox_result"]
     assert sandbox == [False, True]
-    assert events[-2]["type"] == "service_restored"
+    classified = next(e["data"] for e in events if e["type"] == "commander_classified")
+    assert classified["domain"] == "database"
+    assert [e["type"] for e in events[-3:]] == ["service_restored", "routing_stats", "final"]
+
+
+def test_unknown_scenario_is_rejected(monkeypatch, tmp_path) -> None:
+    server = _server(monkeypatch, tmp_path)
+    with TestClient(server.app) as client:
+        with client.websocket_connect("/ws") as websocket:
+            hello = websocket.receive_json()
+            assert [s["scenario_id"] for s in hello["data"]["config"]["scenarios"]] == [
+                "payments_pool", "ams_db_outage", "auth_attack", "network_partition",
+            ]
+            websocket.send_json({"type": "start_incident", "scenario_id": "rm -rf"})
+            error = websocket.receive_json()
+    assert error["type"] == "error" and "scenario_id" in error["data"]["message"]
 
 
 def test_approve_without_pending_repair_is_rejected(monkeypatch, tmp_path) -> None:
@@ -130,14 +145,15 @@ def test_reset_incident_cancels_and_can_repeat(monkeypatch, tmp_path) -> None:
     with TestClient(server.app) as client:
         with client.websocket_connect("/ws") as websocket:
             websocket.receive_json()
-            for _ in range(2):
-                websocket.send_json({"type": "start_incident"})
+            for scenario_id in ("payments_pool", "network_partition"):
+                websocket.send_json({"type": "start_incident", "scenario_id": scenario_id})
                 _receive_until(websocket, "approval_required", [])
                 websocket.send_json({"type": "reset_incident"})
                 event = websocket.receive_json()
                 while not (event["type"] == "incident_status" and event["data"]["status"] == "healthy"):
                     event = websocket.receive_json()
-                assert event["data"]["telemetry"]["db_pool_size"] == 20
+                assert event["data"]["scenario_id"] == scenario_id
+                assert all(item["ok"] for item in event["data"]["telemetry"])
 
 
 def test_bad_json_and_unknown_type_return_errors(monkeypatch, tmp_path) -> None:

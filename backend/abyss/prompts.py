@@ -31,28 +31,56 @@ real errors or caveats, and invent no issues. Use at most 250 words.""",
     "diagnose": """You are an on-call SRE. Using only the incident evidence, state the
 most likely root cause, the evidence for it, and the customer impact. Use at most
 150 words. Do not propose shell commands.""",
-    "remediate": """You propose exactly one remediation for a production incident.
-Respond with only a JSON object using one of these allowlisted actions:
-{"action": "set_db_pool_size", "value": <integer 1-100>}
-{"action": "restart_service"}
-{"action": "rollback_config"}
-No other text, keys, commands, or code. Do not repeat an action that already failed.""",
+    "remediate": """You propose a remediation plan for a production incident.
+Respond with only a JSON object of the form {"steps": [<action>, ...]} with 1 to 4
+steps, using only the allowlisted actions listed in the task brief, exactly as
+written there. No other text, keys, commands, or code. Nothing you write is
+executed: the plan is validated and tested in a sandbox first. Do not repeat a
+plan that already failed.""",
     "verify": """You verify that a repair worked. Compare the production telemetry
-with the SLOs (error rate at most 1%, p95 at most 300 ms, payment success at least
-99%, zero connection timeouts) and give a short verdict. Use at most 120 words.""",
+with its health targets (every metric marked ok) and give a short verdict. Use at
+most 120 words.""",
 }
 
-INCIDENT_JOB = """Production incident on {service} ({severity}).
+COMMANDER_SYSTEM = """You are the MAYDAY incident commander. Classify an incident from a
+compressed alert package. Choose the primary specialist domain (database,
+networking, security, payments, or generalist if unclear), any secondary domains,
+and the severity: SEV-1 for a major customer-facing outage, SEV-2 for a partial
+degradation, SEV-3 for minor impact. Give a one-sentence rationale citing the evidence."""
+
+COMMANDER_USER = """Incident package:
+{package}"""
+
+COMMANDER_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "domain": {"type": "string", "enum": ["database", "networking", "security", "payments", "generalist"]},
+        "secondary_domains": {
+            "type": "array",
+            "items": {"type": "string", "enum": ["database", "networking", "security", "payments", "generalist"]},
+        },
+        "severity": {"type": "string", "enum": ["SEV-1", "SEV-2", "SEV-3"]},
+        "rationale": {"type": "string"},
+    },
+    "required": ["domain", "secondary_domains", "severity", "rationale"],
+    "additionalProperties": False,
+}
+
+INCIDENT_JOB = """You are a {specialist} in the MAYDAY incident market.
+Scenario id: {scenario_id}
+Production incident on {service} in {region} ({severity}), reported by {source}.
+Commander classification: {domain} (secondary: {secondary}). {rationale}
 Telemetry: {telemetry}
-Recent config changes: {changes}
+Recent changes: {changes}
 Logs:
 {logs}"""
 
-DIAGNOSE_BRIEF = "Find the root cause of the payments-api outage from the telemetry, logs, and config changes."
-REMEDIATE_BRIEF = """Propose one allowlisted remediation that restores payments-api.
-Allowed actions: set_db_pool_size(value), restart_service, rollback_config.
+DIAGNOSE_BRIEF = "Find the root cause of the {service} incident from the telemetry, logs, and recent changes."
+REMEDIATE_BRIEF = """Propose a remediation plan that restores {service}.
+Allowed actions (regions: {regions}):
+{actions}
 Previous failed attempts: {previous}"""
-VERIFY_BRIEF = "Verify payments-api after {action}. Production telemetry now: {telemetry}"
+VERIFY_BRIEF = "Verify {service} after {plan}. Production telemetry now: {telemetry}"
 
 WORK_USER = """Job:
 {job_text}
@@ -73,7 +101,7 @@ the job and task. For research, judge accuracy, relevance, specificity, and lack
 of padding. For writing, judge compliance, clarity, and correct use of research.
 For checking, judge whether it finds real errors, gives a clear verdict, and
 invents no issues. For diagnose, judge whether the root cause is supported by the
-evidence. Return a grade from 1 to 10 and a concise rationale."""
+evidence and fits the specialist domain. Return a grade from 1 to 10 and a concise rationale."""
 
 REVIEW_USER = """Job:
 {job_text}

@@ -424,6 +424,11 @@ def _fake_output(
         incident = _fake_incident_work(system, user)
         if incident is not None:
             return incident, None
+    if purpose == "split" and system == prompts.COMMANDER_SYSTEM:
+        from .commander import rules_classify
+
+        data = rules_classify(json.loads(user.split("\n", 1)[1]))
+        return json.dumps(data), data
     if purpose == "split":
         data = {
             "tasks": [
@@ -476,24 +481,25 @@ def _fake_output(
 
 
 def _fake_incident_work(system: str, user: str) -> str | None:
+    if system not in {prompts.WORK_SYSTEM[t] for t in ("diagnose", "remediate", "verify")}:
+        return None
+    from .scenarios import SCENARIOS
+
+    match = re.search(r"Scenario id: (\w+)", user)
+    scenario = SCENARIOS[match.group(1)] if match and match.group(1) in SCENARIOS else None
+    if scenario is None:
+        return None
     if system == prompts.WORK_SYSTEM["diagnose"]:
-        return (
-            "Root cause: config change cfg-2291 cut db.pool.max_size from 20 to 2. "
-            "Evidence: the pool is fully in use, requests time out acquiring a DB "
-            "connection, and HTTP 500s began right after the change. Impact: most "
-            "payment submissions fail."
-        )
+        return scenario.fake_diagnosis
     if system == prompts.WORK_SYSTEM["remediate"]:
-        # A plausible but wrong first guess, so the sandbox has something to reject.
-        if "Previous failed attempts: none" in user:
-            return '{"action": "restart_service"}'
-        return '{"action": "set_db_pool_size", "value": 20}'
-    if system == prompts.WORK_SYSTEM["verify"]:
-        return (
-            "Verdict: recovered. Error rate, p95 latency, and payment success are "
-            "back inside SLO and connection timeouts have stopped."
-        )
-    return None
+        # A plausible but wrong first plan, so the sandbox has something to reject.
+        plan = scenario.decoy_plan if "Previous failed attempts: none" in user else scenario.fix_plan
+        steps = [{key: value for key, value in step.items() if value is not None} for step in plan]
+        return json.dumps({"steps": steps})
+    return (
+        "Verdict: recovered. Every production health target is back inside its "
+        "limit after the approved plan was deployed."
+    )
 
 
 async def _smoke() -> int:

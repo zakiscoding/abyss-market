@@ -1,9 +1,10 @@
-"""MAYDAY: run a Payments API incident through the Abyss market.
+"""MAYDAY: run a simulated incident through the Commander and the Abyss market.
 
-Diagnose, remediate, and verify are ordinary market tasks: the same auction,
-work call, reputation update, ledger, and events as a job. Remediation output is
-only ever parsed into an allowlisted action, tested on a sandbox copy of the
-service, and applied to production after a human approves it.
+Incident received -> Commander classifies -> the domain's specialists are
+dispatched -> diagnose, remediate and verify auctions (the same auction, work
+call, reputation update, ledger and events as a job) -> every remediation plan is
+parsed into allowlisted actions and tested on a sandbox copy -> plan steps are
+assigned to their human owners -> production changes only after approval.
 """
 from __future__ import annotations
 
@@ -12,11 +13,11 @@ import json
 from dataclasses import dataclass, field
 from typing import Awaitable, Callable
 
-from . import config, prompts
-from .agents import build_work_prompt, est_input_tokens
+from . import commander, config, prompts
+from .agents import bid_prompt, build_work_prompt, est_input_tokens
 from .events import EventStream, new_job_id
-from .incident import SERVICE, ActionRejected, PaymentsSimulator, describe_action, parse_action
-from .ledger import Ledger
+from .incident import ACTION_SIGNATURES, REGIONS, ActionRejected, Scenario, describe_action, describe_plan, parse_plan
+from .ledger import Ledger, cost_usd
 from .llm import LLM, LLMError
 from .market import (
     _final_task,
@@ -27,10 +28,14 @@ from .market import (
 )
 from .orchestrator import TaskSpec
 from .reputation import ReputationStore
-from .responders import briefings, select_responders
+from .responders import assign, customer_impact, owner_domain, required_skills, select_responders
 
-SEVERITY = "SEV-1"
 Grader = Callable[[str, str], Awaitable[tuple[int, str, dict]]]
+ROUTING_METHOD = (
+    "Estimate: for each auction, every skipped specialist x the bid prompt it would have "
+    "received (characters / 4), plus the raw incident context the Commander did not read, "
+    "priced at each model's input rate. Actual figures come from the ledger."
+)
 
 
 @dataclass
@@ -47,15 +52,17 @@ class TaskOutcome:
     confidence: float
 
 
-def healthy_status(sim: PaymentsSimulator) -> dict:
-    return _status_data(sim, "healthy", "All systems operational.")
+def healthy_status(sim: Scenario) -> dict:
+    return _status_data(sim, "healthy", "All systems operational.", None)
 
 
-def _status_data(sim: PaymentsSimulator, status: str, summary: str) -> dict:
+def _status_data(sim: Scenario, status: str, summary: str, severity: str | None) -> dict:
     return {
         "status": status,
-        "service": SERVICE,
-        "severity": None if status in {"healthy", "restored"} else SEVERITY,
+        "scenario_id": sim.scenario_id,
+        "service": sim.service,
+        "region": sim.region,
+        "severity": None if status in {"healthy", "restored"} else severity,
         "summary": summary,
         "telemetry": sim.telemetry(),
         "logs": sim.logs(),
@@ -83,6 +90,11 @@ def _grade_from_checks(checks: list[dict]) -> tuple[int, str]:
     return grade, rationale[:200]
 
 
+def _billing_model(model: str) -> str:
+    # Fake calls are priced at the nominal model; real calls at the resolved one.
+    return model if config.fake_llm() else config.resolve_model(model)
+
+
 class IncidentRun:
     def __init__(
         self,
@@ -90,7 +102,7 @@ class IncidentRun:
         stream: EventStream,
         llm: LLM,
         rep: ReputationStore,
-        sim: PaymentsSimulator,
+        sim: Scenario,
         control: IncidentControl,
         price_weight: float,
     ) -> None:
@@ -106,48 +118,106 @@ class IncidentRun:
         self.rep_changes: list[dict] = []
         self.grades: list[int] = []
         self.job_text = ""
+        self.job_fields: dict = {}
         self.task_count = 0
+        self.domain = "generalist"
+        self.severity: str | None = None
+        self.agent_names: dict[str, str] = {}
+        self.responders: list[dict] = []
+        self.registered = 0
+        self.eligible = 0
+        self.auctions = 0
+        self.repair_attempts = 0
+        self.skipped_tokens = 0
+        self.skipped_cost = 0.0
+        self.package_tokens = 0
+        self.full_tokens = 0
 
     async def status(self, status: str, summary: str) -> None:
-        await self.stream.emit("incident_status", _status_data(self.sim, status, summary))
+        await self.stream.emit("incident_status", _status_data(self.sim, status, summary, self.severity))
 
     async def run(self, job_id: str | None = None) -> dict:
         job_id = job_id or new_job_id()
         self.stream.start_job(job_id)
         self.ledger = Ledger(job_id, config.ledger_path())
+        sim = self.sim
 
-        self.sim.break_production()
+        sim.break_production()
         outage_ms = self.stream.elapsed_ms()
-        await self.status("outage", "Payments API is returning HTTP 500s.")
-        telemetry = self.sim.telemetry()
-        required, responders = select_responders(telemetry, self.sim.changes, SEVERITY)
+        package = commander.incident_package(sim)
+        self.package_tokens = commander.package_tokens(package)
+        self.full_tokens = commander.full_context_tokens(sim)
+        await self.stream.emit("incident_received", {
+            **sim.catalog(),
+            "package": package,
+            "package_tokens_est": self.package_tokens,
+            "full_context_tokens_est": self.full_tokens,
+        })
+        await self.status("outage", sim.alert)
+
+        decision = await commander.classify(self.llm, self.ledger, package)
+        self.domain, self.severity = decision["domain"], decision["severity"]
+        impact = customer_impact(sim.telemetry())
+        required = required_skills(self.domain, decision["secondary_domains"], self.severity, impact)
+        await self.stream.emit("commander_classified", {
+            "scenario_id": sim.scenario_id,
+            "domain": self.domain,
+            "secondary_domains": decision["secondary_domains"],
+            "severity": self.severity,
+            "required_specialties": required,
+            "rationale": decision["rationale"],
+            "source": decision["source"],
+            "fallback_reason": decision["fallback_reason"],
+            "usage": decision["usage"],
+        })
+        dispatch = commander.dispatch(self.domain)
+        await self.stream.emit("specialists_dispatched", dispatch)
+        self.registered, self.eligible = dispatch["registered"], dispatch["eligible"]
+        self.agent_names = {s["agent_id"]: s["label"] for s in dispatch["specialists"] if s["dispatched"]}
+
+        self.responders = select_responders(required, self.severity)
+        team = ", ".join(r["name"] for r in self.responders if r["selected"])
         await self.stream.emit("responders_selected", {
             "required_skills": required,
-            "responders": responders,
-            "briefings": briefings(telemetry, self.sim.changes, SEVERITY, responders),
+            "responders": self.responders,
+            "briefings": sim.briefings(self.severity, team),
         })
-        self.job_text = prompts.INCIDENT_JOB.format(
-            service=SERVICE,
-            severity=SEVERITY,
-            telemetry=json.dumps(telemetry, sort_keys=True),
-            changes=json.dumps(self.sim.changes, sort_keys=True),
-            logs="\n".join(self.sim.logs()),
-        )
+        self.job_fields = {
+            "scenario_id": sim.scenario_id,
+            "service": sim.service,
+            "region": sim.region,
+            "severity": self.severity,
+            "source": sim.source_system,
+            "domain": self.domain,
+            "secondary": ", ".join(decision["secondary_domains"]) or "none",
+            "rationale": decision["rationale"],
+            "telemetry": json.dumps(sim.telemetry(), sort_keys=True),
+            "changes": json.dumps(sim.changes, sort_keys=True),
+            "logs": "\n".join(sim.logs()),
+        }
+        self.job_text = self._job_text(self.domain)
 
-        await self.status("investigating", "AI responders are bidding to diagnose the outage.")
-        diagnosis_task = self._task("diagnose", "Diagnose the payments outage", prompts.DIAGNOSE_BRIEF, [])
+        await self.status("investigating", f"{config.DOMAIN_LABELS[self.domain]}s are bidding to diagnose.")
+        diagnosis_task = self._task("diagnose", f"Diagnose the {sim.service} incident",
+                                    prompts.DIAGNOSE_BRIEF.format(service=sim.service), [])
         diagnosis = await self.market_task(diagnosis_task, {}, self._review_grader(diagnosis_task))
         if diagnosis is None:
-            return await self.fail("Diagnosis failed: no responder completed it.")
+            return await self.fail("Diagnosis failed: no specialist completed it.")
 
-        await self.status("repairing", "AI responders are bidding to repair the outage.")
+        await self.status("repairing", f"{config.DOMAIN_LABELS[self.domain]}s are bidding to repair.")
         failed: list[str] = []
         passing: tuple[TaskSpec, TaskOutcome, dict] | None = None
         for attempt in range(1, config.MAX_REPAIR_ATTEMPTS + 1):
+            self.repair_attempts = attempt
             task = self._task(
                 "remediate",
                 f"Repair attempt {attempt}",
-                prompts.REMEDIATE_BRIEF.format(previous="; ".join(failed) or "none"),
+                prompts.REMEDIATE_BRIEF.format(
+                    service=sim.service,
+                    regions=", ".join(REGIONS),
+                    actions="\n".join(ACTION_SIGNATURES[name] for name in sim.allowed_actions),
+                    previous="; ".join(failed) or "none",
+                ),
                 [diagnosis_task.task_id],
             )
             sandbox: dict = {}
@@ -159,67 +229,107 @@ class IncidentRun:
             if outcome is not None and sandbox.get("passed"):
                 passing = (task, outcome, sandbox)
                 break
-            if sandbox.get("action"):
-                failed.append(f"{describe_action(sandbox['action'])} failed the sandbox")
+            if sandbox.get("steps"):
+                failed.append(f"{describe_plan(sandbox['steps'])} failed the sandbox")
             elif sandbox:
-                failed.append("an invalid action was rejected")
+                failed.append("an invalid plan was rejected")
         if passing is None:
-            return await self.fail("No repair passed the sandbox.")
+            return await self.fail(f"No remediation plan passed the sandbox after {self.repair_attempts} attempts.")
 
         repair_task, repair, sandbox = passing
-        action = sandbox["action"]
-        approvers = [r["name"] for r in responders if r["selected"] and
-                     {"incident_command", "database"} & set(r["matched_skills"])]
-        await self.status("awaiting_approval", f"{describe_action(action)} passed the sandbox. Waiting for human approval.")
+        steps = sandbox["steps"]
+        plan_text = describe_plan(steps)
+        await self.stream.emit("remediation_plan_created", {
+            "task_id": repair_task.task_id,
+            "agent_id": repair.agent_id,
+            "attempt": sandbox["attempt"],
+            "steps": [
+                {"index": i, "action": step, "description": describe_action(step), "owner_domain": owner_domain(step)}
+                for i, step in enumerate(steps)
+            ],
+            "summary": f"{plan_text} passed all {len(sandbox['checks'])} sandbox checks.",
+            "confidence": repair.confidence,
+        })
+        assignments, approvers = assign(steps, self.severity, self.responders, customer_impact(sim.telemetry()))
+        await self.stream.emit("human_assignments_created", {
+            "task_id": repair_task.task_id,
+            "assignments": assignments,
+            "required_approvers": approvers,
+        })
+        await self.status("awaiting_approval", f"{plan_text} passed the sandbox. Waiting for {', '.join(approvers)}.")
         self.control.awaiting_approval = True
         await self.stream.emit("approval_required", {
             "task_id": repair_task.task_id,
             "agent_id": repair.agent_id,
             "attempt": sandbox["attempt"],
-            "action": action,
-            "summary": f"Deploy {describe_action(action)} to production. All sandbox checks passed.",
+            "steps": steps,
+            "summary": f"Deploy {plan_text} to production. All sandbox checks passed.",
             "approvers": approvers,
         })
         await self.control.approval.wait()
         self.control.awaiting_approval = False
+        await self.stream.emit("approval_granted", {
+            "task_id": repair_task.task_id,
+            "approved": [item["assignment_id"] for item in assignments if item["approval_required"]],
+            "approved_by": approvers,
+        })
 
-        self.sim.apply(action)
-        await self.status("recovering", f"Deploying {describe_action(action)} and verifying production.")
+        sim.apply(steps)
+        await self.status("recovering", f"Deploying {plan_text} and verifying production.")
         verify_task = self._task(
             "verify",
             "Verify production recovery",
             prompts.VERIFY_BRIEF.format(
-                action=describe_action(action), telemetry=json.dumps(self.sim.telemetry(), sort_keys=True)
+                service=sim.service, plan=plan_text, telemetry=json.dumps(sim.telemetry(), sort_keys=True)
             ),
             [repair_task.task_id],
         )
-        verification = self.sim.health_checks()
+        verification = sim.health_checks()
         verified = await self.market_task(
             verify_task, {repair_task.task_id: repair.output}, self._checks_grader(verification)
         )
-        if verified is None or not self.sim.healthy():
-            return await self.fail("Production verification failed.")
+        if verified is None or not sim.healthy():
+            return await self.fail("Production verification failed after deployment.")
 
-        await self.status("restored", "Payments API restored and verified.")
-        commander = next(r["name"] for r in responders if r["role"] == "Incident Commander")
+        await self.status("restored", f"{sim.service} restored and verified.")
         await self.stream.emit("service_restored", {
+            "scenario_id": sim.scenario_id,
+            "domain": self.domain,
             "mttr_ms": self.stream.elapsed_ms() - outage_ms,
             "total_cost_usd": self.ledger.total_cost(),
             "repair_attempts": sandbox["attempt"],
             "failed_attempts": sandbox["attempt"] - 1,
-            "action": action,
+            "steps": steps,
             "confidence": repair.confidence,
-            "approved_by": commander,
+            "approved_by": approvers,
             "verification": verification,
             "grades": self.final_tasks,
             "rep_changes": self.rep_changes,
-            "telemetry": self.sim.telemetry(),
+            "telemetry": sim.telemetry(),
         })
+        await self.routing_stats()
         return await self.finish("ok", diagnosis_task, diagnosis.output)
+
+    def _job_text(self, domain: str) -> str:
+        return prompts.INCIDENT_JOB.format(specialist=config.DOMAIN_LABELS[domain], **self.job_fields)
 
     def _task(self, type_: str, title: str, brief: str, depends_on: list[str]) -> TaskSpec:
         self.task_count += 1
         return TaskSpec(f"t{self.task_count}", type_, title, brief, depends_on)
+
+    def _count_skipped(self, task: TaskSpec, dep_outputs: dict[str, str]) -> None:
+        """Estimate what broadcasting this auction to every other specialist would have sent."""
+        agents = {agent.agent_id: agent for agent in config.AGENTS}
+        dep_sizes = {task_id: len(output) for task_id, output in dep_outputs.items()}
+        for item in config.specialists():
+            if item["domain"] == self.domain:
+                continue
+            agent = agents[item["agent_id"]]
+            reputation = self.rep.get(agent.agent_id, config.rep_key(task.type, item["domain"]))
+            system, user = bid_prompt(agent, self._job_text(item["domain"]), task, dep_sizes, reputation, item["label"])
+            tokens = est_input_tokens(system, user)
+            self.skipped_tokens += tokens
+            self.skipped_cost += cost_usd(_billing_model(agent.model), tokens, 0)
 
     async def market_task(
         self, task: TaskSpec, dep_outputs: dict[str, str], grader: Grader
@@ -228,6 +338,7 @@ class IncidentRun:
         system, user = build_work_prompt(self.job_text, task, dep_outputs)
         estimated_input = est_input_tokens(system, user)
         index = self.task_count - 1
+        key = config.rep_key(task.type, self.domain)
         await self.stream.emit("task_posted", {
             "task_id": task.task_id,
             "type": task.type,
@@ -238,10 +349,14 @@ class IncidentRun:
             # Planned remaining steps: remediate and verify after a diagnosis.
             "total": index + {"diagnose": 3, "remediate": 2, "verify": 1}[task.type],
             "est_input_tokens": estimated_input,
+            "domain": self.domain,
         })
+        self.auctions += 1
+        self._count_skipped(task, dep_outputs)
         auction = await _run_auction(
             self.stream, self.llm, self.ledger, self.rep, self.job_text, task,
             dep_outputs, estimated_input, self.price_weight, self.tasks_won,
+            rep_key=key, agent_names=self.agent_names,
         )
         if auction is None:
             self.final_tasks.append(_final_task(task, None, None, None, self.ledger))
@@ -279,16 +394,19 @@ class IncidentRun:
             "rationale": rationale,
             "usage": review_usage,
         })
-        old, new, ratio = self.rep.update(winner.agent_id, task.type, grade, promised)
+        old, new, ratio = self.rep.update(winner.agent_id, key, grade, promised)
         await self.stream.emit("rep_update", {
             "task_id": task.task_id,
             "agent_id": winner.agent_id,
             "task_type": task.type,
+            "rep_key": key,
             "old": old,
             "new": new,
             "ratio": ratio,
         })
-        self.rep_changes.append({"agent_id": winner.agent_id, "task_type": task.type, "old": old, "new": new})
+        self.rep_changes.append({
+            "agent_id": winner.agent_id, "task_type": task.type, "rep_key": key, "old": old, "new": new,
+        })
         await self.stream.emit("stats", self.ledger.stats(self.tasks_won))
         self.final_tasks.append(_final_task(task, winner.agent_id, grade, promised, self.ledger))
         return TaskOutcome(winner.agent_id, output, grade, confidence)
@@ -302,35 +420,36 @@ class IncidentRun:
     def _repair_grader(self, task: TaskSpec, attempt: int, result: dict) -> Grader:
         async def grade(agent_id: str, output: str) -> tuple[int, str, dict]:
             try:
-                action: dict | None = parse_action(output)
-                reason = f"{describe_action(action)} is on the allowlist."
+                steps = parse_plan(output, self.sim.allowed_actions)
+                reason = f"{describe_plan(steps)} uses only allowlisted actions."
             except ActionRejected as exc:
-                action, reason = None, f"Rejected: {exc}"
+                steps, reason = [], f"Rejected: {exc}"
             await self.stream.emit("remediation_proposed", {
                 "task_id": task.task_id,
                 "agent_id": agent_id,
                 "attempt": attempt,
-                "action": action,
-                "accepted": action is not None,
+                "steps": steps,
+                "accepted": bool(steps),
                 "reason": reason[:200],
             })
-            if action is None:
-                checks = [{"name": "allowlisted action", "passed": False, "detail": reason[:120]}]
+            if not steps:
+                checks = [{"name": "allowlisted plan", "passed": False, "detail": reason[:120]}]
                 passed, telemetry = False, self.sim.telemetry()
             else:
-                passed, checks, telemetry = self.sim.sandbox(action)
-            result.update({"task_id": task.task_id, "attempt": attempt, "action": action, "passed": passed})
+                passed, checks, telemetry = self.sim.sandbox(steps)
+            result.update({"task_id": task.task_id, "attempt": attempt, "steps": steps,
+                           "passed": passed, "checks": checks})
             await self.stream.emit("sandbox_result", {
                 "task_id": task.task_id,
                 "agent_id": agent_id,
                 "attempt": attempt,
-                "action": action,
+                "steps": steps,
                 "passed": passed,
                 "checks": checks,
                 "telemetry": telemetry,
             })
             grade_value, rationale = _grade_from_checks(checks)
-            verdict = "Sandbox passed." if passed else "Sandbox rejected the repair."
+            verdict = "Sandbox passed." if passed else "Sandbox rejected the plan."
             return grade_value, f"{verdict} {rationale}"[:200], _check_usage()
         return grade
 
@@ -340,8 +459,42 @@ class IncidentRun:
             return grade_value, f"Production health checks: {rationale}"[:200], _check_usage()
         return grade
 
-    async def fail(self, summary: str) -> dict:
-        await self.status("failed", summary)
+    async def routing_stats(self) -> None:
+        assert self.ledger is not None
+        stats = self.ledger.stats(self.tasks_won)
+        context_saved = max(0, self.full_tokens - self.package_tokens)
+        context_cost = cost_usd(_billing_model(config.ORCHESTRATOR_MODEL), context_saved, 0)
+        await self.stream.emit("routing_stats", {
+            "domain": self.domain,
+            "registered_specialists": self.registered,
+            "eligible_specialists": self.eligible,
+            "auctions": self.auctions,
+            "models_contacted": self.eligible * self.auctions,
+            "models_skipped": (self.registered - self.eligible) * self.auctions,
+            "actual_input_tokens": stats["input_tokens"],
+            "actual_output_tokens": stats["output_tokens"],
+            "actual_cost_usd": stats["total_cost_usd"],
+            "actual_calls": stats["calls"],
+            "commander_package_tokens_est": self.package_tokens,
+            "full_context_tokens_est": self.full_tokens,
+            "avoided_input_tokens_est": self.skipped_tokens + context_saved,
+            "avoided_cost_usd_est": round(self.skipped_cost + context_cost, 6),
+            "method": ROUTING_METHOD,
+        })
+
+    async def fail(self, reason: str) -> dict:
+        owners = [
+            r["name"] for r in self.responders
+            if r["selected"] and ({"incident_command"} | set(required_skills(self.domain, [], None, False)))
+            & set(r["matched_skills"])
+        ]
+        await self.stream.emit("incident_escalated", {
+            "reason": reason[:200],
+            "attempts": self.repair_attempts,
+            "escalated_to": owners or ["Zak"],
+        })
+        await self.status("failed", f"Escalated to humans: {reason}")
+        await self.routing_stats()
         return await self.finish("error", None, None)
 
     async def finish(self, status: str, deliverable_task: TaskSpec | None, deliverable: str | None) -> dict:
@@ -364,7 +517,7 @@ async def run_incident(
     stream: EventStream,
     llm: LLM,
     rep: ReputationStore,
-    sim: PaymentsSimulator,
+    sim: Scenario,
     control: IncidentControl,
     price_weight: float = config.PRICE_WEIGHT,
     job_id: str | None = None,

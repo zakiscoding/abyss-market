@@ -1,10 +1,7 @@
-"""Deterministic human rescue-team selection and audience-specific briefings."""
+"""Deterministic human paging and step ownership. No LLM decides who approves what."""
 from __future__ import annotations
 
-from .incident import MAX_ERROR_RATE, SERVICE
-
-# Assumed average checkout value, used only to express failed payments in dollars.
-AVG_ORDER_USD = 42
+from .incident import describe_action
 
 ROSTER = [
     {"responder_id": "zak", "name": "Zak", "role": "Incident Commander",
@@ -13,30 +10,51 @@ ROSTER = [
      "skills": {"database", "connection_pooling", "postgres"}, "available": True, "workload": 2},
     {"responder_id": "alex", "name": "Alex", "role": "Backend Engineer",
      "skills": {"payments_api", "backend", "deploys"}, "available": True, "workload": 1},
+    {"responder_id": "riley", "name": "Riley", "role": "Network Engineer",
+     "skills": {"networking", "routing", "cdn"}, "available": True, "workload": 1},
     {"responder_id": "sam", "name": "Sam", "role": "Security Engineer",
      "skills": {"security", "auth", "access_control"}, "available": True, "workload": 0},
     {"responder_id": "jordan", "name": "Jordan", "role": "Customer Support Lead",
      "skills": {"customer_comms", "support"}, "available": True, "workload": 3},
 ]
+DOMAIN_SKILLS = {
+    "database": ["database", "postgres"],
+    "networking": ["networking", "routing"],
+    "security": ["security", "auth"],
+    "payments": ["payments_api", "backend"],
+    "generalist": ["backend", "deploys"],
+}
+# Which specialty owns each production action, and the skills that may approve it
+# (first match wins, so a network change falls back to a backend engineer).
+ACTION_OWNERS = {
+    "set_db_pool_size": ("database", ["database"]),
+    "restart_db": ("database", ["database"]),
+    "failover_db": ("database", ["database"]),
+    "route_traffic": ("networking", ["networking", "backend"]),
+    "apply_rate_limit": ("security", ["security"]),
+    "block_ips": ("security", ["security"]),
+    "restart_service": ("generalist", ["backend"]),
+    "rollback_config": ("generalist", ["backend"]),
+}
+CUSTOMER_METRIC_TOKENS = ("error", "success", "reachability")
 
 
-def required_skills(telemetry: dict, changes: list[dict], severity: str | None) -> list[str]:
+def customer_impact(telemetry: list[dict]) -> bool:
+    return any(not item["ok"] and any(t in item["key"] for t in CUSTOMER_METRIC_TOKENS) for item in telemetry)
+
+
+def required_skills(domain: str, secondary: list[str], severity: str | None, impact: bool) -> list[str]:
     skills: list[str] = []
     if severity == "SEV-1":
         skills.append("incident_command")
-    if telemetry["timeouts_per_min"] > 0 or any(c["key"].startswith("db.") for c in changes):
-        skills += ["database", "connection_pooling"]
-    if telemetry["error_rate"] > MAX_ERROR_RATE:
-        skills.append("payments_api")
-    if telemetry["failed_payments_per_min"] > 0:
-        skills.append("customer_comms")
+    for area in [domain, *secondary]:
+        skills += [skill for skill in DOMAIN_SKILLS[area] if skill not in skills]
+    if impact:
+        skills += ["customer_comms", "support"]
     return skills
 
 
-def select_responders(
-    telemetry: dict, changes: list[dict], severity: str | None
-) -> tuple[list[str], list[dict]]:
-    required = required_skills(telemetry, changes, severity)
+def select_responders(required: list[str], severity: str | None) -> list[dict]:
     # A SEV-1 pages anyone with one matching skill; lower severities need two.
     threshold = 1 if severity == "SEV-1" else 2
     responders = []
@@ -63,37 +81,57 @@ def select_responders(
             "workload": person["workload"],
             "reason": reason,
         })
-    return required, responders
+    return responders
 
 
-def briefings(
-    telemetry: dict, changes: list[dict], severity: str | None, responders: list[dict]
-) -> dict:
-    team = ", ".join(r["name"] for r in responders if r["selected"])
-    failing = 1 - telemetry["payment_success_rate"]
-    change = changes[-1] if changes else None
-    change_text = (
-        f"{change['change_id']} by {change['author']} set {change['key']} "
-        f"{change['old']} -> {change['new']}, {change['minutes_ago']} min before alerts"
-        if change else "no recent config change"
-    )
-    at_risk = telemetry["failed_payments_per_min"] * AVG_ORDER_USD
-    return {
-        "engineering": (
-            f"{telemetry['db_connections_in_use']}/{telemetry['db_pool_size']} DB connections in use, "
-            f"{telemetry['timeouts_per_min']}/min connection timeouts, p95 {telemetry['p95_latency_ms']} ms, "
-            f"HTTP 500 rate {telemetry['error_rate']:.1%}. Suspect: {change_text}."
-        ),
-        "support": (
-            f"About {failing:.0%} of checkouts are failing ({telemetry['failed_payments_per_min']}/min). "
-            "Tell customers payments are degraded, a fix is being tested, and to retry shortly."
-        ),
-        "commander": (
-            f"{severity} on {SERVICE}. Team: {team}. Timeline: {change_text}; alerts fired; "
-            "AI diagnosis and repair auctions running. Your decision: approve a sandbox-tested repair."
-        ),
-        "leadership": (
-            f"Payments are {failing:.0%} degraded: about {telemetry['failed_payments_per_min']} "
-            f"failed checkouts per minute, roughly ${at_risk:,}/min in revenue at risk."
-        ),
-    }
+def owner_domain(step: dict) -> str:
+    return ACTION_OWNERS[step["action"]][0]
+
+
+def _owner(step: dict) -> dict:
+    for skill in ACTION_OWNERS[step["action"]][1]:
+        for person in ROSTER:
+            if person["available"] and skill in person["skills"]:
+                return person
+    return ROSTER[0]
+
+
+def assign(steps: list[dict], severity: str | None, responders: list[dict], impact: bool) -> tuple[list[dict], list[str]]:
+    """One approval per plan step from its owner, SEV-1 sign-off, and a customer update."""
+    paged = {r["responder_id"] for r in responders if r["selected"]}
+    items: list[dict] = []
+
+    def add(step_index, step, description, person, reason, approval):
+        items.append({
+            "assignment_id": f"a{len(items) + 1}",
+            "step_index": step_index,
+            "action": step,
+            "description": description,
+            "responder_id": person["responder_id"],
+            "name": person["name"],
+            "role": person["role"],
+            "reason": reason,
+            "approval_required": approval,
+            "status": "pending" if approval else "notify",
+        })
+
+    for index, step in enumerate(steps):
+        person = _owner(step)
+        reason = f"{person['role']} owns {owner_domain(step)} changes."
+        if person["responder_id"] not in paged:
+            reason += " Paged for this step."
+        add(index, step, f"Execute {describe_action(step)}", person, reason, True)
+    if severity == "SEV-1":
+        commander = next(p for p in ROSTER if "incident_command" in p["skills"])
+        add(None, None, "Final go/no-go for a SEV-1 production change", commander,
+            "SEV-1 changes need the Incident Commander's sign-off.", True)
+    if impact:
+        support = next(p for p in ROSTER if "customer_comms" in p["skills"])
+        add(None, None, "Send the customer update", support,
+            "Customers are affected; support owns communication.", False)
+
+    approvers: list[str] = []
+    for item in items:
+        if item["approval_required"] and item["name"] not in approvers:
+            approvers.append(item["name"])
+    return items, approvers

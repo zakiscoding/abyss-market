@@ -9,11 +9,12 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 
 from . import config
 from .events import EventStream
-from .incident import PaymentsSimulator
+from .incident import Scenario
 from .llm import LLM
 from .market import run_job
 from .mayday import IncidentControl, healthy_status, run_incident
 from .reputation import ReputationStore
+from .scenarios import DEFAULT_SCENARIO, SCENARIOS, create
 
 
 logger = logging.getLogger(__name__)
@@ -32,7 +33,7 @@ async def websocket_endpoint(ws: WebSocket) -> None:
     await ws.accept()
     stream = EventStream(ws.send_json)
     running: asyncio.Task | None = None
-    sim = PaymentsSimulator()
+    sim: Scenario = create(DEFAULT_SCENARIO)
     control = IncidentControl()
     await stream.hello(reputation)
 
@@ -74,11 +75,11 @@ async def websocket_endpoint(ws: WebSocket) -> None:
                 if running is not None and not running.done():
                     await _connection_error(stream, "a job or incident is already running")
                     continue
-                error = _validate_price_weight(message)
+                error = _validate_incident_start(message)
                 if error is not None:
                     await _connection_error(stream, error)
                     continue
-                sim.reset()
+                sim = create(message.get("scenario_id", DEFAULT_SCENARIO))
                 control = IncidentControl()
                 running = asyncio.create_task(
                     _run_incident_safely(
@@ -122,7 +123,7 @@ async def _run_job_safely(stream: EventStream, job: str, price_weight: float) ->
 
 
 async def _run_incident_safely(
-    stream: EventStream, sim: PaymentsSimulator, control: IncidentControl, price_weight: float
+    stream: EventStream, sim: Scenario, control: IncidentControl, price_weight: float
 ) -> None:
     try:
         await run_incident(
@@ -140,6 +141,13 @@ def _validate_start(message: dict) -> str | None:
     job = message.get("job")
     if not isinstance(job, str) or not job.strip() or len(job) > 2000:
         return "job must be a string between 1 and 2000 characters"
+    return _validate_price_weight(message)
+
+
+def _validate_incident_start(message: dict) -> str | None:
+    scenario_id = message.get("scenario_id", DEFAULT_SCENARIO)
+    if not isinstance(scenario_id, str) or scenario_id not in SCENARIOS:
+        return f"scenario_id must be one of {', '.join(SCENARIOS)}"
     return _validate_price_weight(message)
 
 

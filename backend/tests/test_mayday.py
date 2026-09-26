@@ -4,13 +4,38 @@ import asyncio
 
 import pytest
 
+from abyss import config
 from abyss.contract import validate_stream
 from abyss.events import EventStream
-from abyss.incident import PaymentsSimulator
+from abyss.incident import action
 from abyss.llm import LLM
 from abyss.mayday import IncidentControl, run_incident
 from abyss.reputation import ReputationStore
-from abyss.responders import briefings, select_responders
+from abyss.responders import assign, customer_impact, required_skills, select_responders
+from abyss.scenarios import SCENARIO_IDS, SCENARIOS, create
+
+EXPECTED = {
+    "payments_pool": {
+        "domain": "database", "severity": "SEV-1",
+        "paged": {"Zak", "Maya", "Alex", "Jordan"}, "approvers": ["Maya", "Zak"],
+        "fix": ["set_db_pool_size"], "decoy": ["restart_service"],
+    },
+    "ams_db_outage": {
+        "domain": "database", "severity": "SEV-1",
+        "paged": {"Zak", "Maya", "Riley", "Jordan"}, "approvers": ["Maya", "Riley", "Zak"],
+        "fix": ["failover_db", "route_traffic"], "decoy": ["restart_db"],
+    },
+    "auth_attack": {
+        "domain": "security", "severity": "SEV-2",
+        "paged": {"Sam", "Jordan"}, "approvers": ["Sam"],
+        "fix": ["apply_rate_limit", "block_ips"], "decoy": ["restart_service"],
+    },
+    "network_partition": {
+        "domain": "networking", "severity": "SEV-1",
+        "paged": {"Zak", "Riley", "Jordan"}, "approvers": ["Riley", "Zak"],
+        "fix": ["route_traffic"], "decoy": ["restart_service"],
+    },
+}
 
 
 @pytest.fixture
@@ -20,7 +45,7 @@ def fake_env(monkeypatch, tmp_path):
     monkeypatch.setenv("ABYSS_LEDGER_PATH", str(tmp_path / "ledger.jsonl"))
 
 
-async def _run(approve: bool = True):
+async def _run(scenario_id: str = "payments_pool", approve: bool = True, sim=None):
     events: list[dict] = []
 
     async def sink(event: dict) -> None:
@@ -28,21 +53,15 @@ async def _run(approve: bool = True):
 
     stream = EventStream(sink)
     rep = ReputationStore()
-    sim = PaymentsSimulator()
+    sim = sim or create(scenario_id)
     control = IncidentControl()
     await stream.hello(rep)
-    task = asyncio.create_task(
-        run_incident(stream=stream, llm=LLM(), rep=rep, sim=sim, control=control)
-    )
-    for _ in range(500):
+    task = asyncio.create_task(run_incident(stream=stream, llm=LLM(), rep=rep, sim=sim, control=control))
+    for _ in range(1000):
         if control.awaiting_approval or task.done():
             break
         await asyncio.sleep(0.001)
-    paused = {
-        "awaiting": control.awaiting_approval,
-        "sim_healthy": sim.healthy(),
-        "types": [e["type"] for e in events],
-    }
+    paused = {"awaiting": control.awaiting_approval, "sim_healthy": sim.healthy(), "types": [e["type"] for e in events]}
     if approve:
         control.approval.set()
         await task
@@ -55,80 +74,124 @@ def _of(events, kind):
     return [e for e in events if e["type"] == kind]
 
 
-def test_incident_runs_full_valid_sequence(fake_env) -> None:
-    events, paused, rep, sim = asyncio.run(_run())
+def _one(events, kind):
+    return _of(events, kind)[0]["data"]
+
+
+@pytest.mark.parametrize("scenario_id", SCENARIO_IDS)
+def test_scenario_runs_the_full_commander_flow(fake_env, scenario_id) -> None:
+    expected = EXPECTED[scenario_id]
+    events, _, rep, sim = asyncio.run(_run(scenario_id))
     validate_stream(events)
 
-    statuses = [e["data"]["status"] for e in _of(events, "incident_status")]
-    assert statuses == [
-        "outage", "investigating", "repairing", "awaiting_approval", "recovering", "restored",
-    ]
-    types = [e["data"]["type"] for e in _of(events, "task_posted")]
-    assert types == ["diagnose", "remediate", "remediate", "verify"]
-    assert all(len([b for b in _of(events, "bid") if b["data"]["task_id"] == t]) == 3
-               for t in ("t1", "t2", "t3", "t4"))
+    received = _one(events, "incident_received")
+    assert received["scenario_id"] == scenario_id
+    assert received["package_tokens_est"] < received["full_context_tokens_est"]
+    classified = _one(events, "commander_classified")
+    assert (classified["domain"], classified["severity"], classified["source"]) == (
+        expected["domain"], expected["severity"], "model")
 
-    sandbox = _of(events, "sandbox_result")
-    assert [s["data"]["action"]["action"] for s in sandbox] == ["restart_service", "set_db_pool_size"]
-    assert [s["data"]["passed"] for s in sandbox] == [False, True]
+    dispatched = _one(events, "specialists_dispatched")
+    chosen = [s for s in dispatched["specialists"] if s["dispatched"]]
+    assert {s["domain"] for s in chosen} == {expected["domain"]}
+    assert dispatched["registered"] == len(config.specialists()) and dispatched["eligible"] == 3
+    assert chosen[0]["label"].startswith(config.DOMAIN_LABELS[expected["domain"]] + " · ")
+
+    assert all(e["data"]["domain"] == expected["domain"] for e in _of(events, "task_posted"))
+    assert [e["data"]["type"] for e in _of(events, "task_posted")] == ["diagnose", "remediate", "remediate", "verify"]
+    sandbox = [(s["data"]["passed"], [step["action"] for step in s["data"]["steps"]]) for s in _of(events, "sandbox_result")]
+    assert sandbox == [(False, expected["decoy"]), (True, expected["fix"])]
+
+    paged = {r["name"] for r in _one(events, "responders_selected")["responders"] if r["selected"]}
+    assert paged == expected["paged"]
+    assignments = _one(events, "human_assignments_created")
+    assert assignments["required_approvers"] == expected["approvers"]
+    assert _one(events, "approval_granted")["approved_by"] == expected["approvers"]
+
+    restored = _one(events, "service_restored")
+    assert restored["approved_by"] == expected["approvers"]
+    assert all(check["passed"] for check in restored["verification"])
+    assert all(change["rep_key"] == f"{expected['domain']}.{change['task_type']}" for change in restored["rep_changes"])
     assert sim.healthy()
     assert events[-1]["type"] == "final" and events[-1]["data"]["status"] == "ok"
 
 
-def test_workflow_pauses_for_human_approval(fake_env) -> None:
-    events, paused, rep, sim = asyncio.run(_run(approve=False))
+@pytest.mark.parametrize("scenario_id", ["ams_db_outage", "auth_attack"])
+def test_workflow_pauses_for_human_approval(fake_env, scenario_id) -> None:
+    _, paused, _, _ = asyncio.run(_run(scenario_id, approve=False))
     assert paused["awaiting"] is True
     assert paused["sim_healthy"] is False
     assert paused["types"][-1] == "approval_required"
-    assert "service_restored" not in paused["types"]
+    assert "human_assignments_created" in paused["types"]
+    assert "approval_granted" not in paused["types"] and "service_restored" not in paused["types"]
 
 
-def test_restored_metrics_are_calculated(fake_env) -> None:
-    events, _, rep, _ = asyncio.run(_run())
-    restored = _of(events, "service_restored")[0]["data"]
+def test_restored_metrics_and_routing_are_calculated(fake_env) -> None:
+    events, _, rep, _ = asyncio.run(_run("ams_db_outage"))
+    restored = _one(events, "service_restored")
     final = events[-1]["data"]
     stats = _of(events, "stats")[-1]["data"]
-    assert restored["total_cost_usd"] == final["total_cost_usd"] == stats["total_cost_usd"]
+    routing = _one(events, "routing_stats")
+    assert restored["total_cost_usd"] == final["total_cost_usd"] == stats["total_cost_usd"] == routing["actual_cost_usd"]
+    assert routing["actual_input_tokens"] == stats["input_tokens"]
+    assert routing["actual_calls"] == stats["calls"]
     assert restored["repair_attempts"] == 2 and restored["failed_attempts"] == 1
-    assert restored["action"] == {"action": "set_db_pool_size", "value": 20}
-    assert all(check["passed"] for check in restored["verification"])
-    assert restored["approved_by"] == "Zak"
-    outage_t = _of(events, "incident_status")[0]["t"]
-    restored_t = _of(events, "incident_status")[-1]["t"]
-    assert restored["mttr_ms"] >= restored_t - outage_t - 5
-    winning_bid = next(
-        b["data"] for b in _of(events, "bid")
-        if b["data"]["task_id"] == "t3" and b["data"]["agent_id"] == _of(events, "won")[2]["data"]["agent_id"]
-    )
-    assert restored["confidence"] == winning_bid["confidence"]
+    assert routing["auctions"] == 4
+    assert routing["models_contacted"] == 12 and routing["models_skipped"] == 48
+    assert routing["avoided_input_tokens_est"] > 0 and routing["avoided_cost_usd_est"] > 0
+    assert "Estimate" in routing["method"]
+    bids = [b for b in _of(events, "bid") if b["data"]["task_id"] == "t3"]
+    winner = _of(events, "won")[2]["data"]["agent_id"]
+    assert restored["confidence"] == next(b["data"]["confidence"] for b in bids if b["data"]["agent_id"] == winner)
 
     failed_repair = _of(events, "rep_update")[1]["data"]
-    assert failed_repair["task_type"] == "remediate" and failed_repair["new"] < failed_repair["old"]
+    assert failed_repair["rep_key"] == "database.remediate" and failed_repair["new"] < failed_repair["old"]
+    assert rep.get(failed_repair["agent_id"], "security.remediate") == 1.0
     assert rep.get(failed_repair["agent_id"], "research") == 1.0
 
 
-def test_responder_selection_matches_db_incident() -> None:
-    sim = PaymentsSimulator()
-    sim.break_production()
-    required, responders = select_responders(sim.telemetry(), sim.changes, "SEV-1")
-    selected = {r["name"]: r["role"] for r in responders if r["selected"]}
-    assert selected == {
-        "Zak": "Incident Commander",
-        "Maya": "Database Engineer",
-        "Alex": "Backend Engineer",
-        "Jordan": "Customer Support Lead",
-    }
-    sam = next(r for r in responders if r["name"] == "Sam")
-    assert not sam["selected"] and sam["reason"]
+def test_no_passing_plan_escalates_to_humans(fake_env, monkeypatch) -> None:
+    monkeypatch.setattr(SCENARIOS["network_partition"], "fix_plan", [action("restart_db", region="fra")])
+    sim = create("network_partition")
+    events, _, _, _ = asyncio.run(_run(sim=sim))
+    validate_stream(events)
+    assert len(_of(events, "sandbox_result")) == config.MAX_REPAIR_ATTEMPTS
+    assert not any(s["data"]["passed"] for s in _of(events, "sandbox_result"))
+    escalated = _one(events, "incident_escalated")
+    assert escalated["attempts"] == config.MAX_REPAIR_ATTEMPTS
+    assert set(escalated["escalated_to"]) == {"Zak", "Riley"}
+    assert "approval_required" not in [e["type"] for e in events]
+    assert _of(events, "incident_status")[-1]["data"]["status"] == "failed"
+    assert events[-2]["type"] == "routing_stats" and events[-1]["data"]["status"] == "error"
+    assert not sim.healthy()
 
-    notes = briefings(sim.telemetry(), sim.changes, "SEV-1", responders)
+
+def test_briefings_are_tailored_per_audience() -> None:
+    sim = create("payments_pool")
+    sim.break_production()
+    notes = sim.briefings("SEV-1", "Zak, Maya")
     assert "cfg-2291" in notes["engineering"] and "timeouts" in notes["engineering"]
     assert "checkouts" in notes["support"] and "cfg" not in notes["support"]
     assert "approve" in notes["commander"]
     assert "$" in notes["leadership"]
+    for scenario_id in SCENARIO_IDS:
+        other = create(scenario_id)
+        other.break_production()
+        assert set(other.briefings("SEV-1", "Zak")) == {"engineering", "support", "commander", "leadership"}
 
 
 def test_healthy_service_pages_nobody() -> None:
-    sim = PaymentsSimulator()
-    _, responders = select_responders(sim.telemetry(), sim.changes, None)
-    assert not any(r["selected"] for r in responders)
+    sim = create("payments_pool")
+    assert customer_impact(sim.telemetry()) is False
+    assert not any(r["selected"] for r in select_responders([], None))
+
+
+def test_assignments_follow_ownership_rules() -> None:
+    people = select_responders(required_skills("database", [], "SEV-1", True), "SEV-1")
+    items, approvers = assign(SCENARIOS["ams_db_outage"].fix_plan, "SEV-1", people, True)
+    owners = [(item["name"], item["approval_required"]) for item in items]
+    assert owners == [("Maya", True), ("Riley", True), ("Zak", True), ("Jordan", False)]
+    assert approvers == ["Maya", "Riley", "Zak"]
+    assert "Paged for this step" in items[1]["reason"]
+    items, approvers = assign(SCENARIOS["auth_attack"].fix_plan, "SEV-2", people, False)
+    assert approvers == ["Sam"] and all(item["name"] == "Sam" for item in items)
