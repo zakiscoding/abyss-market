@@ -1,0 +1,25 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    environment:
+      ABYSS_FAKE_LLM: ${ABYSS_FAKE_LLM:-1}
+      ABYSS_REAL_MODELS: ${ABYSS_REAL_MODELS:-0}
+      ABYSS_PRICE_WEIGHT: ${ABYSS_PRICE_WEIGHT:-1.0}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  web:
+    build:
+      context: .
+      dockerfile: web/Dockerfile
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend

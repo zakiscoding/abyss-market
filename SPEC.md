@@ -182,7 +182,7 @@ type Usage = {                // one LLM call, from resp.usage
 
 | type | data |
 |---|---|
-| `hello` | `{ agents: [{agent_id, display_name, model, color}], reputation: {[AgentId]: {[TaskType]: number}}, config: {price_weight, rep_init, rep_alpha, task_types: TaskType[], real_models: bool, fake_llm: bool, orchestrator_model, reviewer_model} }`. Sent on connect, and again after `reset`. |
+| `hello` | `{ agents: [{agent_id, display_name, model, color}], reputation: {[AgentId]: {[rep_key]: number}}, config: {price_weight, rep_init, rep_alpha, task_types: TaskType[], rep_keys, domains, specialists, scenarios, real_models: bool, fake_llm: bool, orchestrator_model, reviewer_model} }`. Sent on connect, and again after `reset`. |
 | `job_split` | `{ job_text, tasks: [{task_id, type, title, brief, depends_on: string[]}], price_weight, usage: Usage }`. `task_id`s are `t1..tN` in execution order. `depends_on` only references earlier tasks. |
 | `task_posted` | `{ task_id, type, title, brief, depends_on, index, total, est_input_tokens }`. The task is open for bidding. `index` is 0-based. |
 | `bid` | `{ task_id, agent_id, ok, error: string\|null, predicted_output_tokens, est_input_tokens, predicted_cost_usd, promised_quality, confidence, eta_ms, pitch, reputation, score, usage: Usage\|null }`. When `ok:false`, the bid fields are `null`. `reputation` is the value used in the score. `confidence` (0–1) is the agent's own estimate that it will succeed and doesn't affect the score. `eta_ms = round(predicted_output_tokens / TOKENS_PER_SEC[model] × 1000)`. |
@@ -205,7 +205,7 @@ WebSocket `ws://localhost:8000/ws`, JSON text frames.
 |---|---|---|
 | `start_job` | `{type, job: string (1–2000 chars), price_weight?: number (0–10)}` | Runs one job and streams its events. If a job is already running on this connection, it replies `error{fatal:false}`. |
 | `reset` | `{type}` | Resets reputation to `REP_INIT` for everyone, persists it and re-sends `hello`. Rejected while a job runs. |
-| `start_incident` | `{type, price_weight?: number (0–10)}` | Breaks the connection's Payments API simulator and runs the MAYDAY incident (§11). Rejected with `error{fatal:false}` while a job or incident runs. |
+| `start_incident` | `{type, scenario_id?: one of payments_pool, ams_db_outage, auth_attack, network_partition, price_weight?: number (0–10)}` | Breaks the named scenario (default `payments_pool`) and runs the MAYDAY incident (§11). Rejected with `error{fatal:false}` while a job or incident runs. |
 | `approve_repair` | `{type}` | Human approval: releases a repair that passed the sandbox. Rejected unless an incident is waiting in `awaiting_approval`. |
 | `reset_incident` | `{type}` | Cancels any running job or incident, restores the simulator and replies `incident_status{status:"healthy"}` with `job_id:null`. Reputation is kept. |
 
@@ -218,13 +218,14 @@ HTTP routes: `GET /health` returns `{"ok": true}`.
 ```
 SPEC.md TASKS.md README.md .gitignore
 fixtures/     make_fake_run.py, fake_run.json         (orchestrator-owned)
-              make_mayday_run.py, mayday_run.json     (MAYDAY replay)
+              make_incident_fixtures.py, incident_*.json
 backend/
   pyproject.toml
   abyss/  config.py ledger.py reputation.py scoring.py contract.py
           llm.py prompts.py orchestrator.py agents.py reviewer.py
           market.py events.py cli.py server.py experiment.py
-          incident.py responders.py mayday.py          (MAYDAY)
+          incident.py scenarios.py commander.py
+          responders.py mayday.py                      (MAYDAY)
   tests/
 experiments/  jobs.json, splits/ (cache), results/
 web/          Vite + React + TypeScript + pixi.js v8
@@ -232,45 +233,60 @@ web/          Vite + React + TypeScript + pixi.js v8
 runs/         (gitignored) ledger.jsonl, reputation.json, recordings
 ```
 
-## 11. MAYDAY incident extension
+## 11. MAYDAY incident command center
 
-MAYDAY runs a simulated Payments API outage through the same market: every step is a normal task with a 3-bid auction, `won`, work, `graded`, `rep_update` and `stats`. The envelope and all v1 events are unchanged.
+MAYDAY is a hub: incidents from different simulated systems enter the same Commander, which classifies a compressed package and opens only the matching specialist market. Diagnose / remediate / verify still use the v1 auction, work, review, reputation, ledger and events. `v` stays 1.
 
-### 11.1 Simulator (`backend/abyss/incident.py`)
-The service starts healthy with a DB pool of 20. `break_production()` applies config change `cfg-2291` (`db.pool.max_size` 20 → 2). Telemetry is derived from the pool size alone (peak demand is 18 connections), so it's deterministic. The health checks are: error rate ≤ 1%, p95 ≤ 300 ms, payment success ≥ 99%, and zero connection timeouts.
+### 11.1 Commander
+The Commander reads `{service, region, source_system, alert, breached metrics, 4 log lines, recent changes}`. Rules always score domains from metric keys, log words and change prefixes. A model may refine the result; invalid or failed model output falls back to rules; severity cannot drop below the rule result. `specialists_dispatched` marks only the primary domain's three models (Haiku / Sonnet / Opus) as dispatched. Labels look like `Database Specialist · Sonnet`. Incident reputation keys are `{domain}.{diagnose|remediate|verify}`.
 
-Remediation output is **never executed**. It's parsed into exactly one allowlisted action and rejected otherwise:
-`{"action":"set_db_pool_size","value":1..100}`, `{"action":"restart_service"}`, `{"action":"rollback_config"}`.
-A restart keeps the bad config. Setting the pool to 18 or more, or rolling back `cfg-2291`, restores service. `sandbox(action)` applies the action to a deep copy, so production is untouched.
+### 11.2 Scenarios
+`backend/abyss/scenarios.py` implements a shared `Scenario` interface. Telemetry is a list of `{key, label, value, unit, ok}`. Remediation is a plan of 1–4 typed actions from that scenario's allowlist (`value`, `region` or `ips`). `sandbox(steps)` applies the plan to a deep copy.
 
-### 11.2 Incident order (one job)
+| id | name | domain (rules) | decoy | fix |
+|---|---|---|---|---|
+| `payments_pool` | Payments API pool exhaustion | database (secondary payments) | `restart_service` | `set_db_pool_size(20)` |
+| `ams_db_outage` | Amsterdam primary down | database (secondary networking) | `restart_db(ams)` | `failover_db(fra)` + `route_traffic(fra)` |
+| `auth_attack` | Credential stuffing | security | `restart_service` | `apply_rate_limit(20)` + `block_ips(...)` |
+| `network_partition` | APAC partition | networking | `restart_service` | `route_traffic(iad)` |
+
+### 11.3 Incident order (one job)
 ```
-incident_status(outage) → responders_selected → incident_status(investigating)
-→ task[diagnose] → incident_status(repairing)
-→ task[remediate]+   (each: … done → remediation_proposed → sandbox_result → graded …)
-→ incident_status(awaiting_approval) → approval_required   (waits for approve_repair)
-→ incident_status(recovering) → task[verify]
-→ incident_status(restored) → service_restored → final(status "ok")
+incident_received → incident_status(outage) → commander_classified → specialists_dispatched
+→ responders_selected → incident_status(investigating) → task[diagnose]
+→ incident_status(repairing) → task[remediate]+
+   (each: … done → remediation_proposed → sandbox_result → graded …)
+→ remediation_plan_created → human_assignments_created
+→ incident_status(awaiting_approval) → approval_required
+→ approval_granted → incident_status(recovering) → task[verify]
+→ incident_status(restored) → service_restored → routing_stats → final(ok)
 ```
-Any step may instead go to `incident_status(failed)` → `final(status "error")`. Task ids are `t1..tN`. `task_posted.total` is the planned number of steps so far. Up to `MAX_REPAIR_ATTEMPTS` (3) remediation auctions run; each brief lists the previous failed actions. `diagnose` is graded by the blind reviewer. `remediate` and `verify` are graded deterministically as `max(1, round(10 × checks_passed / checks))`, with `usage.model = "deterministic-checks"` at zero cost. Production changes only after `approve_repair`, and the incident isn't `restored` until the production health checks pass. `incident_status{status:"healthy"}` is the only event other than `hello`/`error` allowed with `job_id:null`.
+Failure after the last repair attempt emits `incident_escalated` then `incident_status(failed)` → `routing_stats` → `final(error)`. `task_posted` on incident tasks carries `domain`. `rep_update.rep_key` is `{domain}.{task_type}`.
 
-### 11.3 Incident events
+### 11.4 New events
 | type | data |
 |---|---|
-| `incident_status` | `{ status: "healthy"\|"outage"\|"investigating"\|"repairing"\|"awaiting_approval"\|"recovering"\|"restored"\|"failed", service, severity: "SEV-1"\|"SEV-2"\|"SEV-3"\|null, summary, telemetry: Telemetry, logs: string[], config_changes: [{change_id, key, old, new, author, minutes_ago}] }` |
-| `responders_selected` | `{ required_skills: string[], responders: [{responder_id, name, role, selected, score, matched_skills, available, workload, reason}], briefings: {engineering, support, commander, leadership} }` |
-| `remediation_proposed` | `{ task_id, agent_id, attempt, action: Action\|null, accepted, reason }`. `accepted` is true iff `action` is set. |
-| `sandbox_result` | `{ task_id, agent_id, attempt, action\|null, passed, checks: [{name, passed, detail}], telemetry }`. `passed` is true iff every check passed. |
-| `approval_required` | `{ task_id, agent_id, attempt, action, summary, approvers: string[] }`. It references the passing repair. |
-| `service_restored` | `{ mttr_ms, total_cost_usd, repair_attempts, failed_attempts, action, confidence, approved_by, verification: Check[], grades: FinalTask[], rep_changes: [{agent_id, task_type, old, new}], telemetry }` |
+| `incident_received` | catalog fields plus `package`, `package_tokens_est`, `full_context_tokens_est` |
+| `commander_classified` | `{scenario_id, domain, secondary_domains, severity, required_specialties, rationale, source: model\|rules, fallback_reason, usage}` |
+| `specialists_dispatched` | `{domain, registered, eligible, specialists: [{specialist_id, domain, agent_id, label, dispatched}], reason}` |
+| `incident_status` | `{status, scenario_id, service, region, severity, summary, telemetry: Metric[], logs, config_changes}` |
+| `responders_selected` | unchanged shape plus Riley (Network Engineer) on the roster |
+| `remediation_proposed` / `sandbox_result` | `{task_id, agent_id, attempt, steps: Action[], ...}` |
+| `remediation_plan_created` | `{task_id, agent_id, attempt, steps: [{index, action, description, owner_domain}], summary, confidence}` |
+| `human_assignments_created` | `{task_id, assignments: [{assignment_id, step_index, action, description, responder_id, name, role, reason, approval_required, status}], required_approvers}` |
+| `approval_required` | `{task_id, agent_id, attempt, steps, summary, approvers}` |
+| `approval_granted` | `{task_id, approved, approved_by}` |
+| `incident_escalated` | `{reason, attempts, escalated_to}` |
+| `service_restored` | `{scenario_id, domain, mttr_ms, total_cost_usd, repair_attempts, failed_attempts, steps, confidence, approved_by, verification, grades, rep_changes, telemetry}` |
+| `routing_stats` | registered/eligible specialists, auctions, models contacted/skipped, actual ledger totals, estimated avoided tokens/cost, `method` |
 
-`Telemetry = {db_pool_size, db_connections_in_use, p95_latency_ms, error_rate, payment_success_rate, requests_per_min, timeouts_per_min, failed_payments_per_min}`. `Action = {action, value\|null}`, where `value` is set only for `set_db_pool_size`. Every metric is calculated: `mttr_ms` is stream time from outage to restore, and `total_cost_usd` is the ledger total. `confidence` is the winning repair bid's confidence.
+`Action = {action, value, region, ips}` with unused params null. `hello.config` also lists `rep_keys`, `domains`, `specialists` and `scenarios`.
 
-### 11.4 Human responders (`backend/abyss/responders.py`)
-The roster is Zak (Incident Commander), Maya (Database Engineer), Alex (Backend Engineer), Sam (Security Engineer) and Jordan (Customer Support Lead). Required skills come from the telemetry and changes: a SEV-1 needs `incident_command`, timeouts or a `db.*` change need `database`/`connection_pooling`, an error rate above the SLO needs `payments_api`, and failed payments need `customer_comms`. A person is paged when they're available and match at least 1 skill for a SEV-1 (2 otherwise). score = 10 × matches − 2 × workload. For the pool incident this pages Zak, Maya, Alex and Jordan, not Sam. The approvers are the paged commander and the database engineer.
+### 11.5 Humans
+Zak (commander), Maya (database), Alex (backend), Riley (network), Sam (security), Jordan (support). Step owners are fixed by action. SEV-1 adds Zak. Customer impact adds a Jordan notify (no approval). Deployment waits for every `approval_required` assignment. `approve_repair` grants them all.
 
-### 11.5 Replay
-`fixtures/mayday_run.json` (60 events) is recorded by `fixtures/make_mayday_run.py`, which runs the real engine with the fake LLM, a fixed job id and a virtual clock. Hand edits are forbidden. In fake mode the first repair is `restart_service`, which the sandbox rejects, and the second is `set_db_pool_size(20)`, which passes. The web replay pauses before the outage until **Break Production** and after `approval_required` until **Approve Repair** (`?auto=1` plays straight through).
+### 11.6 Replay
+`fixtures/incident_<id>.json` is recorded by `fixtures/make_incident_fixtures.py`. Hand edits are forbidden. Replay pauses at `incident_received` until `start_incident` and at `approval_required` until `approve_repair` (`?auto=1` plays through). Switching `scenario_id` loads that recording.
 
 ## 10. Change log
 - **v1 (H0):** initial freeze. Additions beyond the original 10 event types: `hello` (roster, reputation and config on connect) and `error`.
@@ -282,3 +298,7 @@ The roster is Zak (Incident Commander), Maya (Database Engineer), Alex (Backend 
   - Added six incident events (§11.3), the incident stream order (§11.2) and client messages `start_incident`/`approve_repair`/`reset_incident`.
   - Reputation files that are missing a type load it at `REP_INIT`.
   - `fake_run.json` was regenerated with the new bid fields; its totals are unchanged ($0.06928).
+- **v1 commander hub:** additive.
+  - Commander events, specialist domains, four scenarios, multi-step plans, human assignments, routing stats.
+  - `start_incident.scenario_id`. Reputation keys for incident work are `{domain}.{task_type}`.
+  - Telemetry is a list of metrics. Remediation is a list of typed actions.
