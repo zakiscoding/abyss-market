@@ -18,7 +18,7 @@ export function ServiceCard({ state }: { state: MarketState }) {
         ["Error rate", pct(t.error_rate), t.error_rate > 0.01],
         ["p95 latency", `${t.p95_latency_ms} ms`, t.p95_latency_ms > 300],
         ["Payment success", pct(t.payment_success_rate), t.payment_success_rate < 0.99],
-        ["Failed payments", `${t.failed_payments_per_min}/min`, t.failed_payments_per_min > 0],
+        ["Failed payments", `${t.failed_payments_per_min}/min`, t.error_rate > 0.01],
         ["DB timeouts", `${t.timeouts_per_min}/min`, t.timeouts_per_min > 0],
         ["DB pool", `${t.db_connections_in_use}/${t.db_pool_size}`, t.timeouts_per_min > 0],
       ]

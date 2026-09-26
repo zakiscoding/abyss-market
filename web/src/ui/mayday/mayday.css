@@ -77,6 +77,7 @@
 .mayday .break-button { background: #b3261e; border-color: #ff5a4f; color: #fff; }
 .mayday .break-button:not(:disabled):hover { background: #d6342a; }
 .mayday .ghost:hover:not(:disabled) { border-color: var(--accent); }
+.mayday .ghost.nudge { border-color: var(--accent); color: var(--accent); }
 
 .mayday-grid {
   display: grid;

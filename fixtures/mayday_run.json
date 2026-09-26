@@ -220,9 +220,9 @@
         }
       ],
       "briefings": {
-        "engineering": "2/2 DB connections in use, 640/min connection timeouts, p95 4387 ms, HTTP 500 rate 53.5%. Suspect: cfg-2291 by deploy-bot set db.pool.max_size 20 -> 2 4 min before alerts.",
+        "engineering": "2/2 DB connections in use, 640/min connection timeouts, p95 4387 ms, HTTP 500 rate 53.5%. Suspect: cfg-2291 by deploy-bot set db.pool.max_size 20 -> 2, 4 min before alerts.",
         "support": "About 54% of checkouts are failing (321/min). Tell customers payments are degraded, a fix is being tested, and to retry shortly.",
-        "commander": "SEV-1 on payments-api. Team: Zak, Maya, Alex, Jordan. Timeline: cfg-2291 by deploy-bot set db.pool.max_size 20 -> 2 4 min before alerts; alerts fired; AI diagnosis and repair auctions running. Your decision: approve a sandbox-tested repair.",
+        "commander": "SEV-1 on payments-api. Team: Zak, Maya, Alex, Jordan. Timeline: cfg-2291 by deploy-bot set db.pool.max_size 20 -> 2, 4 min before alerts; alerts fired; AI diagnosis and repair auctions running. Your decision: approve a sandbox-tested repair.",
         "leadership": "Payments are 54% degraded: about 321 failed checkouts per minute, roughly $13,482/min in revenue at risk."
       }
     }

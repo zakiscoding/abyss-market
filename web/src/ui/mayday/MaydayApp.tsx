@@ -128,7 +128,7 @@ export default function MaydayApp() {
             onClick={() => { if (send({ type: "start_incident" })) setPending("break"); }}>
             Break Production
           </button>
-          <button type="button" className="ghost" disabled={status === null}
+          <button type="button" className={`ghost ${status === "restored" || status === "failed" ? "nudge" : ""}`} disabled={status === null}
             onClick={() => { setPending(null); send({ type: "reset_incident" }); }}>
             Reset
           </button>

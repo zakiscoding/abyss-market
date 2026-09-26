@@ -74,7 +74,7 @@ def briefings(
     change = changes[-1] if changes else None
     change_text = (
         f"{change['change_id']} by {change['author']} set {change['key']} "
-        f"{change['old']} -> {change['new']} {change['minutes_ago']} min before alerts"
+        f"{change['old']} -> {change['new']}, {change['minutes_ago']} min before alerts"
         if change else "no recent config change"
     )
     at_risk = telemetry["failed_payments_per_min"] * AVG_ORDER_USD

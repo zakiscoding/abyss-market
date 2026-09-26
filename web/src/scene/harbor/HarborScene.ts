@@ -6,11 +6,11 @@ import { Application, Container, Graphics, Text } from "pixi.js";
 import type { MarketState } from "../../state/reducer";
 import { harborModel, type Berth, type BoatModel, type HarborModel, type Mood } from "./model";
 
-export const HARBOR = { w: 1600, h: 640 };
-const SEA_Y = 330;
+export const HARBOR = { w: 1200, h: 960 };
+const SEA_Y = 380;
 const FONT = ["Silkscreen", "monospace"];
-const PLATFORM = { x: 1180, y: 190, w: 330 };
-const BARGE = { x: 700, y: 470 };
+const PLATFORM = { x: 780, y: 230, w: 320 };
+const BARGE = { x: 450, y: 650 };
 
 const MOOD_COLOR: Record<Mood, { sky: string; glow: string; led: string }> = {
   healthy: { sky: "#0d2236", glow: "#39d2c0", led: "#39d98a" },
@@ -103,25 +103,25 @@ export class HarborScene {
     this.app.stage.addChild(this.world);
     const dock = new Graphics();
     // Pier and market dock
-    dock.rect(0, SEA_Y - 20, 380, 26).fill("#5a3d27");
-    for (let x = 10; x < 380; x += 34) dock.rect(x, SEA_Y + 6, 10, 70).fill("#3b2819");
-    dock.rect(0, SEA_Y - 26, 380, 6).fill("#7a5537");
+    dock.rect(0, SEA_Y - 20, 470, 26).fill("#5a3d27");
+    for (let x = 10; x < 470; x += 34) dock.rect(x, SEA_Y + 6, 10, 70).fill("#3b2819");
+    dock.rect(0, SEA_Y - 26, 470, 6).fill("#7a5537");
     // Market stalls on the dock
     const stallColors = ["#4fb3a9", "#e8a33d", "#8e6cc9"];
     stallColors.forEach((color, i) => {
-      const x = 40 + i * 110;
-      dock.rect(x, SEA_Y - 96, 86, 70).fill("#1c2b3a");
-      dock.poly([x - 8, SEA_Y - 96, x + 94, SEA_Y - 96, x + 80, SEA_Y - 124, x + 6, SEA_Y - 124]).fill(color);
+      const x = 160 + i * 100;
+      dock.rect(x, SEA_Y - 96, 80, 70).fill("#1c2b3a");
+      dock.poly([x - 8, SEA_Y - 96, x + 88, SEA_Y - 96, x + 74, SEA_Y - 124, x + 6, SEA_Y - 124]).fill(color);
     });
     // Lighthouse
-    dock.rect(12, SEA_Y - 210, 22, 184).fill("#d9dde2");
-    for (let y = SEA_Y - 190; y < SEA_Y - 30; y += 40) dock.rect(12, y, 22, 14).fill("#c94a4a");
+    dock.rect(100, SEA_Y - 230, 24, 204).fill("#d9dde2");
+    for (let y = SEA_Y - 210; y < SEA_Y - 30; y += 40) dock.rect(100, y, 24, 14).fill("#c94a4a");
     const dockSign = label("ABYSS AGENT MARKET", 18, "#f4dc97");
-    dockSign.position.set(200, SEA_Y - 140);
+    dockSign.position.set(300, SEA_Y - 146);
 
     const platformLegs = new Graphics();
     for (let i = 0; i < 4; i += 1) {
-      platformLegs.rect(PLATFORM.x + 20 + i * 95, PLATFORM.y + 120, 16, 260).fill("#2c3a47");
+      platformLegs.rect(PLATFORM.x + 20 + i * 92, PLATFORM.y + 120, 16, 300).fill("#2c3a47");
     }
     this.platformText.position.set(PLATFORM.x + PLATFORM.w / 2, PLATFORM.y - 34);
 
@@ -140,7 +140,7 @@ export class HarborScene {
     for (let i = 0; i < 40; i += 1) {
       this.sky.rect((i * 397) % HARBOR.w, (i * 131) % (SEA_Y - 60), 3, 3).fill({ color: "#ffffff", alpha: 0.5 });
     }
-    this.sky.circle(820, 80, 30).fill({ color: "#f3efd6", alpha: 0.85 });
+    this.sky.circle(560, 110, 30).fill({ color: "#f3efd6", alpha: 0.85 });
     this.sea.clear().rect(0, SEA_Y, HARBOR.w, HARBOR.h - SEA_Y).fill("#0a2a3f");
 
     const { x, y, w } = PLATFORM;
@@ -205,14 +205,17 @@ export class HarborScene {
 
   private berthPosition(boat: BoatModel, berth: Berth): { x: number; y: number } {
     const models = this.model?.boats ?? [boat];
-    const group = models.filter((b) => b.kind === boat.kind);
-    const slot = Math.max(0, group.findIndex((b) => b.id === boat.id));
     const human = boat.kind === "human";
+    // Humans at the platform line up by dispatch order so the paged team stays together.
+    const group = models.filter((b) => b.kind === boat.kind && (!human || berth !== "platform" || b.berth === "platform"));
+    const slot = Math.max(0, group.findIndex((b) => b.id === boat.id));
     if (berth === "platform") {
-      return { x: PLATFORM.x - 60 + slot * (human ? 90 : 120), y: human ? 560 : 440 };
+      return human
+        ? { x: PLATFORM.x - 60 + slot * 105, y: 830 }
+        : { x: PLATFORM.x + 40 + slot * 110, y: 690 };
     }
-    if (berth === "sandbox") return { x: BARGE.x + 90, y: BARGE.y + 70 };
-    return { x: human ? 70 + slot * 62 : 110 + slot * 110, y: human ? 560 : 400 };
+    if (berth === "sandbox") return { x: BARGE.x + 90, y: BARGE.y + 80 };
+    return human ? { x: 130 + slot * 88, y: 830 } : { x: 180 + slot * 110, y: 470 };
   }
 
   private tick(deltaMS: number): void {
@@ -223,8 +226,8 @@ export class HarborScene {
     const colors = MOOD_COLOR[mood];
 
     this.waves.clear();
-    for (let row = 0; row < 7; row += 1) {
-      const y = SEA_Y + 20 + row * 44;
+    for (let row = 0; row < 12; row += 1) {
+      const y = SEA_Y + 20 + row * 48;
       for (let x = -40; x < HARBOR.w; x += 80) {
         const dx = (x + t * (18 + row * 6)) % (HARBOR.w + 80);
         this.waves.rect(dx, y + Math.sin(t * 1.6 + x * 0.05 + row) * 4, 34, 3).fill({ color: "#5fa8c7", alpha: 0.25 });
