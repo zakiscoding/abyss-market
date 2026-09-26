@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from .config import AGENTS
+from .config import AGENTS, TOKENS_PER_SEC
 from .ledger import cost_usd
 
 
@@ -63,6 +63,17 @@ def clamp_bid(raw: dict) -> tuple[int, int, str]:
         min(10, max(1, quality)),
         pitch[:80],
     )
+
+
+def clamp_confidence(raw: dict) -> float:
+    value = raw.get("confidence")
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or value != value:
+        return 0.5
+    return round(min(1.0, max(0.0, float(value))), 2)
+
+
+def eta_ms(nominal_model: str, predicted_output_tokens: int) -> int:
+    return round(predicted_output_tokens / TOKENS_PER_SEC[nominal_model] * 1000)
 
 
 def _as_int(value: object, default: int) -> int:

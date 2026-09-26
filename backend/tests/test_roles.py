@@ -60,6 +60,7 @@ async def test_fake_role_shapes(monkeypatch) -> None:
     assert set(raw_bid) == {
         "predicted_output_tokens",
         "promised_quality",
+        "confidence",
         "pitch",
     }
     assert bid_usage["model"] == AGENTS[0].model

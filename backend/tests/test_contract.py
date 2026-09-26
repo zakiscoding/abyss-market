@@ -12,6 +12,8 @@ FAILED_BID_FIELDS = (
     "est_input_tokens",
     "predicted_cost_usd",
     "promised_quality",
+    "confidence",
+    "eta_ms",
     "pitch",
     "reputation",
     "score",

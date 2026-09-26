@@ -14,11 +14,12 @@ Sink = Callable[[dict], Awaitable[None]]
 
 
 class EventStream:
-    def __init__(self, sink: Sink):
+    def __init__(self, sink: Sink, clock: Callable[[], float] = time.monotonic):
         self.sink = sink
         self.seq = 0
         self.job_id: str | None = None
         self._started: float | None = None
+        self._clock = clock
 
     async def hello(self, rep: ReputationStore) -> None:
         await self.emit(
@@ -30,7 +31,7 @@ class EventStream:
                     "price_weight": config.PRICE_WEIGHT,
                     "rep_init": config.REP_INIT,
                     "rep_alpha": config.REP_ALPHA,
-                    "task_types": config.TASK_TYPES,
+                    "task_types": config.ALL_TASK_TYPES,
                     "real_models": config.real_models(),
                     "fake_llm": config.fake_llm(),
                     "orchestrator_model": config.ORCHESTRATOR_MODEL,
@@ -42,7 +43,12 @@ class EventStream:
 
     def start_job(self, job_id: str) -> None:
         self.job_id = job_id
-        self._started = time.monotonic()
+        self._started = self._clock()
+
+    def elapsed_ms(self) -> int:
+        if self._started is None:
+            return 0
+        return round((self._clock() - self._started) * 1000)
 
     async def emit(
         self,
@@ -52,8 +58,8 @@ class EventStream:
     ) -> None:
         resolved_job_id = self.job_id if job_id is ... else job_id
         elapsed = 0
-        if resolved_job_id is not None and self._started is not None:
-            elapsed = round((time.monotonic() - self._started) * 1000)
+        if resolved_job_id is not None:
+            elapsed = self.elapsed_ms()
         event = {
             "v": 1,
             "seq": self.seq,

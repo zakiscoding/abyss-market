@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from abyss.config import AGENTS, TASK_TYPES
+from abyss.config import AGENTS, ALL_TASK_TYPES
 from abyss.reputation import ReputationStore
 
 
@@ -38,6 +38,6 @@ def test_persistence_round_trip_and_reset(tmp_path) -> None:
     loaded.reset()
     reset = ReputationStore(path)
     assert reset.snapshot() == {
-        agent.agent_id: {task_type: 1.0 for task_type in TASK_TYPES}
+        agent.agent_id: {task_type: 1.0 for task_type in ALL_TASK_TYPES}
         for agent in AGENTS
     }

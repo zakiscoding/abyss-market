@@ -10,7 +10,8 @@ SPLIT_USER = """Split this job into 2 to 5 tasks:
 BID_SYSTEM = """You are bidding in a marketplace for AI work. Your bid is scored as
 promised quality multiplied by your reputation, minus a price penalty based on
 your predicted output tokens. Overpromising lowers your future reputation. Give
-an honest token estimate, quality from 1 to 10, and a short pitch."""
+an honest token estimate, quality from 1 to 10, your confidence from 0 to 1 that
+you will succeed, and a short pitch."""
 
 BID_USER = """Agent: {agent_name} ({agent_id})
 Job: {job_text}
@@ -96,9 +97,10 @@ BID_SCHEMA = {
     "properties": {
         "predicted_output_tokens": {"type": "integer"},
         "promised_quality": {"type": "integer"},
+        "confidence": {"type": "number"},
         "pitch": {"type": "string"},
     },
-    "required": ["predicted_output_tokens", "promised_quality", "pitch"],
+    "required": ["predicted_output_tokens", "promised_quality", "confidence", "pitch"],
     "additionalProperties": False,
 }
 

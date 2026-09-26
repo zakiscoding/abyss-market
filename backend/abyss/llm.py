@@ -446,6 +446,7 @@ def _fake_output(purpose: Purpose, user: str, digest: bytes) -> tuple[str, dict 
         data = {
             "predicted_output_tokens": 150 + int.from_bytes(digest[:2], "big") % 551,
             "promised_quality": 6 + digest[2] % 5,
+            "confidence": round(0.55 + digest[3] % 41 / 100, 2),
             "pitch": "A careful, concise result at a competitive price.",
         }
         return json.dumps(data), data

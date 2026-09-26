@@ -22,7 +22,8 @@ AGENTS = [
     {"agent_id": "opus", "display_name": "Opus 5", "model": "claude-opus-5", "color": "#8e6cc9"},
 ]
 AGENT_MODEL = {a["agent_id"]: a["model"] for a in AGENTS}
-TASK_TYPES = ["research", "writing", "checking"]
+TASK_TYPES = ["research", "writing", "checking", "diagnose", "remediate", "verify"]
+TOKENS_PER_SEC = {"claude-haiku-4-5": 150.0, "claude-sonnet-5": 80.0, "claude-opus-5": 50.0}
 PRICE_WEIGHT = 1.0
 REP_INIT = 1.0
 REP_ALPHA = 0.3
@@ -228,7 +229,10 @@ for i, task in enumerate(TASKS):
         emit(bid_start + ms, "bid", {
             "task_id": tid, "agent_id": aid, "ok": True, "error": None,
             "predicted_output_tokens": b["pred"], "est_input_tokens": task["est_input_tokens"],
-            "predicted_cost_usd": pred_cost, "promised_quality": b["q"], "pitch": b["pitch"],
+            "predicted_cost_usd": pred_cost, "promised_quality": b["q"],
+            "confidence": round(b["q"] / 10 - 0.05, 2),
+            "eta_ms": round(b["pred"] / TOKENS_PER_SEC[AGENT_MODEL[aid]] * 1000),
+            "pitch": b["pitch"],
             "reputation": r, "score": s, "usage": u,
         })
     t = bid_start + max(b["u"][2] for b in task["bids"].values()) + 50
