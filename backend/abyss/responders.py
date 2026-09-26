@@ -8,7 +8,7 @@ ROSTER = [
      "skills": {"incident_command", "communication"}, "available": True, "workload": 1},
     {"responder_id": "maya", "name": "Maya", "role": "Database Engineer",
      "skills": {"database", "connection_pooling", "postgres"}, "available": True, "workload": 2},
-    {"responder_id": "alex", "name": "Alex", "role": "Backend Engineer",
+    {"responder_id": "alex", "name": "Alex", "role": "Payments Engineer",
      "skills": {"payments_api", "backend", "deploys"}, "available": True, "workload": 1},
     {"responder_id": "riley", "name": "Riley", "role": "Network Engineer",
      "skills": {"networking", "routing", "cdn"}, "available": True, "workload": 1},

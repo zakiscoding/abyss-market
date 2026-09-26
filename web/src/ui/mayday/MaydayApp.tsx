@@ -6,6 +6,7 @@ import { FixtureSource } from "../../sources/fixture";
 import type { EventSource } from "../../sources/types";
 import { WsSource } from "../../sources/ws";
 import type { MarketState } from "../../state/reducer";
+import { incidentElapsed } from "../../state/incident";
 import { store } from "../../state/store";
 import { DebugPanel } from "../DebugPanel";
 import {
@@ -16,8 +17,8 @@ import {
   ModelMarket,
   PersonaSelect,
 } from "./CommandPanels";
-import { canApprove, planHash, type Persona } from "./command";
-import { formatDuration, outcome } from "./derive";
+import { captainReadout, canApprove, planHash, type Persona } from "./command";
+import { outcome } from "./derive";
 import {
   HistoryPanel,
   Inbox,
@@ -25,6 +26,7 @@ import {
   Repairs,
   Terminal,
 } from "./panels";
+import { IncidentTimer } from "./IncidentTimer";
 import { seasidePicture } from "./seaside";
 import { SeasideScene } from "./SeasideScene";
 import { WorkspaceTabs, type WorkspaceTab } from "./WorkspaceTabs";
@@ -136,12 +138,8 @@ export default function MaydayApp() {
   const active = status !== null && !["healthy", "restored", "failed"].includes(status);
   const mood = harborModel(state).mood;
   const picture = seasidePicture(state);
-  const elapsedMs = incident?.outageT == null
-    ? 0
-    : incident.restored
-      ? incident.restored.mttr_ms
-      : incident.lastT - incident.outageT + (active ? (now - lastEventWall.current) * SPEED : 0);
-  const canTrigger = status !== null && !active && pending === null && (SOURCE === "fixture" || state.connected);
+  const elapsedMs = incidentElapsed(incident, (now - lastEventWall.current) * SPEED);
+  const canTrigger = status !== null && !active && !state.jobActive && pending === null && (SOURCE === "fixture" || state.connected);
   const badge = modeBadge(state);
   const cost = incident?.restored?.total_cost_usd ?? outcome(state).aiCost;
   const costLabel = state.config && !state.config.fake_llm && SOURCE === "ws" ? "Actual AI cost" : "Simulated cost";
@@ -169,13 +167,9 @@ export default function MaydayApp() {
           <b className={active ? "sev" : picture.boat === "restored" ? "ok" : ""}>{status === "restored" ? "RESTORED" : picture.severity ?? "STANDBY"}</b>
           <span>{picture.service}</span>
           <span>{picture.region || "—"}</span>
-          <span className="status">{(status ?? "connecting").replaceAll("_", " ")}</span>
           <span className="cost" title={costLabel}>{costLabel}: ${cost.toFixed(4)}</span>
         </div>}
-        <div className="incident-timer" title="Time since the outage started">
-          <small>{status === "restored" ? "MTTR" : "INCIDENT"}</small>
-          <b>{formatDuration(elapsedMs)}</b>
-        </div>
+        <IncidentTimer incident={incident} sinceLastEventMs={(now - lastEventWall.current) * SPEED} />
         <div className="header-actions">
           <PersonaSelect persona={persona} onChange={setPersona} />
           <button type="button" className={`ghost ${status === "restored" || status === "failed" ? "nudge" : ""}`} disabled={SOURCE === "ws" && !state.connected}
@@ -210,7 +204,7 @@ export default function MaydayApp() {
           requestAnimationFrame(() => document.getElementById("panel-crew")?.focus());
         }} />
 
-      <div className="harbor-caption"><span>CAPTAIN READOUT</span><p>{status === "awaiting_approval" ? "Deterministic sandbox checks passed. Your crew can now review the repair." : status === "restored" ? "Service restored. Explore the evidence or start another incident." : status === "failed" ? "Investigation escalated. Review the evidence for details." : active ? "Specialists are working on this incident." : "Select a source in the inbox to begin an investigation."}</p>
+      <div className="harbor-caption"><span>CAPTAIN READOUT</span><p>{captainReadout(state, costLabel).text}</p>
         {status === "awaiting_approval" && <button type="button" onClick={() => { setActiveTab("crew"); requestAnimationFrame(() => document.getElementById("panel-crew")?.focus()); }}>Review repair</button>}
       </div>
       </div>
@@ -221,7 +215,7 @@ export default function MaydayApp() {
             state={state}
             canTrigger={canTrigger}
             pending={typeof pending === "string" && pending !== "approve" ? pending : null}
-            onTrigger={(scenarioId) => { if (send({ type: "start_incident", scenario_id: scenarioId })) setPending(scenarioId); }}
+            onTrigger={(scenarioId) => { if (canTrigger && send({ type: "start_incident", scenario_id: scenarioId })) setPending(scenarioId); }}
           />
           <HistoryPanel history={state.history} />
         </>,

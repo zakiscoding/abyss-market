@@ -61,13 +61,15 @@ export class FixtureSource implements EventSource {
       return true;
     }
     if (message.type === "start_incident") {
+      if (this.running || this.armed) return false;
       const next = message.scenario_id ?? this.scenario;
       const sameRecording = typeof this.url === "string" || next === this.scenario;
       if (this.waiting?.gate === "start_incident" && sameRecording) {
+        this.running = true;
         this.release();
         return true;
       }
-      if (this.running || typeof this.url === "string" || !this.onEvent) return false;
+      if (!this.onEvent) return false;
       this.scenario = next;
       this.armed = true;
       this.start(this.onEvent);

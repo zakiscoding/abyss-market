@@ -1,3 +1,5 @@
+import { incidentCrew } from "../../state/incident";
+import { formatDuration } from "./derive";
 import type { AgentId, Domain } from "../../contract";
 import { describePlan } from "../../contract";
 import { currentTask } from "../../scene/model";
@@ -7,12 +9,12 @@ import { chooseAutomaticModel, modelRegistry, type RankedModel, type RegistryMod
 export type Persona = "commander" | "sre" | "database" | "security" | "payments" | "support" | "viewer";
 
 export const PERSONAS: { id: Persona; label: string }[] = [
-  { id: "commander", label: "Incident Commander" },
-  { id: "sre", label: "On-call SRE" },
-  { id: "database", label: "Database Engineer" },
-  { id: "security", label: "Security Engineer" },
-  { id: "payments", label: "Payments Engineer" },
-  { id: "support", label: "Support Lead" },
+  { id: "commander", label: "Zak - Incident Commander" },
+  { id: "sre", label: "Riley - Network Engineer" },
+  { id: "database", label: "Maya - Database Engineer" },
+  { id: "security", label: "Sam - Security Engineer" },
+  { id: "payments", label: "Alex - Payments Engineer" },
+  { id: "support", label: "Jordan - Customer Support Lead" },
   { id: "viewer", label: "Viewer" },
 ];
 
@@ -63,7 +65,7 @@ export interface CaptainLine {
   text: string;
 }
 
-export function captainReadout(state: MarketState): CaptainLine {
+export function captainReadout(state: MarketState, costLabel = state.config?.fake_llm === false ? "Actual AI cost" : "Simulated cost"): CaptainLine {
   const commander = state.incident?.commander;
   if (!commander) {
     return {
@@ -73,6 +75,17 @@ export function captainReadout(state: MarketState): CaptainLine {
     };
   }
   const dock = dockTitle(commander.domain);
+  const incident = state.incident!;
+  const restored = incident.restored;
+  if (restored) {
+    const repair = incident.repairs.find((item) => item.proposal.task_id === incident.approval?.task_id)
+      ?? incident.repairs.at(-1);
+    const worker = workerName(repair?.proposal.agent_id ?? null);
+    const sandbox = repair?.sandbox;
+    const verification = restored.verification;
+    return { domain: restored.domain, dock, text:
+      `${incident.received?.name ?? incident.current.service}. Root cause: ${restored.domain}. ${worker} through ${dock}: ${describePlan(restored.steps)}. Applied to simulated cluster. Deterministic sandbox ${sandbox ? sandbox.passed ? "passed" : "failed" : "not recorded"}; recovery checks ${verification.length ? verification.every((check) => check.passed) ? "passed" : "need attention" : "not recorded"}. Human approvers: ${restored.approved_by.join(" and ") || "not recorded"}. MTTR ${formatDuration(restored.mttr_ms)}; ${costLabel}: $${restored.total_cost_usd.toFixed(4)}.` };
+  }
   if (state.incident?.current.scenario_id === "payments_pool" && commander.domain === "database") return {
     domain: commander.domain, dock,
     text: "Payments API is affected, but the root cause is database connection-pool exhaustion. Routing remediation to Database Repair while Payments Operations monitors recovery.",
@@ -206,7 +219,7 @@ export function captainAnswer(state: MarketState, question: string): CaptainAnsw
   if (normalized.includes("repair") || normalized.includes("plan") || normalized.includes("change")) {
     return {
       answer: plan
-        ? `The proposed repair is ${plan}. It ${sandbox?.passed ? "passed" : "has not passed"} sandbox validation. Production remains gated on human approval.`
+        ? `The proposed repair is ${plan}. It ${sandbox?.passed ? "passed" : "has not passed"} sandbox validation. Application to the simulated cluster remains gated on human approval.`
         : "A repair plan has not passed sandbox validation yet.",
       evidence: plan ? [plan] : [],
     };
@@ -242,7 +255,7 @@ export function incidentChat(state: MarketState, note?: { kind: "revision" | "re
   const dock = dockTitle(incident.commander?.domain ?? null);
   if (incident.dispatched) push("Captain AI", "AI COMMANDER", `${dock} is evaluating qualified workers.`);
   for (const person of incident.responders?.responders.filter((item) => item.selected) ?? []) {
-    push(person.name, "HUMAN", `Watching ${person.role.toLowerCase()}.`);
+    push(person.name, "HUMAN", `${incidentCrew(incident).find((member) => member.id === person.responder_id)?.state ?? "Alerted"}: ${person.role}.`);
   }
   for (const repair of incident.repairs) {
     const plan = repair.proposal.steps.length ? describePlan(repair.proposal.steps) : "the proposed plan";
@@ -256,7 +269,7 @@ export function incidentChat(state: MarketState, note?: { kind: "revision" | "re
     }
   }
   for (const assignment of incident.assignments?.assignments ?? []) {
-    if (assignment.approval_required) push(assignment.name, "HUMAN", `Reviewing ${assignment.description}.`);
+    if (incident.status !== "restored" && assignment.approval_required) push(assignment.name, "HUMAN", `Reviewing ${assignment.description}.`);
   }
   if (note?.kind === "revision") push(note.persona, "HUMAN", "Plan held for review in this session. Deployment remains paused.");
   if (note?.kind === "reject") push(note.persona, "HUMAN", "Plan declined in this session. Deployment remains paused.");

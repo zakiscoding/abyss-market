@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from urllib import request
 
 from . import safety
+from .responders import ROSTER
 
 
 @dataclass(frozen=True)
@@ -28,23 +29,25 @@ def _env_id(name: str) -> str | None:
     return value or None
 
 
-def _mention_ids(domain: str, customer_impact: bool, severity: str | None) -> tuple[str, ...]:
-    ownership: dict[str, tuple[str, ...]] = {
-        "database": ("DISCORD_USER_MAYA", "DISCORD_USER_JORDAN"),
-        "security": ("DISCORD_USER_MAYA", "DISCORD_USER_SAM"),
-        "payments": ("DISCORD_USER_MAYA", "DISCORD_USER_ALEX"),
-        "networking": ("DISCORD_USER_MAYA", "DISCORD_USER_ALEX"),
-    }
-    names = list(ownership.get(domain, ()))
+def _mention_ids(domain: str, customer_impact: bool, severity: str | None,
+                 crew: tuple[tuple[str, str], ...] = ()) -> tuple[str, ...]:
+    # Use the actual paged/assigned crew, including cross-domain step owners.
+    names = [name for name, _role in crew] if crew else [
+        {"database": "Maya", "networking": "Riley", "security": "Sam",
+         "payments": "Alex", "generalist": "Alex"}.get(domain, "Zak")
+    ]
     if customer_impact:
-        names.append("DISCORD_USER_TAYLOR")
-    # The Incident Commander is intentionally not guessed: no ID is accepted
-    # unless a dedicated configured mapping is added by the operator.
+        names.append("Jordan")
     if severity == "SEV-1":
-        names.append("DISCORD_USER_INCIDENT_COMMANDER")
+        names.append("Zak")
+    roster = {person["name"] for person in ROSTER}
     ids: list[str] = []
     for name in names:
-        value = _env_id(name)
+        if name not in roster:
+            continue
+        value = _env_id(f"DISCORD_USER_{name.upper()}")
+        if name == "Zak" and not value:
+            value = _env_id("DISCORD_USER_INCIDENT_COMMANDER")
         if value and value not in ids:
             ids.append(value)
     return tuple(ids)
@@ -75,7 +78,7 @@ def build_review_notification(
     channel_id = os.getenv("DISCORD_CHANNEL_ID", "").strip() or None
     if not ((bot_token and channel_id) or webhook):
         return None
-    ids = _mention_ids(domain, customer_impact, severity)
+    ids = _mention_ids(domain, customer_impact, severity, crew)
     mentions = " ".join(f"<@{user_id}>" for user_id in ids)
     audience = f"{mentions}, " if mentions else ""
     specialty = {
@@ -85,6 +88,8 @@ def build_review_notification(
         "payments": "Payments",
         "generalist": "Generalist",
     }.get(domain, domain.title())
+    roles = {person["name"]: person["role"] for person in ROSTER}
+    crew = tuple((name, roles[name]) for name, _role in crew if name in roles)
     crew_lines = "\n".join(f"- {name}: {role}" for name, role in crew)
     crew_section = f"Crew roles:\n{crew_lines}\n" if crew_lines else ""
     message = (

@@ -19,7 +19,7 @@
 .harbor-workflow { position: absolute; left: 3%; top: 53%; width: 94%; z-index: 4; }
 .harbor-workflow .pipeline { display: grid; grid-template-columns: repeat(6, minmax(0,1fr)); gap: 5px; }
 .harbor-workflow .pipeline li { background: #0c2530ed; padding: 7px 8px; min-width: 0; }
-.harbor-workflow .pipeline b { font: 600 clamp(9px,.85cqw,13px)/1.3 var(--ui-font); }
+.harbor-workflow .pipeline b { font: 600 clamp(11px,1cqw,14px)/1.3 var(--ui-font); color: #f3f7fa; white-space: nowrap; }
 .harbor-workflow .pipeline small { font: 10px/1.3 var(--ui-font); overflow: hidden; text-overflow: ellipsis; }
 .harbor-workflow .pipeline li::after { display: none; }
 .harbor-repair-route { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }

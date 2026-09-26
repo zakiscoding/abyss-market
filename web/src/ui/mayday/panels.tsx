@@ -51,7 +51,7 @@ export function Inbox({
               scenario={scenario}
               current={live}
               running={running && live}
-              status={live ? status : past?.outcome ?? "waiting"}
+              status={live && status !== "healthy" ? status : past?.outcome ?? "waiting"}
               severity={live ? state.incident?.commander?.severity ?? state.incident?.current.severity ?? null : past?.severity ?? null}
               domain={live ? state.incident?.commander?.domain ?? seededDomain(scenario.scenario_id) : past?.domain ?? seededDomain(scenario.scenario_id)}
               owner={owners || "—"}
@@ -97,8 +97,8 @@ function InboxCard({
         <span>{domain} · {(status ?? "waiting").replaceAll("_", " ")} · {owner}</span>
         <small>{scenario.alert}</small>
       </div>
-      <button type="button" disabled={disabled} onClick={onTrigger}>
-        {pending ? "Triggering..." : running ? (status ?? "live").replace("_", " ") : "Trigger"}
+      <button type="button" disabled={disabled} onClick={onTrigger} title="Start a new simulation run; previous results stay in history">
+        {pending ? "Triggering..." : running ? (status ?? "live").replace("_", " ") : status === "restored" || status === "failed" ? "Run again" : "Trigger"}
       </button>
     </li>
   );
@@ -121,6 +121,7 @@ export function HistoryPanel({ history }: { history: HistoryEntry[] }) {
               {item.severity ?? "—"} · {item.domain ?? "—"} · {usd(item.costUsd)}
               {item.mttrMs != null ? ` · ${formatDuration(item.mttrMs)}` : ""}
             </small>
+            <small>{item.crew.map((person) => `${person.name}: ${person.state}`).join("; ")}</small>
           </li>
         ))}
       </ul>

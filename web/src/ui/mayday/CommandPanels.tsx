@@ -1,3 +1,4 @@
+import { incidentCrew } from "../../state/incident";
 import { describePlan, formatMetric, type Region } from "../../contract";
 import type { MarketState } from "../../state/reducer";
 import { currentTask } from "../../scene/model";
@@ -8,7 +9,6 @@ import {
   canReject,
   canRevise,
   captainReadout,
-  crewState,
   dockWorker,
   escalationCost,
   incidentChat,
@@ -109,9 +109,7 @@ export function EscalationPanel({ state }: { state: MarketState }) {
 }
 
 export function CrewPanel({ state, revision }: { state: MarketState; revision: boolean }) {
-  const people = state.incident?.responders?.responders.filter((person) => person.selected) ?? [];
-  const status = state.incident?.status ?? "healthy";
-  const approvers = new Set(state.incident?.approval?.approvers ?? []);
+  const people = incidentCrew(state.incident, revision);
   return (
     <section className="panel crew-panel">
       <header className="panel-head">
@@ -122,12 +120,9 @@ export function CrewPanel({ state, revision }: { state: MarketState; revision: b
       {people.length > 0 && <p className="crew-summary">Crew alerted · {people.map((person) => person.name).join(", ")}</p>}
       <ul className="crew-list">
         {people.map((person) => {
-          const needs = approvers.has(person.name);
-          const phase = status === "restored"
-            ? (state.incident?.granted?.approved_by.includes(person.name) ? "approved · complete" : "incident resolved")
-            : crewState(status, needs, revision);
+          const phase = person.state;
           return (
-            <li key={person.responder_id}>
+            <li key={person.id}>
               <b>{person.name}</b>
               <span>{person.role}</span>
               <small className={`crew-${phase.replace(" ", "-")}`}>{phase}</small>

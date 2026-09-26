@@ -1,3 +1,4 @@
+import { incidentCrew, type CrewMember } from "./incident";
 import type {
   AbyssEvent,
   AgentId,
@@ -67,6 +68,7 @@ export interface HistoryEntry {
   avoidedTokensEst: number | null;
   avoidedCostUsdEst: number | null;
   approvedBy: string[];
+  crew: CrewMember[];
 }
 
 export type AgentStatus = "idle" | "bidding" | "working";
@@ -289,20 +291,19 @@ export function reduce(state: MarketState, ev: AbyssEvent): MarketState {
           ...incident,
           status: data.status,
           current: data,
-          outageT: data.status === "outage" ? ev.t : incident.outageT,
+          outageT: data.status === "outage" ? incident.outageT ?? ev.t : incident.outageT,
           lastT: ev.t,
         },
       };
     }
     case "incident_received": {
-      const current = state.incident?.current;
-      const placeholder: IncidentStatusData = current ?? {
-        status: "healthy", scenario_id: ev.data.scenario_id, service: ev.data.service,
+      const placeholder: IncidentStatusData = {
+        status: "outage", scenario_id: ev.data.scenario_id, service: ev.data.service,
         region: ev.data.region, severity: null, summary: ev.data.alert,
         telemetry: ev.data.package.breached, logs: [], config_changes: [],
       };
       const started = startIncident(withLog, ev.job_id, placeholder, ev.t, ev.data.alert);
-      return withIncident(started, ev.t, { received: ev.data });
+      return withIncident(started, ev.t, { received: ev.data, outageT: ev.t });
     }
     case "commander_classified":
       return withIncident(withLog, ev.t, { commander: ev.data });
@@ -396,7 +397,8 @@ function historyEntry(incident: IncidentView | null, jobId: string | null, final
     costUsd: incident.routing?.actual_cost_usd ?? final.total_cost_usd,
     avoidedTokensEst: incident.routing?.avoided_input_tokens_est ?? null,
     avoidedCostUsdEst: incident.routing?.avoided_cost_usd_est ?? null,
-    approvedBy: incident.granted?.approved_by ?? [],
+    approvedBy: restored?.approved_by ?? incident.granted?.approved_by ?? [],
+    crew: incidentCrew(incident),
   };
 }
 

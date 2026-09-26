@@ -335,7 +335,7 @@ class IncidentRun:
             "agent_id": repair.agent_id,
             "attempt": sandbox["attempt"],
             "steps": steps,
-            "summary": f"Deploy {plan_text} to production. All sandbox checks passed.",
+            "summary": f"Apply {plan_text} to the simulated cluster. All deterministic sandbox checks passed.",
             "approvers": approvers,
         })
         if not self.review_notification_sent:

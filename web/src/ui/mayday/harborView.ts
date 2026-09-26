@@ -15,7 +15,7 @@ export function specialtyState(state: MarketState, domain: Domain) {
   const primary = incident.commander.domain === domain;
   const affected = !primary && (incident.commander.secondary_domains.includes(domain)
     || (domain === "payments" && incident.current.scenario_id === "payments_pool"));
-  if (incident.status === "restored" && (primary || affected)) return { kind: "restored", label: "RESTORED", primary };
+  if (incident.status === "restored" && (primary || affected)) return { kind: "restored", label: primary ? "RESTORED" : "RECOVERY CONFIRMED", primary };
   if (primary) return { kind: "active", label: "ACTIVE · ROOT CAUSE", primary };
   if (affected) return { kind: "monitoring", label: "MONITORING · AFFECTED SERVICE", primary: false };
   return { kind: "idle", label: "IDLE", primary: false };

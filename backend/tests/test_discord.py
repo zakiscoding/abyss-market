@@ -26,7 +26,8 @@ def test_notification_uses_only_configured_deterministic_mentions(monkeypatch):
     )
 
     assert notification is not None
-    assert notification.mentions == ("maya-id", "jordan-id", "taylor-id")
+    assert notification.mentions == ("maya-id", "jordan-id")
+    assert "taylor-id" not in notification.message
     assert "<@maya-id>" in notification.message
     assert "<@everyone>" not in notification.message
     assert "https://abyss.example.com/incidents/j_deadbeef" in notification.message
@@ -96,3 +97,32 @@ def test_bot_api_posts_to_configured_channel(monkeypatch):
     assert req.get_header("Authorization") == "Bot bot-secret"
     body = json.loads(req.data)
     assert body["allowed_mentions"]["parse"] == []
+
+
+def test_mentions_follow_cross_domain_crew_and_canonical_roles(monkeypatch):
+    for name in ("ZAK", "MAYA", "RILEY", "SAM", "ALEX", "JORDAN"):
+        monkeypatch.setenv(f"DISCORD_USER_{name}", name.lower())
+    monkeypatch.setenv("DISCORD_WEBHOOK_URL", "https://discord.invalid/webhook")
+    cases = [
+        ("database", (("Maya", "Database Engineer"), ("Alex", "Backend Engineer")), True, "SEV-1", ("maya", "alex", "jordan", "zak")),
+        ("networking", (("Riley", "Network Engineer"),), True, "SEV-1", ("riley", "jordan", "zak")),
+        ("security", (("Sam", "Security Engineer"),), False, "SEV-2", ("sam",)),
+    ]
+    for domain, crew, impact, severity, expected in cases:
+        notification = discord.build_review_notification(
+            job_id="j_test", service="test", region="iad", domain=domain,
+            severity=severity, selected_worker="Claude Haiku", customer_impact=impact,
+            summary="Recorded evidence", crew=crew,
+        )
+        assert notification.mentions == expected
+        assert "Backend Engineer" not in notification.message
+        if domain == "database":
+            assert "Alex: Payments Engineer" in notification.message
+
+
+def test_fallback_mentions_follow_responsible_specialty(monkeypatch):
+    for name in ("MAYA", "RILEY", "SAM", "ALEX", "JORDAN", "ZAK"):
+        monkeypatch.setenv(f"DISCORD_USER_{name}", name.lower())
+    assert discord._mention_ids("networking", False, "SEV-2") == ("riley",)
+    assert discord._mention_ids("security", False, "SEV-2") == ("sam",)
+    assert discord._mention_ids("database", True, "SEV-1") == ("maya", "jordan", "zak")
